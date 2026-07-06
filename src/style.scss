@@ -1,0 +1,113 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+
+  font-family: sans-serif;
+
+  height: min(100vh, 100%);
+  width: 100vw;
+}
+.main {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #000;
+
+  small {
+    color: white;
+    text-align: center;
+    position: absolute;
+    top: 50%;
+  }
+
+  .game {
+    height: 100%;
+    width: auto;
+    padding-top: 0;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+
+    @media (max-aspect-ratio: 1280/720) {
+      width: 100%;
+      height: auto;
+      padding-top: calc((720 / 1280) * 100%);
+      padding-left: 0;
+    }
+    canvas {
+      position: absolute;
+
+      width: auto;
+      height: 100%;
+
+      /* 轻微投影与圆角让画布与右侧卡片分层更明显 */
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      border-radius: 8px;
+
+      @media (max-aspect-ratio: 1280/720) {
+        top: 0;
+        left: 0;
+        width: 100%;
+      }
+    }
+  }
+}
+
+/* --- 视觉增强样式（可被画布内渲染覆盖，但对 DOM UI 有效） --- */
+.start-cta {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.56);
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 12px;
+  border: 2px solid rgba(170, 230, 255, 0.95);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 18px rgba(120, 220, 255, 0.06) inset;
+  font-weight: 700;
+  letter-spacing: 1px;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+.start-cta:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 28px rgba(0,0,0,0.55); }
+
+.sidebar-card {
+  padding: 18px;
+  border-radius: 12px;
+  border: 3px solid rgba(100, 230, 255, 0.85);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.18));
+}
+.sidebar-card h3 { font-size: 20px; margin: 0 0 10px 0; color: #fff; font-weight:700; }
+.score-value { font-size: 22px; font-weight:700; color:#fff; }
+
+/* Logo 与棋盘的视觉平衡：在可能的 DOM logo 上做微调 */
+.game-logo { transform: translateX(-8px); }
+
+/* 底部头像微调（如果头像为 DOM 元素或可应用 class 的容器） */
+.avatar-float { transform: translateY(-8px); filter: drop-shadow(0 8px 12px rgba(0,0,0,0.45)); }
+
+/* Game Over 层次增强（当用 DOM 覆盖文字时有效） */
+.game-over-overlay { backdrop-filter: blur(4px); background: rgba(0,0,0,0.45); }
+
+
+footer {
+  position: absolute;
+  bottom: 0;
+  color: white;
+  text-align: center;
+  width: 100%;
+  padding: 10px;
+
+  a,
+  a:visited,
+  a:active {
+    color: lightblue;
+    text-decoration: none;
+  }
+}
