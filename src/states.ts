@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js-legacy";
+import sound from "pixi-sound";
 import { app, gameTicker, hammerManager, resetGameTicker, setState } from ".";
 import {
   createavatarSan,
@@ -215,9 +216,7 @@ const create = async () => {
     if (character.sounds?.fall) {
       const fallSounds = character.sounds.fall;
       const key = fallSounds[Math.floor(Math.random() * fallSounds.length)];
-      const audio = new Audio(key);
-      audio.volume = 0.5;
-      audio.play().catch(() => {});
+      sound.play(key, { volume: 0.5 });
     }
   }
 

@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js-legacy";
 import * as Hammer from "hammerjs";
-import "pixi-sound";
+import sound from "pixi-sound";
 import "./style.scss";
 import land from "./assets/sounds/land.mp3";
 import move from "./assets/sounds/move.mp3";
@@ -62,6 +62,12 @@ characterData.forEach((character) => {
   if (character.preview) {
     app.loader.add(character.preview);
   }
+  // Register voice sounds with pixi-sound (bypass PIXI loader to avoid ArrayBuffer detach)
+  character.sounds?.fall?.forEach((voice) => {
+    if (!sound.exists(voice)) {
+      sound.add(voice, { url: voice });
+    }
+  });
 });
 items.forEach((img) => {
   app.loader.add(img);
