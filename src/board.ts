@@ -1,8 +1,8 @@
 import * as PIXI from "pixi.js-legacy";
-import "pixi-sound";
+import sound from "pixi-sound";
 import { app, gameTicker } from ".";
 import { getCoordinates } from "./utils";
-import { CharacterData } from "./character-data";
+import { CharacterData, groupSounds } from "./character-data";
 import { fall } from "./piece";
 import { neneRoboFall } from "./nenerobo";
 import { fallItem } from "./items";
@@ -138,6 +138,12 @@ export const clearChunk = async (chunk: [number, number][]) => {
   if (toRemove.length === 0) return;
 
   addScore(chunk.length);
+
+  // Play group clear sound
+  const clearedGroup = toRemove.find((sp) => sp.character?.group)?.character?.group;
+  if (clearedGroup && groupSounds[clearedGroup]) {
+    sound.play(groupSounds[clearedGroup], { volume: 0.5 });
+  }
 
   // Phase 1: Turn white instantly
   toRemove.forEach((sp) => {

@@ -31,7 +31,7 @@ export { addDropScore } from "./score";
 export interface SpriteData {
   sprite: PIXI.Sprite;
   coordinates?: [number, number][];
-  character?: Pick<CharacterData, "name">;
+  character?: Pick<CharacterData, "name" | "group">;
   isItem?: boolean;
 }
 export let sprites: SpriteData[] = [];

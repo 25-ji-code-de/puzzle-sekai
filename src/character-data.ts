@@ -66,6 +66,20 @@ import mafuyu_2 from "./assets/sounds/chara/mafuyu_2.wav";
 import ena_1 from "./assets/sounds/chara/ena_1.wav";
 import mizuki_1 from "./assets/sounds/chara/mizuki_1.wav";
 
+import bandSound from "./assets/sounds/band.wav";
+import idolSound from "./assets/sounds/idol.wav";
+import streetSound from "./assets/sounds/street.wav";
+import wonderSound from "./assets/sounds/wonder.wav";
+import nightSound from "./assets/sounds/night.wav";
+
+export const groupSounds: { [group: string]: string } = {
+  "Leo/need": bandSound,
+  "MORE MORE JUMP!": idolSound,
+  "Vivid BAD SQUAD": streetSound,
+  "Wonderlands×Showtime": wonderSound,
+  "25時": nightSound,
+};
+
 export interface CharacterData {
   name: string;
   file: string;

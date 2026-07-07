@@ -9,7 +9,7 @@ import bgm168 from "./assets/sounds/168.mp3";
 import bgm161 from "./assets/sounds/161.mp3";
 import bgm182 from "./assets/sounds/182.mp3";
 import bg from "./assets/bg.png";
-import { characterData } from "./character-data";
+import { characterData, groupSounds } from "./character-data";
 import { avatarTextures } from "./avatar";
 import gameOver from "./assets/gameOver.png";
 import avatar from "./assets/chara/avatar.png";
@@ -68,6 +68,12 @@ characterData.forEach((character) => {
       sound.add(voice, { url: voice });
     }
   });
+});
+// Register group clear sounds
+Object.values(groupSounds).forEach((url) => {
+  if (!sound.exists(url)) {
+    sound.add(url, { url });
+  }
 });
 items.forEach((img) => {
   app.loader.add(img);
