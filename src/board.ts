@@ -139,17 +139,10 @@ export const clearChunk = async (chunk: [number, number][]) => {
 
   addScore(chunk.length);
 
-  // Play group clear sound
+  // Determine group voice to play after animation
   const clearedGroup = toRemove.find((sp) => sp.character?.group)?.character?.group;
-  if (clearedGroup && groupSounds[clearedGroup]) {
-    const snd = sound.play(groupSounds[clearedGroup], { volume: 0.5 });
-    // Wait for the voice to finish before continuing
-    await new Promise<void>((resolve) => {
-      snd.on("end", resolve);
-      // Fallback timeout in case end never fires
-      setTimeout(resolve, 3000);
-    });
-  }
+  const groupVoiceKey = clearedGroup && groupSounds[clearedGroup]
+    ? groupSounds[clearedGroup] : null;
 
   // Phase 1: Turn white instantly
   toRemove.forEach((sp) => {
@@ -194,12 +187,19 @@ export const clearChunk = async (chunk: [number, number][]) => {
       setSprites(sprites.filter(
         (s) => !toRemove.find((sp) => s.sprite === sp.sprite),
       ));
-      fallChunk(sprites);
     }
   };
   gameTicker.add(glowAnim);
 
   await new Promise((r) => setTimeout(r, 500));
+
+  // Play group voice after animation, wait for it to finish
+  if (groupVoiceKey) {
+    sound.play(groupVoiceKey, { volume: 0.5 });
+    await new Promise((r) => setTimeout(r, 2200));
+  }
+
+  fallChunk(sprites);
 };
 
 const createParticles = (sprites: SpriteData[]) => {
