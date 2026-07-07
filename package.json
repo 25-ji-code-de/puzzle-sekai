@@ -2,9 +2,9 @@
   "name": "puzzle-sekai",
   "version": "1.0.0",
   "description": "パズル⭐︎セカ - A Puyo-puyo-inspired puzzle game with Project SEKAI characters.",
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "scripts": {
-    "start": "vite --port 5678",
+    "start": "vite --port 7426",
     "build": "vite build",
     "preview": "vite preview",
     "format": "prettier --write src",
@@ -23,5 +23,5 @@
     "pixi.js": "^5.3.0",
     "pixi.js-legacy": "^5.3.2"
   },
-  "packageManager": "yarn@4.9.1"
+  "packageManager": "yarn@4.17.0"
 }
