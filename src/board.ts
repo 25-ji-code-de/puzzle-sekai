@@ -142,7 +142,13 @@ export const clearChunk = async (chunk: [number, number][]) => {
   // Play group clear sound
   const clearedGroup = toRemove.find((sp) => sp.character?.group)?.character?.group;
   if (clearedGroup && groupSounds[clearedGroup]) {
-    sound.play(groupSounds[clearedGroup], { volume: 0.5 });
+    const snd = sound.play(groupSounds[clearedGroup], { volume: 0.5 });
+    // Wait for the voice to finish before continuing
+    await new Promise<void>((resolve) => {
+      snd.on("end", resolve);
+      // Fallback timeout in case end never fires
+      setTimeout(resolve, 3000);
+    });
   }
 
   // Phase 1: Turn white instantly
