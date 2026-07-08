@@ -227,11 +227,18 @@ const falling = () => {};
 
 const end = async () => {
   if (!endAnimation) {
-    // Play game over BGM
+    // Play game over BGM: 182.1 once, then loop 182.2
     stopBgm();
-    const bgm182 = app.loader.resources["bgm182"]?.sound;
-    if (bgm182) {
-      playBgm(bgm182 as PIXI.sound.Sound, { loop: false, volume: 0.3 });
+    const bgm182_1 = app.loader.resources["bgm182_1"]?.sound;
+    const bgm182_2 = app.loader.resources["bgm182_2"]?.sound;
+    if (bgm182_1) {
+      const s = bgm182_1 as PIXI.sound.Sound;
+      s.play({ loop: false, volume: 0.3 });
+      s.on("end", () => {
+        if (bgm182_2) {
+          playBgm(bgm182_2 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
+        }
+      });
     }
 
     if (nextCharacter?.file) {
