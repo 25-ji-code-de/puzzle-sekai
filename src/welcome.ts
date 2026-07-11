@@ -18,6 +18,7 @@ import {
 
 import maokenFontUrl from "./assets/fonts/MaokenAssortedSans-Lite.woff2";
 import nishikiFontUrl from "./assets/fonts/nishiki-teki.woff2";
+import droidSansMonoFontUrl from "./assets/fonts/DroidSansMono.woff2";
 
 let welcomeSprite: PIXI.Sprite;
 let welcomeInitialized = false;
@@ -26,12 +27,14 @@ let modalEl: HTMLDivElement | null = null;
 // 加载字体
 const loadFonts = async () => {
   try {
-    const [maoken, nishiki] = await Promise.all([
+    const [maoken, nishiki, droidMono] = await Promise.all([
       new FontFace('MaokenAssortedSans', `url(${maokenFontUrl})`).load(),
       new FontFace('NishikiTeki', `url(${nishikiFontUrl})`).load(),
+      new FontFace('DroidSansMono', `url(${droidSansMonoFontUrl})`).load(),
     ]);
     document.fonts.add(maoken);
     document.fonts.add(nishiki);
+    document.fonts.add(droidMono);
   } catch (e) {
     console.warn('Failed to load fonts:', e);
   }
@@ -187,11 +190,11 @@ const showWelcomePage = () => {
   highScoreRow.innerHTML = `
     <div style="text-align:center;">
       <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">ENDLESS</div>
-      <div style="font-size:18px;color:#ff6b8a;font-family:monospace;">${endlessHigh.toString().padStart(6, '0')}</div>
+      <div style="font-size:18px;color:#ff6b8a;font-family:'DroidSansMono',monospace;">${endlessHigh.toString().padStart(6, '0')}</div>
     </div>
     <div style="text-align:center;">
       <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">TIME ATTACK</div>
-      <div style="font-size:18px;color:#44ff88;font-family:monospace;">${timeAttackHigh.toString().padStart(6, '0')}</div>
+      <div style="font-size:18px;color:#44ff88;font-family:'DroidSansMono',monospace;">${timeAttackHigh.toString().padStart(6, '0')}</div>
     </div>
   `;
   footer.appendChild(highScoreRow);

@@ -34,7 +34,7 @@ const makePaddedText = (num: number, len: number, color: number, fontSize: numbe
   const baseStyle = {
     fontSize,
     fontWeight: "bold",
-    fontFamily: "monospace",
+    fontFamily: "DroidSansMono, monospace",
     letterSpacing: 2,
   } as const;
 
@@ -66,13 +66,13 @@ const formatTime = (seconds: number): string => {
 // Create time display text
 const makeTimeText = (seconds: number, fontSize: number) => {
   const timeStr = formatTime(seconds);
-  const color = seconds <= 10 ? 0xff4444 : seconds <= 30 ? 0xffaa44 : 0x44ff44;
+  const color = seconds <= 10 ? 0xff4444 : seconds <= 30 ? 0xffaa44 : 0xffffff;
 
   const container = new PIXI.Container();
   const text = new PIXI.Text(timeStr, {
     fontSize,
     fontWeight: "bold",
-    fontFamily: "monospace",
+    fontFamily: "DroidSansMono, monospace",
     fill: color,
   });
   text.anchor.set(0, 0.5);
@@ -114,9 +114,9 @@ export const initScoreDisplay = () => {
   // Show timer for time attack mode
   if (mode === "timeAttack") {
     _timeRemaining = settings.timeAttackDuration;
-    timerText = makeTimeText(_timeRemaining, 48);
-    timerText.x = SCORE_X;
-    timerText.y = 580;
+    timerText = makeTimeText(_timeRemaining, 60);
+    timerText.x = SCORE_X + 50;
+    timerText.y = 135;
     timerText.pivot.x = timerText.width / 2;
     app.stage.addChild(timerText);
   }
