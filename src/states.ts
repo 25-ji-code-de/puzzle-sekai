@@ -20,10 +20,18 @@ import {
 import { getOffset, getCoordinates, getMaxStackHeight } from "./utils";
 import { CharacterData } from "./character-data";
 import { findClearPieces } from "./clear";
-import { createItem, items } from "./items";
-import { resetScore, initScoreDisplay, resetCombo } from "./score";
+import { createItem, getRandomItem } from "./items";
+import {
+  resetScore,
+  initScoreDisplay,
+  resetCombo,
+  setTimeRemaining,
+  decrementTime,
+  getScoreSummary,
+} from "./score";
 import { updateCoordinates, clearChunk } from "./board";
 import { welcome as _welcome } from "./welcome";
+import { getCurrentGameMode, getCurrentSettings, getSpeedMultiplier } from "./settings";
 
 export { welcome } from "./welcome";
 export { addDropScore } from "./score";
@@ -48,6 +56,9 @@ let nextPiece: PIXI.Sprite;
 
 let bgmPlaying: PIXI.sound.Sound;
 let bgmActive = false;
+
+// Time attack timer
+let timeAttackInterval: number | undefined;
 
 export const stopBgm = () => {
   bgmActive = false;
@@ -85,6 +96,29 @@ const checkBGM = () => {
   }
 };
 
+// Stop time attack timer
+const stopTimeAttackTimer = () => {
+  if (timeAttackInterval) {
+    clearInterval(timeAttackInterval);
+    timeAttackInterval = undefined;
+  }
+};
+
+// Start time attack timer
+const startTimeAttackTimer = () => {
+  stopTimeAttackTimer();
+  const settings = getCurrentSettings();
+  setTimeRemaining(settings.timeAttackDuration);
+
+  timeAttackInterval = window.setInterval(() => {
+    const isTimeUp = decrementTime();
+    if (isTimeUp) {
+      stopTimeAttackTimer();
+      setState(endTimeAttack);
+    }
+  }, 1000);
+};
+
 const start = () => {
   sprites.forEach((sp) => {
     app.stage.removeChild(sp.sprite);
@@ -93,6 +127,7 @@ const start = () => {
   resetGameTicker();
   endAnimation = undefined;
   stopBgm();
+  stopTimeAttackTimer();
   if (avatarStab) {
     app.stage.removeChild(avatarStab);
   }
@@ -122,6 +157,12 @@ const start = () => {
   playNextBGM();
   gameTicker.remove(checkBGM);
   gameTicker.add(checkBGM);
+
+  // Start timer for time attack mode
+  const mode = getCurrentGameMode();
+  if (mode === "timeAttack") {
+    startTimeAttackTimer();
+  }
 };
 export { start };
 
@@ -130,7 +171,7 @@ const create = async () => {
   const index = sprites.length;
   const maxHeight = getMaxStackHeight();
   if (maxHeight < 5 && Math.random() < 0.1) {
-    const itemFile = items[Math.floor(Math.random() * items.length)];
+    const itemFile = getRandomItem();
     let dropped = [false, false];
     const onDropped = (id: number) => async (sprite: PIXI.Sprite) => {
       const { y } = getCoordinates(sprite);
@@ -227,6 +268,9 @@ const falling = () => {};
 
 const end = async () => {
   if (!endAnimation) {
+    // Stop time attack timer if running
+    stopTimeAttackTimer();
+
     // Play game over BGM: 182.1 once, then loop 182.2
     stopBgm();
     const bgm182_1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
@@ -268,6 +312,32 @@ const end = async () => {
         });
       }, dur);
     }
+  }
+};
+
+// Time attack end - time ran out
+const endTimeAttack = async () => {
+  if (!endAnimation) {
+    stopTimeAttackTimer();
+
+    // Play game over BGM
+    stopBgm();
+    const bgm182_1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
+    const bgm182_2 = app.loader.resources["bgm182_2"]?.sound;
+    if (bgm182_1 && bgm182_2) {
+      bgm182_1.play({ loop: false, volume: 0.3 }, () => {
+        playBgm(bgm182_2 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
+      });
+    }
+
+    // Show game over curtain
+    if (nextPiece) {
+      app.stage.removeChild(nextPiece);
+    }
+    createBarrel();
+    gameOverCurtain(() => {
+      setState(ended);
+    });
   }
 };
 
