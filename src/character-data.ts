@@ -22,6 +22,7 @@ import nene from "./assets/chara/nene.png";
 import rui from "./assets/chara/rui.png";
 import nenerobo from "./assets/chara/nenerobo.png";
 import neneroboSmall from "./assets/chara/nenerobo_small.png";
+import mikuWxS from "./assets/chara/miku_wxs.png";
 
 import kanade from "./assets/chara/kanade.png";
 import mafuyu from "./assets/chara/mafuyu.png";
@@ -237,6 +238,11 @@ export const characterData: CharacterData[] = [
     file: nenerobo,
     group: "Wonderlands×Showtime",
     preview: neneroboSmall,
+  },
+  {
+    name: "MikuWxS",
+    file: mikuWxS,
+    group: "Wonderlands×Showtime",
   },
   {
     name: "Kanade",
