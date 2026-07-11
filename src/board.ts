@@ -21,7 +21,7 @@ export const updateCoordinates = (
     return;
   }
   if (character) {
-    if (character.name === "NeneRobo") {
+    if (character.name === "NeneRobo" || character.name === "Mikudayo") {
       pieces[y - 1][x] = character.name;
       pieces[y - 1][x - 1] = character.name;
       pieces[y][x] = character.name;
@@ -124,11 +124,11 @@ export const fallChunk = async (sprites: SpriteData[]) => {
     // Place on temp grid (mirrors what updateCoordinates does)
     if (isItem) {
       pieces[targetY][x] = "Item";
-    } else if (character?.name === "NeneRobo") {
-      pieces[targetY][x] = "NeneRobo";
-      pieces[targetY][x - 1] = "NeneRobo";
-      pieces[targetY - 1][x] = "NeneRobo";
-      pieces[targetY - 1][x - 1] = "NeneRobo";
+    } else if (character?.name === "NeneRobo" || character?.name === "Mikudayo") {
+      pieces[targetY][x] = character.name;
+      pieces[targetY][x - 1] = character.name;
+      pieces[targetY - 1][x] = character.name;
+      pieces[targetY - 1][x - 1] = character.name;
     } else {
       pieces[targetY][x] = character!.name;
       if (offset === 0) pieces[targetY - 1][x] = character!.name;

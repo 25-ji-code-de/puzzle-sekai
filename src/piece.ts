@@ -27,7 +27,7 @@ import { getCurrentSettings, getSpeedMultiplier } from "./settings";
 // Get filtered character list based on selected groups
 const getFilteredCharacterData = (): CharacterData[] => {
   const settings = getCurrentSettings();
-  return characterData.filter(c => settings.selectedGroups.includes(c.group as any));
+  return characterData.filter(c => settings.selectedGroups.includes(c.group as any) || c.group === "Special");
 };
 
 export let nextCharacter: CharacterData | undefined;
@@ -143,7 +143,7 @@ export const createPiece = async (
 ) => {
   // load the texture we need
 
-  if (file.includes("nenerobo")) return await createNeneRobo(file, onDropped);
+  if (file.includes("nenerobo") || file.includes("mikudayo")) return await createNeneRobo(file, onDropped);
   const texture =
     app.loader.resources[file]?.texture ??
     (await new Promise((resolve) => {
