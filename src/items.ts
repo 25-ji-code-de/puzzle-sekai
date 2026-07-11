@@ -3,6 +3,20 @@ import "pixi-sound";
 import { app, gameTicker } from ".";
 import { LEFT_BORDER, BOX_SIZE, SPEED, OFFSET_BOTTOM } from "./config";
 import { getStackHeight } from "./utils";
+
+// Import all item images
+import material008 from "./assets/objects/material008.png";
+import material013 from "./assets/objects/material013.png";
+import material044 from "./assets/objects/material044.png";
+import material105 from "./assets/objects/material105.png";
+import material106 from "./assets/objects/material106.png";
+import material107 from "./assets/objects/material107.png";
+import material108 from "./assets/objects/material108.png";
+import material109 from "./assets/objects/material109.png";
+import material110 from "./assets/objects/material110.png";
+import material111 from "./assets/objects/material111.png";
+import material112 from "./assets/objects/material112.png";
+import material113 from "./assets/objects/material113.png";
 import material205 from "./assets/objects/material205.png";
 import material218 from "./assets/objects/material218.png";
 import material221 from "./assets/objects/material221.png";
@@ -10,7 +24,26 @@ import material222 from "./assets/objects/material222.png";
 import material225 from "./assets/objects/material225.png";
 import material226 from "./assets/objects/material226.png";
 
-export const items = [material205, material218, material221, material222, material225, material226];
+// Item groups - each group contains variants of the same item
+const itemGroups: string[][] = [
+  [material008, material013],           // Group A: 008, 013
+  [material044, material105, material106, material107, material108, material109, material110, material111, material112, material113], // Group B: 044, 105-113
+  [material218, material221],           // Group C: 218, 221
+  [material222, material225],           // Group D: 222, 225
+  [material205],                        // Group E: 205 (no variants)
+  [material226],                        // Group F: 226 (no variants)
+];
+
+// Get a random item - first select group, then select variant
+export const getRandomItem = (): string => {
+  // Select a random group
+  const group = itemGroups[Math.floor(Math.random() * itemGroups.length)];
+  // Select a random variant from the group
+  return group[Math.floor(Math.random() * group.length)];
+};
+
+// For backward compatibility, export a flat list of all items
+export const items = itemGroups.flat();
 
 export const fallItem = (
   item: PIXI.Sprite,
@@ -37,7 +70,6 @@ export const fallItem = (
         BOX_SIZE * stackHeight;
       cleanup();
     }
-    // each frame we spin the bunny around a bit
   };
 
   // Listen for frame updates
@@ -75,7 +107,6 @@ export const createItem = async (
     onDropped(item);
   };
   const checkOffset = (delta: number) => {
-    // each frame we spin the bunny around a bit
     const stackHeight = getStackHeight(item);
     const dropHeight =
       app.renderer.height -
