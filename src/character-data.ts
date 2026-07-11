@@ -30,6 +30,9 @@ import ena from "./assets/chara/ena.png";
 import mizuki from "./assets/chara/mizuki.png";
 import miku25ji from "./assets/chara/miku_25ji.png";
 
+import mikudayo from "./assets/chara/mikudayo.png";
+import mikudayoSmall from "./assets/chara/mikudayo_small.png";
+
 import ichika_1 from "./assets/sounds/chara/ichika_1.wav";
 import ichika_2 from "./assets/sounds/chara/ichika_2.wav";
 import saki_1 from "./assets/sounds/chara/saki_1.wav";
@@ -280,5 +283,11 @@ export const characterData: CharacterData[] = [
     name: "Miku25ji",
     file: miku25ji,
     group: "25時、ナイトコードで。",
+  },
+  {
+    name: "Mikudayo",
+    file: mikudayo,
+    group: "Special",
+    preview: mikudayoSmall,
   },
 ];
