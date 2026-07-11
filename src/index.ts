@@ -7,7 +7,6 @@ import move from "./assets/sounds/move.mp3";
 import bgm038 from "./assets/sounds/038.mp3";
 import bgm168 from "./assets/sounds/168.mp3";
 import bgm161 from "./assets/sounds/161.mp3";
-import bgm182 from "./assets/sounds/182.mp3";
 import bgm182_1 from "./assets/sounds/182.1.mp3";
 import bgm182_2 from "./assets/sounds/182.2.mp3";
 import bg from "./assets/bg.png";
@@ -107,7 +106,6 @@ app.loader
   .add("bgm038", bgm038)
   .add("bgm168", bgm168)
   .add("bgm161", bgm161)
-  .add("bgm182", bgm182)
   .add("bgm182_1", bgm182_1)
   .add("bgm182_2", bgm182_2)
   .add("gameOver", gameOver)

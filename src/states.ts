@@ -276,7 +276,8 @@ const end = async () => {
     const bgm182_1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
     const bgm182_2 = app.loader.resources["bgm182_2"]?.sound;
     if (bgm182_1 && bgm182_2) {
-      bgm182_1.play({ loop: false, volume: 0.3 }, () => {
+      const inst = bgm182_1.play({ loop: false, volume: 0.3 });
+      inst.on('end', () => {
         playBgm(bgm182_2 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
       });
     }
@@ -325,7 +326,8 @@ const endTimeAttack = async () => {
     const bgm182_1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
     const bgm182_2 = app.loader.resources["bgm182_2"]?.sound;
     if (bgm182_1 && bgm182_2) {
-      bgm182_1.play({ loop: false, volume: 0.3 }, () => {
+      const inst = bgm182_1.play({ loop: false, volume: 0.3 });
+      inst.on('end', () => {
         playBgm(bgm182_2 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
       });
     }
