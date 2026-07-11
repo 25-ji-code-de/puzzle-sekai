@@ -87,7 +87,7 @@ export const createItem = async (
     (await new Promise((resolve) => {
       app.loader
         .add(file)
-        .load((_, resources) => resolve(resources[file]?.texture));
+        .load((_, resources) => resolve(resources[file]!.texture!));
     }));
 
   const item = new PIXI.Sprite(texture);

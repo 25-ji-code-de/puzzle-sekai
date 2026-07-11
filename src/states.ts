@@ -27,11 +27,10 @@ import {
   resetCombo,
   setTimeRemaining,
   decrementTime,
-  getScoreSummary,
 } from "./score";
 import { updateCoordinates, clearChunk } from "./board";
 import { welcome as _welcome } from "./welcome";
-import { getCurrentGameMode, getCurrentSettings, getSpeedMultiplier } from "./settings";
+import { getCurrentGameMode, getCurrentSettings } from "./settings";
 
 export { welcome } from "./welcome";
 export { addDropScore } from "./score";
@@ -276,10 +275,15 @@ const end = async () => {
     const bgm182_1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
     const bgm182_2 = app.loader.resources["bgm182_2"]?.sound;
     if (bgm182_1 && bgm182_2) {
-      const inst = bgm182_1.play({ loop: false, volume: 0.3 });
-      inst.on('end', () => {
+      const result = bgm182_1.play({ loop: false, volume: 0.3 });
+      const onEnd = () => {
         playBgm(bgm182_2 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
-      });
+      };
+      if (result instanceof Promise) {
+        result.then(inst => inst.on('end', onEnd));
+      } else {
+        result.on('end', onEnd);
+      }
     }
 
     if (nextCharacter?.file) {
@@ -326,10 +330,15 @@ const endTimeAttack = async () => {
     const bgm182_1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
     const bgm182_2 = app.loader.resources["bgm182_2"]?.sound;
     if (bgm182_1 && bgm182_2) {
-      const inst = bgm182_1.play({ loop: false, volume: 0.3 });
-      inst.on('end', () => {
+      const result = bgm182_1.play({ loop: false, volume: 0.3 });
+      const onEnd = () => {
         playBgm(bgm182_2 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
-      });
+      };
+      if (result instanceof Promise) {
+        result.then(inst => inst.on('end', onEnd));
+      } else {
+        result.on('end', onEnd);
+      }
     }
 
     // Show game over curtain

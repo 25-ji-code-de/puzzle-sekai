@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js-legacy";
 import { app } from ".";
-import { GameMode, getCurrentGameMode, getCurrentSettings, loadHighScore, saveHighScore } from "./settings";
+import { getCurrentGameMode, getCurrentSettings, loadHighScore, saveHighScore } from "./settings";
 
 let _score = 0;
 let _highScore = 0;

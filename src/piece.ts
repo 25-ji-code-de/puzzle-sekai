@@ -123,7 +123,7 @@ export const showNextPiece = async (file: string) => {
     (await new Promise((resolve) => {
       app.loader
         .add(file)
-        .load((_, resources) => resolve(resources[file]?.texture));
+        .load((_, resources) => resolve(resources[file]!.texture!));
     }));
 
   const kasumi = new PIXI.Sprite(texture);
@@ -149,7 +149,7 @@ export const createPiece = async (
     (await new Promise((resolve) => {
       app.loader
         .add(file)
-        .load((_, resources) => resolve(resources[file]?.texture));
+        .load((_, resources) => resolve(resources[file]!.texture!));
     }));
 
   const kasumi = new PIXI.Sprite(texture);
@@ -167,7 +167,6 @@ export const createPiece = async (
   const settings = getCurrentSettings();
   const speedMultiplier = getSpeedMultiplier(settings);
   let speed = SPEED * speedMultiplier;
-  const startY = kasumi.y;
   let dropScore = 0;
 
   const onMoved = () => {

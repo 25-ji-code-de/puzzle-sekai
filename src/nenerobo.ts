@@ -25,7 +25,7 @@ export const createNeneRobo = async (
     (await new Promise((resolve) => {
       app.loader
         .add(file)
-        .load((_, resources) => resolve(resources[file]?.texture));
+        .load((_, resources) => resolve(resources[file]!.texture!));
     }));
 
   const nenerobo = new PIXI.Sprite(texture);
@@ -43,7 +43,6 @@ export const createNeneRobo = async (
   const settings = getCurrentSettings();
   const speedMultiplier = getSpeedMultiplier(settings);
   let speed = SPEED * speedMultiplier;
-  const startY = nenerobo.y;
   let dropScore = 0;
 
   const onMoved = () => {

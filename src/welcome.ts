@@ -2,10 +2,8 @@ import * as PIXI from "pixi.js-legacy";
 import { app, bgSprite, setState } from ".";
 import { start, stopBgm, playBgm } from "./states";
 import {
-  GameSettings,
   SpeedLevel,
   TimeAttackDuration,
-  GroupName,
   GAME_GROUPS,
   GROUP_LABELS,
   SPEED_LABELS,

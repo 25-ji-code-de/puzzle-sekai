@@ -110,7 +110,7 @@ app.loader
   .add("bgm182_2", bgm182_2)
   .add("gameOver", gameOver)
   .add("welcome", welcomeImg)
-  .load((loader, resources) => {
+  .load((_loader, resources) => {
     const bg = new PIXI.Sprite(resources.background?.texture);
 
     bg.position.x = 0;
