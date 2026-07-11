@@ -77,7 +77,7 @@ export const groupSounds: { [group: string]: string } = {
   "MORE MORE JUMP!": idolSound,
   "Vivid BAD SQUAD": streetSound,
   "Wonderlands×Showtime": wonderSound,
-  "25時": nightSound,
+  "25時、ナイトコードで。": nightSound,
 };
 
 export interface CharacterData {
@@ -242,7 +242,7 @@ export const characterData: CharacterData[] = [
   {
     name: "Kanade",
     file: kanade,
-    group: "25時",
+    group: "25時、ナイトコードで。",
     sounds: {
       fall: [kanade_1],
     },
@@ -250,7 +250,7 @@ export const characterData: CharacterData[] = [
   {
     name: "Mafuyu",
     file: mafuyu,
-    group: "25時",
+    group: "25時、ナイトコードで。",
     sounds: {
       fall: [mafuyu_1, mafuyu_2],
     },
@@ -258,7 +258,7 @@ export const characterData: CharacterData[] = [
   {
     name: "Ena",
     file: ena,
-    group: "25時",
+    group: "25時、ナイトコードで。",
     sounds: {
       fall: [ena_1],
     },
@@ -266,7 +266,7 @@ export const characterData: CharacterData[] = [
   {
     name: "Mizuki",
     file: mizuki,
-    group: "25時",
+    group: "25時、ナイトコードで。",
     sounds: {
       fall: [mizuki_1],
     },
@@ -274,6 +274,6 @@ export const characterData: CharacterData[] = [
   {
     name: "Miku25ji",
     file: miku25ji,
-    group: "25時",
+    group: "25時、ナイトコードで。",
   },
 ];
