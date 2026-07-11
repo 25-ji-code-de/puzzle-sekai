@@ -30,8 +30,8 @@ export const fly = (
   sprite: PIXI.Sprite,
   onExit: (sprite: PIXI.Sprite) => void,
 ) => {
-  const handleFly = () => {
-    sprite.y -= 25 * SPEED;
+  const handleFly = (delta: number) => {
+    sprite.y -= 25 * SPEED * delta;
     if (sprite.y + 2 * BOX_SIZE < 0) {
       gameTicker.remove(handleFly);
       onExit(sprite);
@@ -49,7 +49,7 @@ export const fall = (
     onFall && onFall(sprite);
   };
 
-  const checkOffset = () => {
+  const checkOffset = (delta: number) => {
     // each frame we spin the bunny around a bit
     const offset = getOffset(sprite);
     const stackHeight = getStackHeight(sprite);
@@ -59,7 +59,7 @@ export const fall = (
       BOX_SIZE * stackHeight -
       (offset === 2 ? BOX_SIZE : 0);
     if (sprite.y < dropHeight) {
-      sprite.y += FALL_SPEED;
+      sprite.y += FALL_SPEED * delta;
       if (timer) clearTimeout(timer);
     } else {
       if (!timer) {
@@ -309,7 +309,7 @@ export const createPiece = async (
 
     onDropped(kasumi);
   };
-  const checkOffset = () => {
+  const checkOffset = (delta: number) => {
     // each frame we spin the bunny around a bit
     const offset = getOffset(kasumi);
     const stackHeight = getStackHeight(kasumi);
@@ -320,7 +320,7 @@ export const createPiece = async (
       (offset === 2 ? BOX_SIZE : 0);
     if (kasumi.y < dropHeight) {
       const prevY = kasumi.y;
-      kasumi.y += speed;
+      kasumi.y += speed * delta;
       if (kasumi.y > dropHeight) kasumi.y = dropHeight;
       // Accumulate score based on actual movement
       const moved = Math.floor((kasumi.y - prevY) / BOX_SIZE);

@@ -174,14 +174,14 @@ export const createNeneRobo = async (
 
     onDropped(nenerobo);
   };
-  const checkOffset = () => {
+  const checkOffset = (delta: number) => {
     // each frame we spin the bunny around a bit
     const stackHeight = getNeneRoboStackHeight(nenerobo);
     const dropHeight =
       app.renderer.height - (BOX_SIZE + OFFSET_BOTTOM) - BOX_SIZE * stackHeight;
     if (nenerobo.y < dropHeight) {
       const prevY = nenerobo.y;
-      nenerobo.y += speed;
+      nenerobo.y += speed * delta;
       if (nenerobo.y > dropHeight) nenerobo.y = dropHeight;
       const moved = Math.floor((nenerobo.y - prevY) / BOX_SIZE);
       if (moved > 0) {
@@ -217,13 +217,13 @@ export const neneRoboFall = (
     gameTicker.remove(checkOffset);
     onFell(sprite);
   };
-  const checkOffset = () => {
+  const checkOffset = (delta: number) => {
     // each frame we spin the bunny around a bit
     const stackHeight = getNeneRoboStackHeight(sprite);
     const dropHeight =
       app.renderer.height - (BOX_SIZE + OFFSET_BOTTOM) - BOX_SIZE * stackHeight;
     if (sprite.y < dropHeight) {
-      sprite.y += FALL_SPEED;
+      sprite.y += FALL_SPEED * delta;
       if (timer) clearTimeout(timer);
     } else {
       if (!timer) {

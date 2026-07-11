@@ -175,11 +175,11 @@ export const fallChunk = async (sprites: SpriteData[]) => {
     }));
 
     await new Promise<void>((resolve) => {
-      const tick = () => {
+      const tick = (delta: number) => {
         let allDone = true;
         for (const item of animTargets) {
           if (item.entry.sprite.y < item.targetPixelY) {
-            item.entry.sprite.y += FALL_SPEED;
+            item.entry.sprite.y += FALL_SPEED * delta;
             if (item.entry.sprite.y > item.targetPixelY) item.entry.sprite.y = item.targetPixelY;
             allDone = false;
           }
@@ -248,8 +248,8 @@ export const clearChunk = async (chunk: [number, number][]) => {
   let glowFrame = 0;
   const glowDuration = 30;
   await new Promise<void>((resolve) => {
-    const glowAnim = () => {
-      glowFrame++;
+    const glowAnim = (delta: number) => {
+      glowFrame += delta;
       const progress = glowFrame / glowDuration;
       const brightness = 5 + progress * 5;
       toRemove.forEach((sp, i) => {
@@ -308,10 +308,10 @@ const createParticles = (sprites: SpriteData[]) => {
       app.stage.addChild(particle);
 
       let frame = 0;
-      const animate = () => {
-        frame++;
-        particle.x += vx;
-        particle.y += vy;
+      const animate = (delta: number) => {
+        frame += delta;
+        particle.x += vx * delta;
+        particle.y += vy * delta;
         particle.alpha = 1 - frame / 20;
         particle.scale.set(1 - frame / 20);
         if (frame >= 20) {

@@ -254,9 +254,9 @@ const end = async () => {
       avatarFlyDown.x = LEFT_BORDER + BOX_SIZE / 2 + BOX_SIZE * lastPieceCoor.x;
       avatarFlyDown.y = (-1 + overflow) * BOX_SIZE + BOX_SIZE / 2;
       const speed = overflow === -2 ? 4 : 3;
-      const moveDown = () => {
-        sprites.forEach((sp) => (sp.sprite.y += speed));
-        avatarFlyDown.y += speed;
+      const moveDown = (delta: number) => {
+        sprites.forEach((sp) => (sp.sprite.y += speed * delta));
+        avatarFlyDown.y += speed * delta;
       };
       const dur = overflow === -2 ? 2000 : 2000;
       app.ticker.add(moveDown);

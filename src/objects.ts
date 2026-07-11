@@ -13,13 +13,13 @@ export const gameOverCurtain = (onFinish: () => void = () => {}) => {
   curtain.y = 0;
   curtain.zIndex = 9999;
   let bounce = 0;
-  const moveDown = () => {
+  const moveDown = (delta: number) => {
     if (
       bounce % 2 == 0
         ? curtain.y < app.renderer.height
         : curtain.y > app.renderer.height - 80
     ) {
-      curtain.y += ((bounce % 2) * -2 + 1) * 10;
+      curtain.y += ((bounce % 2) * -2 + 1) * 10 * delta;
     } else {
       if (bounce < 2) {
         bounce++;

@@ -238,8 +238,8 @@ const showWelcomePage = () => {
   app.stage.addChild(promptText);
 
   let blinkTimer = 0;
-  const blink = () => {
-    blinkTimer++;
+  const blink = (delta: number) => {
+    blinkTimer += delta;
     promptText.alpha = Math.abs(Math.sin(blinkTimer * 0.05));
   };
   app.ticker.add(blink);

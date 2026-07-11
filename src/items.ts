@@ -21,14 +21,14 @@ export const fallItem = (
     onFall && onFall(item);
   };
 
-  const checkOffset = () => {
+  const checkOffset = (delta: number) => {
     const stackHeight = getStackHeight(item);
     const dropHeight =
       app.renderer.height -
       (BOX_SIZE / 2 + OFFSET_BOTTOM) -
       BOX_SIZE * stackHeight;
     if (item.y < dropHeight) {
-      item.y += SPEED * 4;
+      item.y += SPEED * 4 * delta;
     } else {
       app.loader.resources.land.sound.play({ volume: 0.5 });
       item.y =
@@ -74,7 +74,7 @@ export const createItem = async (
     gameTicker.remove(checkOffset);
     onDropped(item);
   };
-  const checkOffset = () => {
+  const checkOffset = (delta: number) => {
     // each frame we spin the bunny around a bit
     const stackHeight = getStackHeight(item);
     const dropHeight =
@@ -82,7 +82,7 @@ export const createItem = async (
       (BOX_SIZE / 2 + OFFSET_BOTTOM) -
       BOX_SIZE * stackHeight;
     if (item.y < dropHeight) {
-      item.y += SPEED * 4;
+      item.y += SPEED * 4 * delta;
     } else {
       app.loader.resources.land.sound.play({ volume: 0.5 });
       item.y =
