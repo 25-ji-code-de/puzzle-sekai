@@ -22,6 +22,13 @@ import {
 import { characterData, CharacterData } from "./character-data";
 import { createNeneRobo } from "./nenerobo";
 import { addDropScore } from "./score";
+import { getCurrentSettings, getSpeedMultiplier } from "./settings";
+
+// Get filtered character list based on selected groups
+const getFilteredCharacterData = (): CharacterData[] => {
+  const settings = getCurrentSettings();
+  return characterData.filter(c => settings.selectedGroups.includes(c.group as any));
+};
 
 export let nextCharacter: CharacterData | undefined;
 let characterList: CharacterData[] = [];
@@ -30,8 +37,10 @@ export const fly = (
   sprite: PIXI.Sprite,
   onExit: (sprite: PIXI.Sprite) => void,
 ) => {
+  const settings = getCurrentSettings();
+  const speedMultiplier = getSpeedMultiplier(settings);
   const handleFly = (delta: number) => {
-    sprite.y -= 25 * SPEED * delta;
+    sprite.y -= 25 * SPEED * speedMultiplier * delta;
     if (sprite.y + 2 * BOX_SIZE < 0) {
       gameTicker.remove(handleFly);
       onExit(sprite);
@@ -79,7 +88,8 @@ export const fall = (
   gameTicker.add(checkOffset);
 };
 export const initRNG = () => {
-  characterList = [...characterData];
+  const filtered = getFilteredCharacterData();
+  characterList = [...filtered];
   nextCharacter = characterList.splice(
     Math.floor(Math.random() * characterList.length),
     1,
@@ -87,7 +97,8 @@ export const initRNG = () => {
 };
 export const randomCharacter = (): CharacterData => {
   if (characterList.length === 0) {
-    characterList = [...characterData];
+    const filtered = getFilteredCharacterData();
+    characterList = [...filtered];
   }
   let res: CharacterData;
   if (!nextCharacter) {
@@ -153,7 +164,9 @@ export const createPiece = async (
   // app.stage.addChild(bunny);
 
   let dropped: number | undefined = undefined;
-  let speed = SPEED;
+  const settings = getCurrentSettings();
+  const speedMultiplier = getSpeedMultiplier(settings);
+  let speed = SPEED * speedMultiplier;
   const startY = kasumi.y;
   let dropScore = 0;
 
@@ -225,11 +238,11 @@ export const createPiece = async (
   };
 
   const softDrop = () => {
-    speed = SPEED * 4;
+    speed = SPEED * 4 * speedMultiplier;
   };
 
   const normalSpeed = () => {
-    speed = SPEED;
+    speed = SPEED * speedMultiplier;
   };
 
   const handleKeyPress = (event: KeyboardEvent) => {
@@ -265,7 +278,7 @@ export const createPiece = async (
 
   const handleKeyUp = (event: KeyboardEvent) => {
     if (event.key === "ArrowDown") {
-      speed = SPEED;
+      speed = SPEED * speedMultiplier;
     }
   };
 

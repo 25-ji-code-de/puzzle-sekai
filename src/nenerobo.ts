@@ -13,6 +13,7 @@ import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
 import { pieces } from "./states";
 import { addDropScore } from "./score";
+import { getCurrentSettings, getSpeedMultiplier } from "./settings";
 
 export const createNeneRobo = async (
   file: string,
@@ -39,7 +40,9 @@ export const createNeneRobo = async (
   // app.stage.addChild(bunny);
 
   let dropped: number | undefined = undefined;
-  let speed = SPEED;
+  const settings = getCurrentSettings();
+  const speedMultiplier = getSpeedMultiplier(settings);
+  let speed = SPEED * speedMultiplier;
   const startY = nenerobo.y;
   let dropScore = 0;
 
@@ -96,11 +99,11 @@ export const createNeneRobo = async (
   };
 
   const softDrop = () => {
-    speed = SPEED * 4;
+    speed = SPEED * 4 * speedMultiplier;
   };
 
   const normalSpeed = () => {
-    speed = SPEED;
+    speed = SPEED * speedMultiplier;
   };
 
   const handleKeyPress = (event: KeyboardEvent) => {
