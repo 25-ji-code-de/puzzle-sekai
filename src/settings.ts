@@ -2,14 +2,18 @@
 
 import {
   DEFAULT_FUN_MODES,
+  FUN_MODE_DEFS,
   FunModeFlags,
   getFunModeMultiplier,
   isEntertainmentMode as funFlagsOn,
   normalizeFunModes,
+  scaleItemLinkedFactor,
 } from "./fun-modes";
 
 export type SpeedLevel = 1 | 2 | 3 | 4 | 5;
 export type TimeAttackDuration = 60 | 90 | 120 | 180;
+/** Item spawn chance when stack is low enough (percent 0–30) */
+export type ItemDropRate = 0 | 5 | 10 | 15 | 20 | 30;
 
 // Available groups
 export const GAME_GROUPS = [
@@ -27,6 +31,8 @@ export interface GameSettings {
   timeAttackDuration: TimeAttackDuration;
   selectedGroups: GroupName[];  // 3-5 groups
   funModes: FunModeFlags;
+  /** Percent chance to spawn items when max stack height < 5 */
+  itemDropRate: ItemDropRate;
 }
 
 // Speed multipliers for each level
@@ -55,6 +61,31 @@ export const TIME_LABELS: Record<TimeAttackDuration, string> = {
   180: "180秒",
 };
 
+export const ITEM_DROP_RATES: ItemDropRate[] = [0, 5, 10, 15, 20, 30];
+
+export const ITEM_DROP_LABELS: Record<ItemDropRate, string> = {
+  0: "なし",
+  5: "5%",
+  10: "10%",
+  15: "15%",
+  20: "20%",
+  30: "30%",
+};
+
+/**
+ * Score factor for item drop rate.
+ * More items clutter the board → harder → higher mult.
+ * Baseline 10% (legacy default) = ×1.00
+ */
+export const ITEM_DROP_SCORE_FACTORS: Record<ItemDropRate, number> = {
+  0: 0.88,
+  5: 0.94,
+  10: 1.0,
+  15: 1.06,
+  20: 1.12,
+  30: 1.22,
+};
+
 // Group display names (Japanese)
 export const GROUP_LABELS: Record<GroupName, string> = {
   "Leo/need": "Leo/need",
@@ -64,13 +95,17 @@ export const GROUP_LABELS: Record<GroupName, string> = {
   "25時、ナイトコードで。": "25時、ナイトコードで。",
 };
 
-// Default settings (all 5 groups selected, fun modes off)
+// Default settings (all 5 groups selected, fun modes off, 10% items)
 const DEFAULT_SETTINGS: GameSettings = {
   speedLevel: 2,
   timeAttackDuration: 90,
   selectedGroups: [...GAME_GROUPS],
   funModes: { ...DEFAULT_FUN_MODES },
+  itemDropRate: 10,
 };
+
+const isItemDropRate = (v: unknown): v is ItemDropRate =>
+  typeof v === "number" && (ITEM_DROP_RATES as number[]).includes(v);
 
 // localStorage key
 const SETTINGS_KEY = "puzzleSekaiSettings";
@@ -98,6 +133,9 @@ export function loadSettings(): GameSettings {
         timeAttackDuration: parsed.timeAttackDuration || DEFAULT_SETTINGS.timeAttackDuration,
         selectedGroups: selectedGroups as GroupName[],
         funModes: normalizeFunModes(parsed.funModes),
+        itemDropRate: isItemDropRate(parsed.itemDropRate)
+          ? parsed.itemDropRate
+          : DEFAULT_SETTINGS.itemDropRate,
       };
     }
   } catch (e) {
@@ -165,11 +203,80 @@ export function isEntertainmentMode(settings: GameSettings): boolean {
   return funFlagsOn(settings.funModes ?? DEFAULT_FUN_MODES);
 }
 
-/** Final score mult = base difficulty × fun-mode product */
+/** Final score mult = base difficulty × fun-mode product × item-drop factor */
 export function getFinalScoreMultiplier(settings: GameSettings): number {
+  return getScoreMultiplierBreakdown(settings).final;
+}
+
+export type ScoreMultLine = {
+  label: string;
+  factor: number;
+};
+
+export type ScoreMultBreakdown = {
+  base: number;
+  fun: number;
+  item: number;
+  final: number;
+  difficultyLabel: string;
+  itemDropRate: ItemDropRate;
+  lines: ScoreMultLine[];
+};
+
+/** Detailed factors for UI tooltip */
+export function getScoreMultiplierBreakdown(
+  settings: GameSettings,
+): ScoreMultBreakdown {
   const base = getBaseScoreMultiplier(settings);
-  const fun = getFunModeMultiplier(settings.funModes ?? DEFAULT_FUN_MODES);
-  return Math.min(4, Math.max(0.3, base * fun));
+  const rate = isItemDropRate(settings.itemDropRate)
+    ? settings.itemDropRate
+    : DEFAULT_SETTINGS.itemDropRate;
+  const flags = settings.funModes ?? DEFAULT_FUN_MODES;
+  const fun = getFunModeMultiplier(flags, rate);
+  const item = ITEM_DROP_SCORE_FACTORS[rate];
+  const final = Math.min(4, Math.max(0.3, base * fun * item));
+
+  const lines: ScoreMultLine[] = [
+    {
+      label: `難易度 ${getDifficultyLabel(settings)}（速度${settings.speedLevel} · ${settings.selectedGroups.length}ユニット）`,
+      factor: base,
+    },
+    {
+      label: `道具ドロップ ${ITEM_DROP_LABELS[rate]}`,
+      factor: item,
+    },
+  ];
+
+  for (const def of FUN_MODE_DEFS) {
+    if (!flags[def.id]) continue;
+    const factor = def.itemLinked
+      ? scaleItemLinkedFactor(def.scoreFactor, rate)
+      : def.scoreFactor;
+    lines.push({
+      label: def.itemLinked
+        ? `${def.name}（道具率連動）`
+        : def.name,
+      factor,
+    });
+  }
+
+  return {
+    base,
+    fun,
+    item,
+    final,
+    difficultyLabel: getDifficultyLabel(settings),
+    itemDropRate: rate,
+    lines,
+  };
+}
+
+/** Chance 0–1 used when deciding to spawn items */
+export function getItemDropChance(settings: GameSettings): number {
+  const rate = isItemDropRate(settings.itemDropRate)
+    ? settings.itemDropRate
+    : DEFAULT_SETTINGS.itemDropRate;
+  return rate / 100;
 }
 
 /** Alias used by score/UI — always final mult */
@@ -264,6 +371,9 @@ export function updateCurrentSettings(settings: GameSettings): void {
   currentSettings = {
     ...settings,
     funModes: normalizeFunModes(settings.funModes),
+    itemDropRate: isItemDropRate(settings.itemDropRate)
+      ? settings.itemDropRate
+      : DEFAULT_SETTINGS.itemDropRate,
   };
   saveSettings(currentSettings);
 }

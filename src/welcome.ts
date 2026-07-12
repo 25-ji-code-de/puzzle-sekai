@@ -4,20 +4,24 @@ import { start, stopBgm, playBgm } from "./states";
 import {
   SpeedLevel,
   TimeAttackDuration,
+  ItemDropRate,
   GAME_GROUPS,
   GROUP_LABELS,
   SPEED_LABELS,
   TIME_LABELS,
+  ITEM_DROP_RATES,
+  ITEM_DROP_LABELS,
+  ITEM_DROP_SCORE_FACTORS,
   getCurrentSettings,
   updateCurrentSettings,
   setCurrentGameMode,
   loadHighScoreRecord,
   getDifficultyLabel,
-  getScoreMultiplier,
+  getScoreMultiplierBreakdown,
   isEntertainmentMode,
   DifficultyLevel,
 } from "./settings";
-import { FUN_MODE_DEFS, FunModeId } from "./fun-modes";
+import { FUN_MODE_DEFS, FunModeId, scaleItemLinkedFactor } from "./fun-modes";
 
 import maokenFontUrl from "./assets/fonts/MaokenAssortedSans-Lite.woff2";
 import nishikiFontUrl from "./assets/fonts/nishiki-teki.woff2";
@@ -505,6 +509,29 @@ const showSettingsPanel = () => {
   groupGroup.appendChild(groupOptions);
   settingsPanel.appendChild(groupGroup);
 
+  // 道具掉落概率
+  const itemGroup = document.createElement("div");
+  itemGroup.className = "setting-group";
+  itemGroup.innerHTML = `<div class="setting-label">道具ドロップ確率（山が低い時）</div>`;
+  const itemOptions = document.createElement("div");
+  itemOptions.className = "setting-options";
+  const currentItemRate = (settings.itemDropRate ?? 10) as ItemDropRate;
+  ITEM_DROP_RATES.forEach((rate) => {
+    const opt = document.createElement("div");
+    opt.className = `setting-opt ${rate === currentItemRate ? "active" : ""}`;
+    opt.title = `スコア倍率 ×${ITEM_DROP_SCORE_FACTORS[rate].toFixed(2)}（道具が多いほど盤面が乱れて倍率↑）`;
+    opt.innerHTML = `<div>${ITEM_DROP_LABELS[rate]}</div>
+      <div style="font-size:10px;opacity:0.65;margin-top:2px;">×${ITEM_DROP_SCORE_FACTORS[rate].toFixed(2)}</div>`;
+    opt.onclick = () => {
+      settings.itemDropRate = rate;
+      updateCurrentSettings(settings);
+      refreshSettingsPanel();
+    };
+    itemOptions.appendChild(opt);
+  });
+  itemGroup.appendChild(itemOptions);
+  settingsPanel.appendChild(itemGroup);
+
   // 娯楽モード
   if (!settings.funModes) {
     settings.funModes = { ...FUN_MODE_DEFS.reduce((acc, d) => {
@@ -538,8 +565,12 @@ const showSettingsPanel = () => {
     const opt = document.createElement("div");
     opt.className = `setting-opt ${on ? "active" : ""}`;
     opt.title = def.description;
+    const shownFactor = def.itemLinked
+      ? scaleItemLinkedFactor(def.scoreFactor, currentItemRate)
+      : def.scoreFactor;
+    const factorNote = def.itemLinked ? "（道具率連動）" : "";
     opt.innerHTML = `<div style="font-size:13px;">${def.name}</div>
-      <div style="font-size:10px;opacity:0.65;margin-top:2px;">${def.subtitle} · ×${def.scoreFactor.toFixed(2)}</div>`;
+      <div style="font-size:10px;opacity:0.65;margin-top:2px;">${def.subtitle} · ×${shownFactor.toFixed(2)}${factorNote}</div>`;
     opt.onmouseenter = () => {
       funHelp.textContent = def.description;
     };
@@ -556,20 +587,68 @@ const showSettingsPanel = () => {
   funGroup.appendChild(funOptions);
   settingsPanel.appendChild(funGroup);
 
-  // 难度摘要（只读，含娱乐最终倍率）
+  // 难度摘要（只读，含娱乐最终倍率 + 明细 tooltip）
   const diffSummary = document.createElement("div");
   diffSummary.className = "setting-group";
-  const mult = getScoreMultiplier(settings);
-  const label = getDifficultyLabel(settings);
+  const breakdown = getScoreMultiplierBreakdown(settings);
+  const mult = breakdown.final;
+  const label = breakdown.difficultyLabel;
   const entOn = isEntertainmentMode(settings);
-  diffSummary.innerHTML = `
-    <div class="setting-label">難易度 / スコア倍率</div>
-    <div style="padding:12px 14px;border-radius:8px;background:rgba(100,200,255,0.12);
-      border:1px solid rgba(100,200,255,0.25);color:#fff;font-size:14px;line-height:1.6;">
-      <div>${label}${entOn ? ' <span style="color:#ffcc66;">娯楽</span>' : ""}</div>
-      <div style="font-family:DroidSansMono,monospace;color:#aaccff;">×${mult.toFixed(2)}</div>
+
+  const linesHtml = breakdown.lines
+    .map(
+      (line) =>
+        `<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="color:rgba(255,255,255,0.75);">${line.label}</span>
+          <span style="font-family:DroidSansMono,monospace;color:#aaccff;white-space:nowrap;">×${line.factor.toFixed(2)}</span>
+        </div>`,
+    )
+    .join("");
+
+  const card = document.createElement("div");
+  card.style.cssText = `
+    position:relative;padding:12px 14px;border-radius:8px;
+    background:rgba(100,200,255,0.12);border:1px solid rgba(100,200,255,0.25);
+    color:#fff;font-size:14px;line-height:1.6;cursor:help;
+  `;
+  card.innerHTML = `
+    <div>${label}${entOn ? ' <span style="color:#ffcc66;">娯楽</span>' : ""}</div>
+    <div style="font-family:DroidSansMono,monospace;color:#aaccff;">
+      ×${mult.toFixed(2)}
+      <span style="font-size:11px;opacity:0.55;margin-left:6px;">ⓘ 内訳</span>
     </div>
   `;
+
+  const tip = document.createElement("div");
+  tip.style.cssText = `
+    display:none;position:absolute;left:0;right:0;bottom:calc(100% + 8px);z-index:20;
+    padding:12px 14px;border-radius:10px;
+    background:rgba(12,16,32,0.97);border:1px solid rgba(100,200,255,0.35);
+    box-shadow:0 8px 28px rgba(0,0,0,0.45);font-size:12px;line-height:1.45;
+  `;
+  tip.innerHTML = `
+    <div style="font-size:11px;color:rgba(180,220,255,0.8);letter-spacing:1px;margin-bottom:8px;">スコア倍率の内訳</div>
+    ${linesHtml}
+    <div style="display:flex;justify-content:space-between;gap:12px;padding-top:8px;margin-top:4px;border-top:1px solid rgba(100,200,255,0.25);font-weight:600;">
+      <span>合計</span>
+      <span style="font-family:DroidSansMono,monospace;color:#fff;">×${mult.toFixed(2)}</span>
+    </div>
+  `;
+  card.appendChild(tip);
+  card.onmouseenter = () => {
+    tip.style.display = "block";
+  };
+  card.onmouseleave = () => {
+    tip.style.display = "none";
+  };
+  // mobile: tap to toggle
+  card.onclick = (e) => {
+    e.stopPropagation();
+    tip.style.display = tip.style.display === "block" ? "none" : "block";
+  };
+
+  diffSummary.innerHTML = `<div class="setting-label">難易度 / スコア倍率</div>`;
+  diffSummary.appendChild(card);
   settingsPanel.appendChild(diffSummary);
 
   settingsContainer.appendChild(settingsPanel);
