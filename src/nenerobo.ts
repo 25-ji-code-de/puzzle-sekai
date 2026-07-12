@@ -111,18 +111,18 @@ export const createNeneRobo = async (
     const swapped = isControlsSwapped();
     switch (event.key.toLowerCase()) {
       case "arrowleft":
-        swapped ? rotateCCW() : moveLeft();
+        swapped ? moveRight() : moveLeft();
         break;
       case "arrowright":
-        swapped ? rotateCW() : moveRight();
+        swapped ? moveLeft() : moveRight();
         break;
       case "x":
       case "arrowup":
-        swapped ? moveRight() : rotateCW();
+        swapped ? rotateCCW() : rotateCW();
         break;
       case "z":
       case "control":
-        swapped ? moveLeft() : rotateCCW();
+        swapped ? rotateCW() : rotateCCW();
         break;
       case "arrowdown":
         softDrop();
@@ -140,13 +140,13 @@ export const createNeneRobo = async (
   };
 
   const handleSwipeLeft = () =>
-    isControlsSwapped() ? rotateCCW() : moveLeft();
+    isControlsSwapped() ? moveRight() : moveLeft();
   const handleSwipeRight = () =>
-    isControlsSwapped() ? rotateCW() : moveRight();
+    isControlsSwapped() ? moveLeft() : moveRight();
   const handleTap = (e: HammerInput) => {
     const leftHalf = e.center.x < window.innerWidth / 2;
     if (isControlsSwapped()) {
-      leftHalf ? moveLeft() : moveRight();
+      leftHalf ? rotateCW() : rotateCCW();
     } else {
       leftHalf ? rotateCCW() : rotateCW();
     }

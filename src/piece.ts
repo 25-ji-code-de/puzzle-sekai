@@ -30,6 +30,7 @@ import {
   getKanadeSelfSpeedMult,
   onKanadeLanded,
 } from "./fun-effects";
+import { getMizukiLockColumns, getCarrotHazardColumns } from "./board";
 
 // Get filtered character list based on selected groups
 const getFilteredCharacterData = (): CharacterData[] => {
@@ -165,7 +166,38 @@ export const createPiece = async (
 
   const kasumi = new PIXI.Sprite(texture);
 
-  kasumi.x = (LEFT_BORDER + RIGHT_BORDER) / 2 - BOX_SIZE / 2;
+  const isMizuki = file.toLowerCase().includes("mizuki");
+  const isAllergyAvoider =
+    file.toLowerCase().includes("ena") ||
+    file.toLowerCase().includes("akito");
+  // ポテトと瑞希: if fries on board and open columns exist, lock Mizuki to those cols
+  const mizukiLockCols = isMizuki ? getMizukiLockColumns() : [];
+  const mizukiLocked = mizukiLockCols.length > 0;
+  // にんじん嫌い: Ena/Akito skip carrot hazard columns (cannot voluntarily land there)
+  const carrotHazards = isAllergyAvoider ? getCarrotHazardColumns() : [];
+  const avoidCarrotCols = carrotHazards.length > 0;
+
+  // Spawn: Mizuki prefers contact cols; Ena/Akito avoid contact cols
+  let spawnCol: number | undefined;
+  if (mizukiLocked) {
+    spawnCol = mizukiLockCols[Math.floor(mizukiLockCols.length / 2)];
+  } else if (avoidCarrotCols) {
+    // Prefer center among columns that do NOT contact carrots
+    const mid = Math.floor(COLUMNS / 2);
+    const free = Array.from({ length: COLUMNS }, (_, c) => c).filter(
+      (c) => !carrotHazards.includes(c),
+    );
+    if (free.length > 0) {
+      spawnCol = free.reduce(
+        (best, c) => (Math.abs(c - mid) < Math.abs(best - mid) ? c : best),
+        free[0],
+      );
+    }
+  }
+  kasumi.x =
+    spawnCol !== undefined
+      ? LEFT_BORDER + spawnCol * BOX_SIZE + BOX_SIZE / 2
+      : (LEFT_BORDER + RIGHT_BORDER) / 2 - BOX_SIZE / 2;
   kasumi.y = -BOX_SIZE / 2;
 
   kasumi.anchor.x = 0.5;
@@ -183,6 +215,70 @@ export const createPiece = async (
     (isKanade ? getKanadeSelfSpeedMult() : 1);
   let speed = SPEED * speedMultiplier * funSpeedMult;
   let dropScore = 0;
+
+  /** When locked, left/right move only among allowed columns (skip others). */
+  const currentCol = () =>
+    Math.round((kasumi.x - LEFT_BORDER - BOX_SIZE / 2) / BOX_SIZE);
+
+  const moveToAllowedCol = (direction: -1 | 1) => {
+    const col = currentCol();
+    const rawY = (kasumi.y - BOX_SIZE / 2) / BOX_SIZE;
+    const y = Math.max(0, Math.ceil(rawY));
+
+    // ---- Mizuki locked to fries columns: jump among allowed only ----
+    if (mizukiLocked) {
+      const sorted = mizukiLockCols;
+      let idx = sorted.indexOf(col);
+      if (idx < 0) {
+        idx = 0;
+        let best = Math.abs(sorted[0] - col);
+        for (let i = 1; i < sorted.length; i++) {
+          const d = Math.abs(sorted[i] - col);
+          if (d < best) {
+            best = d;
+            idx = i;
+          }
+        }
+        const snapCol = sorted[idx];
+        if (snapCol !== col && !willCollide(snapCol, y, kasumi.rotation)) {
+          kasumi.x += (snapCol - col) * BOX_SIZE;
+          onMoved();
+        }
+        return;
+      }
+      const nextIdx = idx + direction;
+      if (nextIdx < 0 || nextIdx >= sorted.length) return;
+      const targetCol = sorted[nextIdx];
+      if (targetCol < 0 || targetCol >= COLUMNS) return;
+      if (!willCollide(targetCol, y, kasumi.rotation)) {
+        kasumi.x += (targetCol - col) * BOX_SIZE;
+        onMoved();
+      }
+      return;
+    }
+
+    // ---- Ena/Akito: skip carrot hazard columns entirely ----
+    if (avoidCarrotCols) {
+      let next = col + direction;
+      while (next >= 0 && next < COLUMNS && carrotHazards.includes(next)) {
+        next += direction;
+      }
+      if (next < 0 || next >= COLUMNS) return;
+      if (!willCollide(next, y, kasumi.rotation)) {
+        kasumi.x += (next - col) * BOX_SIZE;
+        onMoved();
+      }
+      return;
+    }
+
+    // ---- Normal free move ----
+    const next = col + direction;
+    if (next < 0 || next >= COLUMNS) return;
+    if (!willCollide(next, y, kasumi.rotation)) {
+      kasumi.x += direction * BOX_SIZE;
+      onMoved();
+    }
+  };
 
   const onMoved = () => {
     if (dropped) {
@@ -204,21 +300,9 @@ export const createPiece = async (
     }
   };
 
-  const moveLeft = () => {
-    const { x, y } = getCoordinates(kasumi, "ceil");
-    if (x > 0 && !willCollide(x - 1, y, kasumi.rotation)) {
-      kasumi.x -= BOX_SIZE;
-      onMoved();
-    }
-  };
+  const moveLeft = () => moveToAllowedCol(-1);
 
-  const moveRight = () => {
-    const { x, y } = getCoordinates(kasumi, "ceil");
-    if (x < COLUMNS - 1 && !willCollide(x + 1, y, kasumi.rotation)) {
-      kasumi.x += BOX_SIZE;
-      onMoved();
-    }
-  };
+  const moveRight = () => moveToAllowedCol(1);
   const rotateCW = () => {
     const { x, y } = getCoordinates(kasumi, "ceil");
     if (!willCollide(x, y, kasumi.rotation + Math.PI / 2)) {
@@ -263,24 +347,24 @@ export const createPiece = async (
     const swapped = isControlsSwapped();
     switch (event.key.toLowerCase()) {
       case "arrowleft":
-        swapped ? rotateCCW() : moveLeft();
+        swapped ? moveRight() : moveLeft();
         break;
       case "arrowright":
-        swapped ? rotateCW() : moveRight();
+        swapped ? moveLeft() : moveRight();
         break;
       case "arrowup":
         if (event.shiftKey && file.includes("emu")) {
           moveUp();
           break;
         }
-        swapped ? moveRight() : rotateCW();
+        swapped ? rotateCCW() : rotateCW();
         break;
       case "x":
-        swapped ? moveRight() : rotateCW();
+        swapped ? rotateCCW() : rotateCW();
         break;
       case "z":
       case "control":
-        swapped ? moveLeft() : rotateCCW();
+        swapped ? rotateCW() : rotateCCW();
         break;
       case "arrowdown":
         softDrop();
@@ -299,13 +383,13 @@ export const createPiece = async (
 
   // Mobile: swipe left/right move, tap left/right rotate — swap pairs when mirrored
   const handleSwipeLeft = () =>
-    isControlsSwapped() ? rotateCCW() : moveLeft();
+    isControlsSwapped() ? moveRight() : moveLeft();
   const handleSwipeRight = () =>
-    isControlsSwapped() ? rotateCW() : moveRight();
+    isControlsSwapped() ? moveLeft() : moveRight();
   const handleTap = (e: HammerInput) => {
     const leftHalf = e.center.x < window.innerWidth / 2;
     if (isControlsSwapped()) {
-      leftHalf ? moveLeft() : moveRight();
+      leftHalf ? rotateCW() : rotateCCW();
     } else {
       leftHalf ? rotateCCW() : rotateCW();
     }

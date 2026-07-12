@@ -7,6 +7,7 @@ import { addScore } from "./score";
 import { ROWS, COLUMNS, BOX_SIZE, LEFT_BORDER, FALL_SPEED } from "./config";
 import { SpriteData, sprites, pieces, setSprites } from "./states";
 import { isFunModeOn, onKanadeCleared, onShizukuCleared, cancelShizukuSwapIfShihoPresent } from "./fun-effects";
+import { isCarrotItem, isFriesItem } from "./items";
 
 export const updateCoordinates = (
   sprite: PIXI.Sprite,
@@ -14,17 +15,24 @@ export const updateCoordinates = (
   character?: Pick<CharacterData, "name">,
   isItem: boolean = false,
 ) => {
+  // Prefer live index by sprite ref — fixed indices go stale after clears / async item spawn
+  let idx = sprites.findIndex((s) => s.sprite === sprite);
+  if (idx < 0) idx = index;
+  if (!sprites[idx]) return;
+
   const { x, y } = getCoordinates(sprite);
   const orientation = (Math.fround(sprite.rotation / Math.PI) * 2 + 2) % 4;
   if (isItem) {
-    pieces[y][x] = "Item";
-    sprites[index].coordinates = [[x, y]];
+    if (y >= 0 && y < pieces.length && x >= 0 && x < (pieces[y]?.length ?? 0)) {
+      pieces[y][x] = "Item";
+    }
+    sprites[idx].coordinates = [[x, y]];
     return;
   }
   // Shrunk Emu (えむちぢみ): always 1 cell
-  if (sprites[index]?.isShrunk && character) {
+  if (sprites[idx]?.isShrunk && character) {
     pieces[y][x] = character.name;
-    sprites[index].coordinates = [[x, y]];
+    sprites[idx].coordinates = [[x, y]];
     return;
   }
   if (character) {
@@ -33,7 +41,7 @@ export const updateCoordinates = (
       pieces[y - 1][x - 1] = character.name;
       pieces[y][x] = character.name;
       pieces[y][x - 1] = character.name;
-      sprites[index].coordinates = [
+      sprites[idx].coordinates = [
         [x, y],
         [x - 1, y],
         [x, y - 1],
@@ -45,7 +53,7 @@ export const updateCoordinates = (
       case 0:
         pieces[y][x] = character.name;
         pieces[y - 1][x] = character.name;
-        sprites[index].coordinates = [
+        sprites[idx].coordinates = [
           [x, y],
           [x, y - 1],
         ];
@@ -53,7 +61,7 @@ export const updateCoordinates = (
       case 1:
         pieces[y][x] = character.name;
         pieces[y][x + 1] = character.name;
-        sprites[index].coordinates = [
+        sprites[idx].coordinates = [
           [x, y],
           [x + 1, y],
         ];
@@ -61,7 +69,7 @@ export const updateCoordinates = (
       case 2:
         pieces[y][x] = character.name;
         pieces[y + 1][x] = character.name;
-        sprites[index].coordinates = [
+        sprites[idx].coordinates = [
           [x, y],
           [x, y + 1],
         ];
@@ -69,7 +77,7 @@ export const updateCoordinates = (
       case 3:
         pieces[y][x] = character.name;
         pieces[y][x - 1] = character.name;
-        sprites[index].coordinates = [
+        sprites[idx].coordinates = [
           [x, y],
           [x - 1, y],
         ];
@@ -214,7 +222,11 @@ export const fallChunk = async (sprites: SpriteData[]) => {
   await fallChunk(sprites);
 };
 
-export const clearChunk = async (chunk: [number, number][]) => {
+export const clearChunk = async (
+  chunk: [number, number][],
+  options?: { silent?: boolean },
+) => {
+  const silent = options?.silent === true;
   const toRemove = sprites.filter((sprite) => {
     return (
       sprite.coordinates &&
@@ -240,10 +252,12 @@ export const clearChunk = async (chunk: [number, number][]) => {
 
   addScore(chunk.length);
 
-  // Determine group voice to play
+  // Determine group voice to play (skip for silent allergy clears)
   const clearedGroup = toRemove.find((sp) => sp.character?.group)?.character?.group;
-  const groupVoiceKey = clearedGroup && groupSounds[clearedGroup]
-    ? groupSounds[clearedGroup] : null;
+  const groupVoiceKey =
+    !silent && clearedGroup && groupSounds[clearedGroup]
+      ? groupSounds[clearedGroup]
+      : null;
 
   // Start group voice and record start time
   const voiceStart = groupVoiceKey ? performance.now() : 0;
@@ -309,6 +323,9 @@ export const clearChunk = async (chunk: [number, number][]) => {
   // Phase 4: Fall pieces
   await fallChunk(sprites);
 
+  // After gravity: carrot allergy may connect newly
+  await recheckCarrotAllergy();
+
   // えむちぢみ: after gravity settles, shrink Emus adjacent to Mafuyu
   await tryEmuShrink();
 
@@ -347,7 +364,6 @@ export const applyCarrotAllergy = async (
   ];
   const allergyCells = new Set<string>();
 
-  // Scan the whole fall column so mid-fall side-touches are caught on land
   for (let y = 0; y <= landY; y++) {
     for (const [dx, dy] of dirs) {
       const nx = itemX + dx;
@@ -368,11 +384,62 @@ export const applyCarrotAllergy = async (
   }
 
   if (allergyCells.size === 0) return false;
+  return clearAllergyCells(allergyCells);
+};
 
-  // Expand to whole multi-cell sprites (Ena/Akito are 2 cells) so score matches cells removed
+/**
+ * Reverse direction: Ena/Akito just landed — clear them if any cell is
+ * orthogonally adjacent to a carrot item.
+ */
+export const applyCarrotAllergyOnCharacter = async (
+  characterIndex: number,
+): Promise<boolean> => {
+  if (!isFunModeOn("itemAllergy")) return false;
+  const sp = sprites[characterIndex];
+  if (!sp?.coordinates?.length) return false;
+  if (sp.character?.name !== "Ena" && sp.character?.name !== "Akito") {
+    return false;
+  }
+
+  const dirs: [number, number][] = [
+    [0, 0],
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ];
+
+  let touchesCarrot = false;
+  outer: for (const [cx, cy] of sp.coordinates) {
+    for (const [dx, dy] of dirs) {
+      const nx = cx + dx;
+      const ny = cy + dy;
+      for (const itemSp of sprites) {
+        if (!itemSp.isItem || !itemSp.itemFile || !itemSp.coordinates) continue;
+        if (!isCarrotItem(itemSp.itemFile)) continue;
+        if (itemSp.coordinates.some(([ix, iy]) => ix === nx && iy === ny)) {
+          touchesCarrot = true;
+          break outer;
+        }
+      }
+    }
+  }
+
+  if (!touchesCarrot) return false;
+
+  const chunk: [number, number][] = sp.coordinates.map(([x, y]) => [x, y]);
+  await clearChunk(chunk, { silent: true });
+  return true;
+};
+
+const clearAllergyCells = async (
+  allergyCells: Set<string>,
+): Promise<boolean> => {
   const chunkKeys = new Set<string>();
   for (const sp of sprites) {
     if (!sp.coordinates?.length) continue;
+    if (sp.isItem) continue;
+    if (sp.character?.name !== "Ena" && sp.character?.name !== "Akito") continue;
     const hit = sp.coordinates.some(([cx, cy]) =>
       allergyCells.has(`${cx},${cy}`),
     );
@@ -387,24 +454,148 @@ export const applyCarrotAllergy = async (
     const [x, y] = key.split(",").map(Number);
     return [x, y] as [number, number];
   });
-
-  // clearChunk removes whole multi-cell sprites, awards score, fallChunk
-  await clearChunk(chunk);
+  await clearChunk(chunk, { silent: true });
   return true;
 };
 
 /**
- * mizukiShift fun mode: after a fries item lands, teleport the nearest Mizuki
- * so she sits directly above it (anchor at (itemX, itemY-1)).
- * Prefer keeping orientation; fall back to vertical 2-cell. Skip if no room.
- * Then gravity-fall pieces that were above her old seat.
+ * After gravity: any Ena/Akito that ends orthogonally adjacent to a carrot
+ * is cleared (silent, no unit voice).
  */
-export const applyMizukiShift = async (itemX: number, itemY: number) => {
+export const recheckCarrotAllergy = async (): Promise<boolean> => {
+  if (!isFunModeOn("itemAllergy")) return false;
+
+  const dirs: [number, number][] = [
+    [0, 0],
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ];
+
+  const allergyCells = new Set<string>();
+  for (const sp of sprites) {
+    if (sp.character?.name !== "Ena" && sp.character?.name !== "Akito") continue;
+    if (!sp.coordinates?.length) continue;
+    for (const [cx, cy] of sp.coordinates) {
+      for (const [dx, dy] of dirs) {
+        const nx = cx + dx;
+        const ny = cy + dy;
+        for (const itemSp of sprites) {
+          if (!itemSp.isItem || !itemSp.itemFile || !itemSp.coordinates) continue;
+          if (!isCarrotItem(itemSp.itemFile)) continue;
+          if (itemSp.coordinates.some(([ix, iy]) => ix === nx && iy === ny)) {
+            allergyCells.add(`${cx},${cy}`);
+          }
+        }
+      }
+    }
+  }
+  if (allergyCells.size === 0) return false;
+  return clearAllergyCells(allergyCells);
+};
+
+/** Same cell or orthogonal neighbor */
+const cellsTouch = (ax: number, ay: number, bx: number, by: number) => {
+  const d = Math.abs(ax - bx) + Math.abs(ay - by);
+  return d === 0 || d === 1;
+};
+
+/**
+ * Landing row (bottom cell) for a piece falling in `col` under gravity,
+ * assuming the column is a solid stack from the bottom (post-gravity).
+ * Returns -1 if the column is full.
+ */
+const landYInColumn = (col: number): number => {
+  if (col < 0 || col >= COLUMNS) return -1;
+  // First occupied cell from the top; land on the cell above it
+  for (let y = 0; y < ROWS; y++) {
+    if (pieces[y][col] != null) {
+      return y - 1;
+    }
+  }
+  return ROWS - 1; // empty column → rest on floor
+};
+
+/**
+ * Cells occupied by a default-orientation (vertical 2-cell) character
+ * after landing with bottom at (col, landY).
+ */
+const landedVerticalCells = (
+  col: number,
+  landY: number,
+): [number, number][] | null => {
+  if (landY < 0 || landY >= ROWS || col < 0 || col >= COLUMNS) return null;
+  // Need room for the upper cell (spawn orientation is vertical)
+  if (landY < 1) return null;
+  return [
+    [col, landY],
+    [col, landY - 1],
+  ];
+};
+
+/**
+ * ContactColumns: columns where a default-orientation character, after falling and
+ * landing under gravity, would touch the given item (same cell or edge-adjacent).
+ */
+const contactColumnsForItem = (itemX: number, itemY: number): number[] => {
+  const cols: number[] = [];
+  for (let col = 0; col < COLUMNS; col++) {
+    const landY = landYInColumn(col);
+    const cells = landedVerticalCells(col, landY);
+    if (!cells) continue;
+    if (cells.some(([x, y]) => cellsTouch(x, y, itemX, itemY))) {
+      cols.push(col);
+    }
+  }
+  return cols;
+};
+
+/**
+ * Unified ContactColumns for all items matching `itemPred` (e.g. isCarrotItem / isFriesItem).
+ * A column is included if landing a vertical 2-cell piece there would contact
+ * at least one matching item.
+ */
+export const getItemContactColumns = (
+  itemPred: (file: string) => boolean,
+): number[] => {
+  const cols = new Set<number>();
+  for (const sp of sprites) {
+    if (!sp.isItem || !sp.itemFile || !sp.coordinates?.length) continue;
+    if (!itemPred(sp.itemFile)) continue;
+    const [ix, iy] = sp.coordinates[0];
+    for (const c of contactColumnsForItem(ix, iy)) {
+      cols.add(c);
+    }
+  }
+  return [...cols].sort((a, b) => a - b);
+};
+
+/** にんじん嫌い: columns Ena/Akito must NOT use (contact carrots). */
+export const getCarrotHazardColumns = (): number[] => {
+  if (!isFunModeOn("itemAllergy")) return [];
+  return getItemContactColumns(isCarrotItem);
+};
+
+/** ポテトと瑞希: columns Mizuki MUST use when any valid fries contact col exists. */
+export const getMizukiLockColumns = (): number[] => {
+  if (!isFunModeOn("mizukiShift")) return [];
+  return getItemContactColumns(isFriesItem);
+};
+
+/**
+ * When fries land: move the nearest board Mizuki to sit above the fries
+ * (prefer column fx, else fx±1 if open; anchor bottom at row fy-1).
+ */
+export const applyMizukiShift = async (
+  itemX: number,
+  itemY: number,
+): Promise<void> => {
   if (!isFunModeOn("mizukiShift")) return;
 
+  // Nearest Mizuki already on board
   type Cand = { index: number; dist: number };
   let best: Cand | null = null;
-
   for (let i = 0; i < sprites.length; i++) {
     const sp = sprites[i];
     if (sp.character?.name !== "Mizuki" || !sp.coordinates?.length) continue;
@@ -413,45 +604,45 @@ export const applyMizukiShift = async (itemX: number, itemY: number) => {
         ([x, y]) => Math.abs(x - itemX) + Math.abs(y - itemY),
       ),
     );
-    // Stable: first wins ties (strict <)
-    if (!best || dist < best.dist) {
-      best = { index: i, dist };
-    }
+    if (!best || dist < best.dist) best = { index: i, dist };
   }
   if (!best) return;
 
   const mizukiIndex = best.index;
   const mizuki = sprites[mizukiIndex];
-  const targetX = itemX;
   const targetY = itemY - 1;
-  if (targetY < 0 || targetX < 0 || targetX >= COLUMNS) return;
+  if (targetY < 0) return;
 
-  // Cells occupied by a 2-cell piece with given orientation at anchor (ax, ay)
+  // Prefer fries column, then left, then right — must be in bounds & free for placement
+  const tryCols = [itemX, itemX - 1, itemX + 1].filter(
+    (c) => c >= 0 && c < COLUMNS,
+  );
+
   const cellsFor = (
     orientation: number,
     ax: number,
     ay: number,
   ): [number, number][] | null => {
     switch (orientation) {
-      case 0: // vertical, anchor bottom
+      case 0:
         if (ay < 1 || ay >= ROWS || ax < 0 || ax >= COLUMNS) return null;
         return [
           [ax, ay],
           [ax, ay - 1],
         ];
-      case 1: // horizontal, extend right
+      case 1:
         if (ay < 0 || ay >= ROWS || ax < 0 || ax + 1 >= COLUMNS) return null;
         return [
           [ax, ay],
           [ax + 1, ay],
         ];
-      case 2: // vertical, anchor top
+      case 2:
         if (ay < 0 || ay + 1 >= ROWS || ax < 0 || ax >= COLUMNS) return null;
         return [
           [ax, ay],
           [ax, ay + 1],
         ];
-      case 3: // horizontal, extend left
+      case 3:
         if (ay < 0 || ay >= ROWS || ax - 1 < 0 || ax >= COLUMNS) return null;
         return [
           [ax, ay],
@@ -462,39 +653,40 @@ export const applyMizukiShift = async (itemX: number, itemY: number) => {
     }
   };
 
-  const isFree = (cells: [number, number][]) =>
-    cells.every(([x, y]) => pieces[y][x] === null);
-
-  // Clear old Mizuki cells so self-collision doesn't block the move
+  // Clear old cells first
   mizuki.coordinates?.forEach(([x, y]) => {
     pieces[y][x] = null;
   });
 
+  const isFree = (cells: [number, number][]) =>
+    cells.every(([x, y]) => pieces[y][x] === null);
+
   const currentOrient = getOffset(mizuki.sprite);
   let placed = false;
 
-  const tryPlace = (orientation: number, rotation: number) => {
-    const cells = cellsFor(orientation, targetX, targetY);
+  const tryPlace = (col: number, orientation: number, rotation: number) => {
+    const cells = cellsFor(orientation, col, targetY);
     if (!cells || !isFree(cells)) return false;
     mizuki.sprite.rotation = rotation;
-    moveToCoordinate(mizuki.sprite, targetX, targetY);
+    moveToCoordinate(mizuki.sprite, col, targetY);
     updateCoordinates(mizuki.sprite, mizukiIndex, mizuki.character);
     return true;
   };
 
-  // Prefer keeping current orientation
-  if (tryPlace(currentOrient, mizuki.sprite.rotation)) {
-    placed = true;
-  } else if (currentOrient !== 0) {
-    // Fall back to vertical 2-cell with bottom at (itemX, itemY-1)
-    // orientation 0 ⇔ rotation Math.PI (matches createPiece default)
-    if (tryPlace(0, Math.PI)) {
+  for (const col of tryCols) {
+    if (tryPlace(col, currentOrient, mizuki.sprite.rotation)) {
       placed = true;
+      break;
+    }
+    // fall back to vertical (orient 0 / rotation π)
+    if (currentOrient !== 0 && tryPlace(col, 0, Math.PI)) {
+      placed = true;
+      break;
     }
   }
 
   if (!placed) {
-    // Restore old board cells; sprite pixel position unchanged
+    // restore
     updateCoordinates(mizuki.sprite, mizukiIndex, mizuki.character);
     return;
   }
@@ -611,19 +803,46 @@ export const tryEmuShrink = async (): Promise<boolean> => {
 };
 
 /**
- * When Rui and NeneRobo are both in a cleared set, randomly blast extra pieces.
+ * When Rui and NeneRobo are both in a cleared set AND share an edge (orthogonal
+ * adjacency of any of their cells), randomly blast extra pieces.
  * blastCount = 2 + 2 * (Rui/NeneRobo sprites in the clear), capped at 12 / half board.
  * Multi-cell sprites (NeneRobo, Mikudayo, 2-cell chars) are removed whole.
  */
-const applyWonderBlast = (cleared: SpriteData[]) => {
-  const hasRui = cleared.some((sp) => sp.character?.name === "Rui");
-  const hasNeneRobo = cleared.some((sp) => sp.character?.name === "NeneRobo");
-  if (!hasRui || !hasNeneRobo) return;
+const cellsOrthogonallyAdjacent = (
+  a: [number, number][],
+  b: [number, number][],
+): boolean => {
+  for (const [ax, ay] of a) {
+    for (const [bx, by] of b) {
+      if (Math.abs(ax - bx) + Math.abs(ay - by) === 1) return true;
+    }
+  }
+  return false;
+};
 
-  const ruiNeneCount = cleared.filter(
-    (sp) =>
-      sp.character?.name === "Rui" || sp.character?.name === "NeneRobo",
-  ).length;
+const applyWonderBlast = (cleared: SpriteData[]) => {
+  const ruiSprites = cleared.filter((sp) => sp.character?.name === "Rui");
+  const neneRoboSprites = cleared.filter(
+    (sp) => sp.character?.name === "NeneRobo",
+  );
+  if (ruiSprites.length === 0 || neneRoboSprites.length === 0) return;
+
+  // Require at least one Rui cell orthogonally adjacent to one NeneRobo cell
+  let adjacent = false;
+  for (const rui of ruiSprites) {
+    if (!rui.coordinates?.length) continue;
+    for (const nene of neneRoboSprites) {
+      if (!nene.coordinates?.length) continue;
+      if (cellsOrthogonallyAdjacent(rui.coordinates, nene.coordinates)) {
+        adjacent = true;
+        break;
+      }
+    }
+    if (adjacent) break;
+  }
+  if (!adjacent) return;
+
+  const ruiNeneCount = ruiSprites.length + neneRoboSprites.length;
   const halfBoard = Math.floor((ROWS * COLUMNS) / 2);
   const blastTarget = Math.min(12, halfBoard, 2 + 2 * ruiNeneCount);
   if (blastTarget <= 0) return;

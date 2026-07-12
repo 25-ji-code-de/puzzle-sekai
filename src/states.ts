@@ -32,11 +32,12 @@ import {
   updateCoordinates,
   clearChunk,
   applyCarrotAllergy,
+  applyCarrotAllergyOnCharacter,
   applyMizukiShift,
   tryEmuShrink,
 } from "./board";
 import { welcome as _welcome } from "./welcome";
-import { getCurrentGameMode, getCurrentSettings } from "./settings";
+import { getCurrentGameMode, getCurrentSettings, getItemDropChance } from "./settings";
 import { resetFunEffects } from "./fun-effects";
 
 export { welcome } from "./welcome";
@@ -47,6 +48,8 @@ export interface SpriteData {
   coordinates?: [number, number][];
   character?: Pick<CharacterData, "name" | "group">;
   isItem?: boolean;
+  /** Source asset path for items (carrot / fries detection) */
+  itemFile?: string;
   /** Emu shrunk to 1 cell by えむちぢみ fun mode */
   isShrunk?: boolean;
 }
@@ -64,20 +67,76 @@ let nextPiece: PIXI.Sprite;
 
 let bgmPlaying: PIXI.sound.Sound;
 let bgmActive = false;
+/** Instance of game-over intro (182.1) so we can cancel the chain on restart */
+let gameOverIntroInst: { stop?: () => void; off?: (e: string, fn: () => void) => void } | null = null;
+let gameOverIntroOnEnd: (() => void) | null = null;
 
 // Time attack timer
 let timeAttackInterval: number | undefined;
 
 export const stopBgm = () => {
   bgmActive = false;
+  // Cancel game-over 182.1 → 182.2 chain
+  if (gameOverIntroInst && gameOverIntroOnEnd) {
+    try {
+      gameOverIntroInst.off?.("end", gameOverIntroOnEnd);
+    } catch {
+      /* ignore */
+    }
+  }
+  gameOverIntroInst = null;
+  gameOverIntroOnEnd = null;
   if (bgmPlaying) {
-    bgmPlaying.stop();
+    try {
+      bgmPlaying.stop();
+    } catch {
+      /* ignore */
+    }
+  }
+  // Also hard-stop known game-over tracks (may not be in bgmPlaying yet)
+  const g1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
+  const g2 = app.loader.resources["bgm182_2"]?.sound as PIXI.sound.Sound | undefined;
+  try {
+    g1?.stop();
+  } catch {
+    /* ignore */
+  }
+  try {
+    g2?.stop();
+  } catch {
+    /* ignore */
   }
 };
 
 export const playBgm = (sound: PIXI.sound.Sound, options: { loop: boolean; volume: number }) => {
   bgmPlaying = sound;
   bgmPlaying.play(options);
+};
+
+const playGameOverBgm = () => {
+  stopBgm();
+  const bgm182_1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
+  const bgm182_2 = app.loader.resources["bgm182_2"]?.sound;
+  if (!bgm182_1 || !bgm182_2) return;
+
+  bgmPlaying = bgm182_1;
+  const onEnd = () => {
+    gameOverIntroInst = null;
+    gameOverIntroOnEnd = null;
+    playBgm(bgm182_2 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
+  };
+  gameOverIntroOnEnd = onEnd;
+
+  const result = bgm182_1.play({ loop: false, volume: 0.3 });
+  const attach = (inst: { on: (e: string, fn: () => void) => void; stop?: () => void }) => {
+    gameOverIntroInst = inst;
+    inst.on("end", onEnd);
+  };
+  if (result instanceof Promise) {
+    result.then((inst) => attach(inst as any));
+  } else if (result) {
+    attach(result as any);
+  }
 };
 
 let created = false;
@@ -179,7 +238,7 @@ const create = async () => {
   if (created) return;
   const index = sprites.length;
   const maxHeight = getMaxStackHeight();
-  if (maxHeight < 5 && Math.random() < 0.1) {
+  if (maxHeight < 5 && Math.random() < getItemDropChance(getCurrentSettings())) {
     const itemFile = getRandomItem();
     let dropped = [false, false];
     const onDropped = (id: number) => async (sprite: PIXI.Sprite) => {
@@ -193,7 +252,7 @@ const create = async () => {
         if (isCarrotItem(itemFile)) {
           allergyCleared = await applyCarrotAllergy(x, y);
         }
-        // ポテトと瑞希: fries land → nearest Mizuki teleports above
+        // ポテトと瑞希: fries land → nearest board Mizuki moves above fries
         if (isFriesItem(itemFile)) {
           await applyMizukiShift(x, y);
         }
@@ -223,16 +282,25 @@ const create = async () => {
         itemFile,
         positions.splice(Math.floor(Math.random() * positions.length))[0],
         onDropped(0),
-      ),
+      ).then((item) => {
+        // Register as soon as the sprite exists so early land can't miss sprites[]
+        if (!sprites.some((s) => s.sprite === item)) {
+          sprites.push({ sprite: item, isItem: true, itemFile });
+        }
+        return item;
+      }),
       createItem(
         itemFile,
         positions.splice(Math.floor(Math.random() * positions.length))[0],
         onDropped(1),
-      ),
+      ).then((item) => {
+        if (!sprites.some((s) => s.sprite === item)) {
+          sprites.push({ sprite: item, isItem: true, itemFile });
+        }
+        return item;
+      }),
     ]);
-    itemSprites.forEach((item) => {
-      sprites.push({ sprite: item, isItem: true });
-    });
+    void itemSprites;
   } else {
     const character = randomCharacter();
     const onDropped = async (sprite: PIXI.Sprite) => {
@@ -243,10 +311,15 @@ const create = async () => {
         setState(end);
       } else {
         updateCoordinates(sprite, index, character);
+        // にんじん嫌い: Ena/Akito landing next to carrot → clear character
+        let allergyCleared = false;
+        if (character.name === "Ena" || character.name === "Akito") {
+          allergyCleared = await applyCarrotAllergyOnCharacter(index);
+        }
         // えむちぢみ: Mafuyu adjacent to Emu → shrink Emu to 1 cell
         await tryEmuShrink();
         let chunk = findClearPieces(pieces);
-        let cleared = false;
+        let cleared = allergyCleared;
         while (chunk !== undefined) {
           cleared = true;
           await clearChunk(chunk);
@@ -294,20 +367,7 @@ const end = async () => {
     stopTimeAttackTimer();
 
     // Play game over BGM: 182.1 once, then loop 182.2
-    stopBgm();
-    const bgm182_1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
-    const bgm182_2 = app.loader.resources["bgm182_2"]?.sound;
-    if (bgm182_1 && bgm182_2) {
-      const result = bgm182_1.play({ loop: false, volume: 0.3 });
-      const onEnd = () => {
-        playBgm(bgm182_2 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
-      };
-      if (result instanceof Promise) {
-        result.then(inst => inst.on('end', onEnd));
-      } else {
-        result.on('end', onEnd);
-      }
-    }
+    playGameOverBgm();
 
     if (nextCharacter?.file) {
       app.stage.removeChild(avatarStab);
@@ -349,20 +409,7 @@ const endTimeAttack = async () => {
     stopTimeAttackTimer();
 
     // Play game over BGM
-    stopBgm();
-    const bgm182_1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
-    const bgm182_2 = app.loader.resources["bgm182_2"]?.sound;
-    if (bgm182_1 && bgm182_2) {
-      const result = bgm182_1.play({ loop: false, volume: 0.3 });
-      const onEnd = () => {
-        playBgm(bgm182_2 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
-      };
-      if (result instanceof Promise) {
-        result.then(inst => inst.on('end', onEnd));
-      } else {
-        result.on('end', onEnd);
-      }
-    }
+    playGameOverBgm();
 
     // Show game over curtain
     if (nextPiece) {
