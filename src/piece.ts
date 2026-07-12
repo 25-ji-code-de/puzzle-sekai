@@ -27,7 +27,11 @@ import { getCurrentSettings, getSpeedMultiplier } from "./settings";
 // Get filtered character list based on selected groups
 const getFilteredCharacterData = (): CharacterData[] => {
   const settings = getCurrentSettings();
-  return characterData.filter(c => settings.selectedGroups.includes(c.group as any) || c.group === "Special");
+  return characterData.filter(
+    (c) =>
+      settings.selectedGroups.includes(c.group as any) ||
+      (c.group === "Special" && settings.funModes?.mikudayo),
+  );
 };
 
 export let nextCharacter: CharacterData | undefined;

@@ -7,6 +7,7 @@ import {
   getDifficultyLabel,
   getDifficultyLevel,
   getScoreMultiplier,
+  isEntertainmentMode,
   loadHighScoreRecord,
   saveHighScore,
 } from "./settings";
@@ -14,6 +15,7 @@ import {
 let _score = 0;
 let _highScore = 0;
 let _highScoreDifficulty = 0;
+let _highScoreEntertainment = false;
 let _combo = 0;
 let _maxCombo = 0;
 
@@ -120,12 +122,13 @@ const replaceDisplay = (
   return next;
 };
 
-const formatMultBadge = (mult: number, hsDiff: number) => {
+const formatMultBadge = (mult: number, hsDiff: number, hsEnt: boolean) => {
   const multStr = `×${mult.toFixed(2)}`;
-  if (hsDiff >= 1 && hsDiff <= 7) {
-    return `${multStr}  HS★${hsDiff}`;
-  }
-  return multStr;
+  const parts = [multStr];
+  if (hsDiff >= 1 && hsDiff <= 7) parts.push(`HS★${hsDiff}`);
+  if (hsEnt) parts.push("娯楽");
+  if (isEntertainmentMode(getCurrentSettings())) parts.push("ENT");
+  return parts.join("  ");
 };
 
 export const initScoreDisplay = () => {
@@ -144,6 +147,7 @@ export const initScoreDisplay = () => {
   const record = loadHighScoreRecord(mode, settings);
   _highScore = record.score;
   _highScoreDifficulty = record.difficultyLevel;
+  _highScoreEntertainment = record.entertainment;
 
   scoreText = makePaddedText(_score, 8, 0xff6b8a, 44);
   scoreText.x = SCORE_X;
@@ -159,7 +163,7 @@ export const initScoreDisplay = () => {
 
   // Current multiplier + high-score star badge
   multText = makeLabelText(
-    formatMultBadge(mult, _highScoreDifficulty),
+    formatMultBadge(mult, _highScoreDifficulty, _highScoreEntertainment),
     0xaaccff,
     18,
   );
@@ -204,7 +208,7 @@ export const updateScoreDisplay = () => {
     const settings = getCurrentSettings();
     const mult = getScoreMultiplier(settings);
     const next = makeLabelText(
-      formatMultBadge(mult, _highScoreDifficulty),
+      formatMultBadge(mult, _highScoreDifficulty, _highScoreEntertainment),
       0xaaccff,
       18,
     );
@@ -257,6 +261,7 @@ export const addScore = (piecesCleared: number) => {
   if (isNewHigh) {
     _highScore = _score;
     _highScoreDifficulty = getDifficultyLevel(settings);
+    _highScoreEntertainment = isEntertainmentMode(settings);
   }
   updateScoreDisplay();
 };
@@ -279,6 +284,7 @@ export const getScoreSummary = () => ({
   score: _score,
   highScore: _highScore,
   highScoreDifficulty: _highScoreDifficulty,
+  highScoreEntertainment: _highScoreEntertainment,
   highScoreLabel:
     _highScoreDifficulty >= 1 && _highScoreDifficulty <= 7
       ? getDifficultyLabel(_highScoreDifficulty as DifficultyLevel)

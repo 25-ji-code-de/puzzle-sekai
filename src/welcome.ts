@@ -14,8 +14,10 @@ import {
   loadHighScoreRecord,
   getDifficultyLabel,
   getScoreMultiplier,
+  isEntertainmentMode,
   DifficultyLevel,
 } from "./settings";
+import { FUN_MODE_DEFS, FunModeId } from "./fun-modes";
 
 import maokenFontUrl from "./assets/fonts/MaokenAssortedSans-Lite.woff2";
 import nishikiFontUrl from "./assets/fonts/nishiki-teki.woff2";
@@ -178,20 +180,29 @@ const showWelcomePage = () => {
     pointer-events:auto;
   `;
 
-  // 最高分显示（全局榜 + 打出该分时的难度档）
+  // 最高分显示（全局榜 + 打出该分时的难度档 + 娱乐标记）
   const settings = getCurrentSettings();
   const endlessRecord = loadHighScoreRecord("endless");
   const timeAttackRecord = loadHighScoreRecord("timeAttack", settings);
-  const formatHs = (score: number, diff: number) => {
+  const formatHs = (score: number, diff: number, ent: boolean) => {
     const scoreStr = score.toString().padStart(6, "0");
     const star =
       diff >= 1 && diff <= 7
         ? getDifficultyLabel(diff as DifficultyLevel)
         : "";
-    return { scoreStr, star };
+    const entTag = ent ? " 娯楽" : "";
+    return { scoreStr, star, entTag };
   };
-  const endlessHs = formatHs(endlessRecord.score, endlessRecord.difficultyLevel);
-  const taHs = formatHs(timeAttackRecord.score, timeAttackRecord.difficultyLevel);
+  const endlessHs = formatHs(
+    endlessRecord.score,
+    endlessRecord.difficultyLevel,
+    endlessRecord.entertainment,
+  );
+  const taHs = formatHs(
+    timeAttackRecord.score,
+    timeAttackRecord.difficultyLevel,
+    timeAttackRecord.entertainment,
+  );
 
   const highScoreRow = document.createElement("div");
   highScoreRow.id = "high-score-row";
@@ -203,12 +214,12 @@ const showWelcomePage = () => {
     <div style="text-align:center;">
       <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">ENDLESS</div>
       <div style="font-size:18px;color:#ff6b8a;font-family:'DroidSansMono',monospace;">${endlessHs.scoreStr}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${endlessHs.star || "—"}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${endlessHs.star || "—"}${endlessHs.entTag}</div>
     </div>
     <div style="text-align:center;">
       <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">TIME ATTACK</div>
       <div style="font-size:18px;color:#44ff88;font-family:'DroidSansMono',monospace;">${taHs.scoreStr}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${taHs.star || "—"}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${taHs.star || "—"}${taHs.entTag}</div>
     </div>
   `;
   footer.appendChild(highScoreRow);
@@ -494,16 +505,68 @@ const showSettingsPanel = () => {
   groupGroup.appendChild(groupOptions);
   settingsPanel.appendChild(groupGroup);
 
-  // 难度摘要（只读，随速度/团数变化）
+  // 娯楽モード
+  if (!settings.funModes) {
+    settings.funModes = { ...FUN_MODE_DEFS.reduce((acc, d) => {
+      acc[d.id] = false;
+      return acc;
+    }, {} as Record<FunModeId, boolean>) };
+  }
+
+  const funGroup = document.createElement("div");
+  funGroup.className = "setting-group";
+  funGroup.innerHTML = `<div class="setting-label">娯楽モード（1つでもONで娯楽）</div>`;
+
+  const funOptions = document.createElement("div");
+  funOptions.className = "setting-options";
+  funOptions.style.flexDirection = "column";
+  funOptions.style.alignItems = "stretch";
+
+  const funChipRow = document.createElement("div");
+  funChipRow.className = "setting-options";
+
+  const funHelp = document.createElement("div");
+  funHelp.style.cssText = `
+    margin-top:10px;padding:10px 12px;border-radius:8px;
+    background:rgba(0,0,0,0.25);border:1px solid rgba(100,200,255,0.15);
+    color:rgba(255,255,255,0.7);font-size:12px;line-height:1.55;min-height:3.2em;
+  `;
+  funHelp.textContent = "チップを選ぶと説明が表示されます";
+
+  FUN_MODE_DEFS.forEach((def) => {
+    const on = !!settings.funModes[def.id];
+    const opt = document.createElement("div");
+    opt.className = `setting-opt ${on ? "active" : ""}`;
+    opt.title = def.description;
+    opt.innerHTML = `<div style="font-size:13px;">${def.name}</div>
+      <div style="font-size:10px;opacity:0.65;margin-top:2px;">${def.subtitle} · ×${def.scoreFactor.toFixed(2)}</div>`;
+    opt.onmouseenter = () => {
+      funHelp.textContent = def.description;
+    };
+    opt.onclick = () => {
+      settings.funModes[def.id] = !settings.funModes[def.id];
+      updateCurrentSettings(settings);
+      refreshSettingsPanel();
+    };
+    funChipRow.appendChild(opt);
+  });
+
+  funOptions.appendChild(funChipRow);
+  funOptions.appendChild(funHelp);
+  funGroup.appendChild(funOptions);
+  settingsPanel.appendChild(funGroup);
+
+  // 难度摘要（只读，含娱乐最终倍率）
   const diffSummary = document.createElement("div");
   diffSummary.className = "setting-group";
   const mult = getScoreMultiplier(settings);
   const label = getDifficultyLabel(settings);
+  const entOn = isEntertainmentMode(settings);
   diffSummary.innerHTML = `
     <div class="setting-label">難易度 / スコア倍率</div>
     <div style="padding:12px 14px;border-radius:8px;background:rgba(100,200,255,0.12);
       border:1px solid rgba(100,200,255,0.25);color:#fff;font-size:14px;line-height:1.6;">
-      <div>${label}</div>
+      <div>${label}${entOn ? ' <span style="color:#ffcc66;">娯楽</span>' : ""}</div>
       <div style="font-family:DroidSansMono,monospace;color:#aaccff;">×${mult.toFixed(2)}</div>
     </div>
   `;
@@ -537,33 +600,42 @@ const closeSettingsPanel = () => {
   }
 };
 
-// 刷新主菜单最高分（TA 时长变化时）
+// 刷新主菜单最高分（TA 时长 / 娱乐纪录变化时）
 const refreshHighScoreRow = () => {
   const row = document.getElementById("high-score-row");
   if (!row) return;
   const settings = getCurrentSettings();
   const endlessRecord = loadHighScoreRecord("endless");
   const timeAttackRecord = loadHighScoreRecord("timeAttack", settings);
-  const formatHs = (score: number, diff: number) => {
+  const formatHs = (score: number, diff: number, ent: boolean) => {
     const scoreStr = score.toString().padStart(6, "0");
     const star =
       diff >= 1 && diff <= 7
         ? getDifficultyLabel(diff as DifficultyLevel)
         : "—";
-    return { scoreStr, star };
+    const entTag = ent ? " 娯楽" : "";
+    return { scoreStr, star, entTag };
   };
-  const endlessHs = formatHs(endlessRecord.score, endlessRecord.difficultyLevel);
-  const taHs = formatHs(timeAttackRecord.score, timeAttackRecord.difficultyLevel);
+  const endlessHs = formatHs(
+    endlessRecord.score,
+    endlessRecord.difficultyLevel,
+    endlessRecord.entertainment,
+  );
+  const taHs = formatHs(
+    timeAttackRecord.score,
+    timeAttackRecord.difficultyLevel,
+    timeAttackRecord.entertainment,
+  );
   row.innerHTML = `
     <div style="text-align:center;">
       <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">ENDLESS</div>
       <div style="font-size:18px;color:#ff6b8a;font-family:'DroidSansMono',monospace;">${endlessHs.scoreStr}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${endlessHs.star}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${endlessHs.star}${endlessHs.entTag}</div>
     </div>
     <div style="text-align:center;">
       <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">TIME ATTACK</div>
       <div style="font-size:18px;color:#44ff88;font-family:'DroidSansMono',monospace;">${taHs.scoreStr}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${taHs.star}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${taHs.star}${taHs.entTag}</div>
     </div>
   `;
 };

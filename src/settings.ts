@@ -1,5 +1,13 @@
 // Game settings management
 
+import {
+  DEFAULT_FUN_MODES,
+  FunModeFlags,
+  getFunModeMultiplier,
+  isEntertainmentMode as funFlagsOn,
+  normalizeFunModes,
+} from "./fun-modes";
+
 export type SpeedLevel = 1 | 2 | 3 | 4 | 5;
 export type TimeAttackDuration = 60 | 90 | 120 | 180;
 
@@ -18,6 +26,7 @@ export interface GameSettings {
   speedLevel: SpeedLevel;
   timeAttackDuration: TimeAttackDuration;
   selectedGroups: GroupName[];  // 3-5 groups
+  funModes: FunModeFlags;
 }
 
 // Speed multipliers for each level
@@ -55,11 +64,12 @@ export const GROUP_LABELS: Record<GroupName, string> = {
   "25時、ナイトコードで。": "25時、ナイトコードで。",
 };
 
-// Default settings (all 5 groups selected)
+// Default settings (all 5 groups selected, fun modes off)
 const DEFAULT_SETTINGS: GameSettings = {
   speedLevel: 2,
   timeAttackDuration: 90,
   selectedGroups: [...GAME_GROUPS],
+  funModes: { ...DEFAULT_FUN_MODES },
 };
 
 // localStorage key
@@ -77,7 +87,6 @@ export function loadSettings(): GameSettings {
       if (!Array.isArray(selectedGroups) || selectedGroups.length < 3 || selectedGroups.length > 5) {
         selectedGroups = [...GAME_GROUPS];
       } else {
-        // Filter to only valid groups
         selectedGroups = selectedGroups.filter((g: string) => GAME_GROUPS.includes(g as GroupName));
         if (selectedGroups.length < 3) {
           selectedGroups = [...GAME_GROUPS];
@@ -88,12 +97,17 @@ export function loadSettings(): GameSettings {
         speedLevel: parsed.speedLevel || DEFAULT_SETTINGS.speedLevel,
         timeAttackDuration: parsed.timeAttackDuration || DEFAULT_SETTINGS.timeAttackDuration,
         selectedGroups: selectedGroups as GroupName[],
+        funModes: normalizeFunModes(parsed.funModes),
       };
     }
   } catch (e) {
     console.warn("Failed to load settings:", e);
   }
-  return { ...DEFAULT_SETTINGS };
+  return {
+    ...DEFAULT_SETTINGS,
+    selectedGroups: [...GAME_GROUPS],
+    funModes: { ...DEFAULT_FUN_MODES },
+  };
 }
 
 // Save settings to localStorage
@@ -141,10 +155,26 @@ export function getDifficultyLabel(
   return DIFFICULTY_LABELS[level as DifficultyLevel] ?? `★${level}`;
 }
 
-/** Score multiplier ~0.5 (★1) … ~3.0 (★7) */
-export function getScoreMultiplier(settings: GameSettings): number {
+/** Base score multiplier from difficulty only ~0.5 (★1) … ~3.0 (★7) */
+export function getBaseScoreMultiplier(settings: GameSettings): number {
   const d = getDifficultyLevel(settings);
   return 0.5 + (d - 1) * (2.5 / 6);
+}
+
+export function isEntertainmentMode(settings: GameSettings): boolean {
+  return funFlagsOn(settings.funModes ?? DEFAULT_FUN_MODES);
+}
+
+/** Final score mult = base difficulty × fun-mode product */
+export function getFinalScoreMultiplier(settings: GameSettings): number {
+  const base = getBaseScoreMultiplier(settings);
+  const fun = getFunModeMultiplier(settings.funModes ?? DEFAULT_FUN_MODES);
+  return Math.min(4, Math.max(0.3, base * fun));
+}
+
+/** Alias used by score/UI — always final mult */
+export function getScoreMultiplier(settings: GameSettings): number {
+  return getFinalScoreMultiplier(settings);
 }
 
 // Game mode type
@@ -154,6 +184,8 @@ export type HighScoreRecord = {
   score: number;
   /** Difficulty when the high score was achieved; 0 = unknown/legacy */
   difficultyLevel: number;
+  /** Whether entertainment modes were on when the score was set */
+  entertainment: boolean;
 };
 
 // Get high score key for a specific mode (not split by difficulty)
@@ -166,7 +198,11 @@ function getHighScoreDifficultyKey(mode: GameMode, settings?: GameSettings): str
   return `${getHighScoreKey(mode, settings)}_difficulty`;
 }
 
-// Load high score + difficulty record for a mode
+function getHighScoreEntertainmentKey(mode: GameMode, settings?: GameSettings): string {
+  return `${getHighScoreKey(mode, settings)}_entertainment`;
+}
+
+// Load high score + difficulty + entertainment record
 export function loadHighScoreRecord(
   mode: GameMode,
   settings?: GameSettings,
@@ -174,12 +210,14 @@ export function loadHighScoreRecord(
   try {
     const scoreKey = getHighScoreKey(mode, settings);
     const diffKey = getHighScoreDifficultyKey(mode, settings);
+    const entKey = getHighScoreEntertainmentKey(mode, settings);
     const score = parseInt(localStorage.getItem(scoreKey) || "0", 10) || 0;
     const difficultyLevel =
       parseInt(localStorage.getItem(diffKey) || "0", 10) || 0;
-    return { score, difficultyLevel };
+    const entertainment = localStorage.getItem(entKey) === "1";
+    return { score, difficultyLevel, entertainment };
   } catch {
-    return { score: 0, difficultyLevel: 0 };
+    return { score: 0, difficultyLevel: 0, entertainment: false };
   }
 }
 
@@ -188,7 +226,7 @@ export function loadHighScore(mode: GameMode, settings?: GameSettings): number {
   return loadHighScoreRecord(mode, settings).score;
 }
 
-// Save high score if higher; also store difficulty of that run
+// Save high score if higher; store difficulty + entertainment of that run
 export function saveHighScore(
   mode: GameMode,
   score: number,
@@ -197,13 +235,15 @@ export function saveHighScore(
   try {
     const current = loadHighScoreRecord(mode, settings);
     if (score > current.score) {
+      const s = settings ?? getCurrentSettings();
       localStorage.setItem(getHighScoreKey(mode, settings), score.toString());
-      const level = settings
-        ? getDifficultyLevel(settings)
-        : getDifficultyLevel(getCurrentSettings());
       localStorage.setItem(
         getHighScoreDifficultyKey(mode, settings),
-        String(level),
+        String(getDifficultyLevel(s)),
+      );
+      localStorage.setItem(
+        getHighScoreEntertainmentKey(mode, settings),
+        isEntertainmentMode(s) ? "1" : "0",
       );
       return true;
     }
@@ -221,8 +261,11 @@ export function getCurrentSettings(): GameSettings {
 }
 
 export function updateCurrentSettings(settings: GameSettings): void {
-  currentSettings = settings;
-  saveSettings(settings);
+  currentSettings = {
+    ...settings,
+    funModes: normalizeFunModes(settings.funModes),
+  };
+  saveSettings(currentSettings);
 }
 
 // Current game mode
