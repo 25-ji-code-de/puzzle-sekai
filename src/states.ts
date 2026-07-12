@@ -20,7 +20,7 @@ import {
 import { getOffset, getCoordinates, getMaxStackHeight } from "./utils";
 import { CharacterData } from "./character-data";
 import { findClearPieces } from "./clear";
-import { createItem, getRandomItem } from "./items";
+import { createItem, getRandomItem, isCarrotItem, isFriesItem } from "./items";
 import {
   resetScore,
   initScoreDisplay,
@@ -28,9 +28,16 @@ import {
   setTimeRemaining,
   decrementTime,
 } from "./score";
-import { updateCoordinates, clearChunk } from "./board";
+import {
+  updateCoordinates,
+  clearChunk,
+  applyCarrotAllergy,
+  applyMizukiShift,
+  tryEmuShrink,
+} from "./board";
 import { welcome as _welcome } from "./welcome";
 import { getCurrentGameMode, getCurrentSettings } from "./settings";
+import { resetFunEffects } from "./fun-effects";
 
 export { welcome } from "./welcome";
 export { addDropScore } from "./score";
@@ -40,6 +47,8 @@ export interface SpriteData {
   coordinates?: [number, number][];
   character?: Pick<CharacterData, "name" | "group">;
   isItem?: boolean;
+  /** Emu shrunk to 1 cell by えむちぢみ fun mode */
+  isShrunk?: boolean;
 }
 export let sprites: SpriteData[] = [];
 export const setSprites = (s: SpriteData[]) => { sprites = s; };
@@ -144,6 +153,7 @@ const start = () => {
   resetScore();
   initScoreDisplay();
   initRNG();
+  resetFunEffects();
   gameTicker.start();
   setState(create);
   if (nextCharacter) {
@@ -173,13 +183,24 @@ const create = async () => {
     const itemFile = getRandomItem();
     let dropped = [false, false];
     const onDropped = (id: number) => async (sprite: PIXI.Sprite) => {
-      const { y } = getCoordinates(sprite);
+      const { x, y } = getCoordinates(sprite);
       if (y < 0) {
         setState(end);
       } else {
         updateCoordinates(sprite, index + id, undefined, true);
+        // にんじん嫌い: carrot touching Ena/Akito clears those chars (not the carrot)
+        let allergyCleared = false;
+        if (isCarrotItem(itemFile)) {
+          allergyCleared = await applyCarrotAllergy(x, y);
+        }
+        // ポテトと瑞希: fries land → nearest Mizuki teleports above
+        if (isFriesItem(itemFile)) {
+          await applyMizukiShift(x, y);
+        }
+        // えむちぢみ: Mafuyu adjacent to Emu → shrink Emu to 1 cell
+        await tryEmuShrink();
         let chunk = findClearPieces(pieces);
-        let cleared = false;
+        let cleared = allergyCleared;
         while (chunk !== undefined) {
           cleared = true;
           await clearChunk(chunk);
@@ -222,6 +243,8 @@ const create = async () => {
         setState(end);
       } else {
         updateCoordinates(sprite, index, character);
+        // えむちぢみ: Mafuyu adjacent to Emu → shrink Emu to 1 cell
+        await tryEmuShrink();
         let chunk = findClearPieces(pieces);
         let cleared = false;
         while (chunk !== undefined) {

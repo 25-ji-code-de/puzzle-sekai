@@ -26,13 +26,22 @@ import material226 from "./assets/objects/material226.png";
 
 // Item groups - each group contains variants of the same item
 const itemGroups: string[][] = [
-  [material008, material013],           // Group A: 008, 013
-  [material044, material105, material106, material107, material108, material109, material110, material111, material112, material113], // Group B: 044, 105-113
+  [material008, material013],           // Group A: 008, 013 (carrots / にんじん)
+  [material044, material105, material106, material107, material108, material109, material110, material111, material112, material113], // Group B: 044, 105-113 (fries / ポテト)
   [material218, material221],           // Group C: 218, 221
   [material222, material225],           // Group D: 222, 225
   [material205],                        // Group E: 205 (no variants)
   [material226],                        // Group F: 226 (no variants)
 ];
+
+/** Group A: carrot materials (にんじん) — used by itemAllergy fun mode */
+export const CARROT_ITEMS = [material008, material013];
+export const isCarrotItem = (file: string) => CARROT_ITEMS.includes(file);
+
+/** Group B: fries / ポテト / 薯条 — used by mizukiShift fun mode */
+export const FRIES_ITEMS: readonly string[] = itemGroups[1];
+export const isFriesItem = (file: string): boolean =>
+  FRIES_ITEMS.includes(file);
 
 // Get a random item - first select group, then select variant
 export const getRandomItem = (): string => {

@@ -23,6 +23,13 @@ import { characterData, CharacterData } from "./character-data";
 import { createNeneRobo } from "./nenerobo";
 import { addDropScore } from "./score";
 import { getCurrentSettings, getSpeedMultiplier } from "./settings";
+import {
+  isControlsSwapped,
+  onShihoLanded,
+  consumeKanadeSlowForSpawn,
+  getKanadeSelfSpeedMult,
+  onKanadeLanded,
+} from "./fun-effects";
 
 // Get filtered character list based on selected groups
 const getFilteredCharacterData = (): CharacterData[] => {
@@ -170,7 +177,11 @@ export const createPiece = async (
   let dropped: number | undefined = undefined;
   const settings = getCurrentSettings();
   const speedMultiplier = getSpeedMultiplier(settings);
-  let speed = SPEED * speedMultiplier;
+  const isKanade = file.toLowerCase().includes("kanade");
+  const funSpeedMult =
+    consumeKanadeSlowForSpawn() *
+    (isKanade ? getKanadeSelfSpeedMult() : 1);
+  let speed = SPEED * speedMultiplier * funSpeedMult;
   let dropScore = 0;
 
   const onMoved = () => {
@@ -241,34 +252,35 @@ export const createPiece = async (
   };
 
   const softDrop = () => {
-    speed = SPEED * 4 * speedMultiplier;
+    speed = SPEED * 4 * speedMultiplier * funSpeedMult;
   };
 
   const normalSpeed = () => {
-    speed = SPEED * speedMultiplier;
+    speed = SPEED * speedMultiplier * funSpeedMult;
   };
 
   const handleKeyPress = (event: KeyboardEvent) => {
+    const swapped = isControlsSwapped();
     switch (event.key.toLowerCase()) {
       case "arrowleft":
-        moveLeft();
+        swapped ? rotateCCW() : moveLeft();
         break;
       case "arrowright":
-        moveRight();
+        swapped ? rotateCW() : moveRight();
         break;
       case "arrowup":
         if (event.shiftKey && file.includes("emu")) {
           moveUp();
           break;
         }
-        rotateCW();
+        swapped ? moveRight() : rotateCW();
         break;
       case "x":
-        rotateCW();
+        swapped ? moveRight() : rotateCW();
         break;
       case "z":
       case "control":
-        rotateCCW();
+        swapped ? moveLeft() : rotateCCW();
         break;
       case "arrowdown":
         softDrop();
@@ -281,23 +293,29 @@ export const createPiece = async (
 
   const handleKeyUp = (event: KeyboardEvent) => {
     if (event.key === "ArrowDown") {
-      speed = SPEED * speedMultiplier;
+      speed = SPEED * speedMultiplier * funSpeedMult;
     }
   };
 
+  // Mobile: swipe left/right move, tap left/right rotate — swap pairs when mirrored
+  const handleSwipeLeft = () =>
+    isControlsSwapped() ? rotateCCW() : moveLeft();
+  const handleSwipeRight = () =>
+    isControlsSwapped() ? rotateCW() : moveRight();
   const handleTap = (e: HammerInput) => {
-    if (e.center.x < window.innerWidth / 2) {
-      rotateCCW();
+    const leftHalf = e.center.x < window.innerWidth / 2;
+    if (isControlsSwapped()) {
+      leftHalf ? moveLeft() : moveRight();
     } else {
-      rotateCW();
+      leftHalf ? rotateCCW() : rotateCW();
     }
   };
 
   window.addEventListener("keydown", handleKeyPress, false);
   window.addEventListener("keyup", handleKeyUp, false);
 
-  hammerManager.on("swipeleft", moveLeft);
-  hammerManager.on("swiperight", moveRight);
+  hammerManager.on("swipeleft", handleSwipeLeft);
+  hammerManager.on("swiperight", handleSwipeRight);
   hammerManager.on("swipedown", hardDrop);
   hammerManager.on("press", softDrop);
   hammerManager.on("pressup", normalSpeed);
@@ -309,9 +327,9 @@ export const createPiece = async (
     window.removeEventListener("keydown", handleKeyPress, false);
     window.removeEventListener("keyup", handleKeyUp, false);
 
-    hammerManager.off("swiperight", moveRight);
+    hammerManager.off("swiperight", handleSwipeRight);
     hammerManager.off("tap", handleTap);
-    hammerManager.off("swipeleft", moveLeft);
+    hammerManager.off("swipeleft", handleSwipeLeft);
     hammerManager.off("swipedown", hardDrop);
     hammerManager.off("press", softDrop);
     hammerManager.off("pressup", normalSpeed);
@@ -321,6 +339,13 @@ export const createPiece = async (
     // Add accumulated drop score
     if (dropScore > 0) {
       addDropScore(dropScore);
+    }
+
+    if (file.toLowerCase().includes("shiho")) {
+      onShihoLanded();
+    }
+    if (isKanade) {
+      onKanadeLanded();
     }
 
     onDropped(kasumi);

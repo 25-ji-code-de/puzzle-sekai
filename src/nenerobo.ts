@@ -14,6 +14,7 @@ import "pixi-sound";
 import { pieces } from "./states";
 import { addDropScore } from "./score";
 import { getCurrentSettings, getSpeedMultiplier } from "./settings";
+import { isControlsSwapped, consumeKanadeSlowForSpawn } from "./fun-effects";
 
 export const createNeneRobo = async (
   file: string,
@@ -42,7 +43,8 @@ export const createNeneRobo = async (
   let dropped: number | undefined = undefined;
   const settings = getCurrentSettings();
   const speedMultiplier = getSpeedMultiplier(settings);
-  let speed = SPEED * speedMultiplier;
+  const funSpeedMult = consumeKanadeSlowForSpawn();
+  let speed = SPEED * speedMultiplier * funSpeedMult;
   let dropScore = 0;
 
   const onMoved = () => {
@@ -98,28 +100,29 @@ export const createNeneRobo = async (
   };
 
   const softDrop = () => {
-    speed = SPEED * 4 * speedMultiplier;
+    speed = SPEED * 4 * speedMultiplier * funSpeedMult;
   };
 
   const normalSpeed = () => {
-    speed = SPEED * speedMultiplier;
+    speed = SPEED * speedMultiplier * funSpeedMult;
   };
 
   const handleKeyPress = (event: KeyboardEvent) => {
+    const swapped = isControlsSwapped();
     switch (event.key.toLowerCase()) {
       case "arrowleft":
-        moveLeft();
+        swapped ? rotateCCW() : moveLeft();
         break;
       case "arrowright":
-        moveRight();
+        swapped ? rotateCW() : moveRight();
         break;
       case "x":
       case "arrowup":
-        rotateCW();
+        swapped ? moveRight() : rotateCW();
         break;
       case "z":
       case "control":
-        rotateCCW();
+        swapped ? moveLeft() : rotateCCW();
         break;
       case "arrowdown":
         softDrop();
@@ -136,19 +139,24 @@ export const createNeneRobo = async (
     }
   };
 
+  const handleSwipeLeft = () =>
+    isControlsSwapped() ? rotateCCW() : moveLeft();
+  const handleSwipeRight = () =>
+    isControlsSwapped() ? rotateCW() : moveRight();
   const handleTap = (e: HammerInput) => {
-    if (e.center.x < window.innerWidth / 2) {
-      rotateCCW();
+    const leftHalf = e.center.x < window.innerWidth / 2;
+    if (isControlsSwapped()) {
+      leftHalf ? moveLeft() : moveRight();
     } else {
-      rotateCW();
+      leftHalf ? rotateCCW() : rotateCW();
     }
   };
 
   window.addEventListener("keydown", handleKeyPress, false);
   window.addEventListener("keyup", handleKeyUp, false);
 
-  hammerManager.on("swipeleft", moveLeft);
-  hammerManager.on("swiperight", moveRight);
+  hammerManager.on("swipeleft", handleSwipeLeft);
+  hammerManager.on("swiperight", handleSwipeRight);
   hammerManager.on("swipedown", hardDrop);
   hammerManager.on("press", softDrop);
   hammerManager.on("pressup", normalSpeed);
@@ -160,9 +168,9 @@ export const createNeneRobo = async (
     window.removeEventListener("keydown", handleKeyPress, false);
     window.removeEventListener("keyup", handleKeyUp, false);
 
-    hammerManager.off("swiperight", moveRight);
+    hammerManager.off("swiperight", handleSwipeRight);
     hammerManager.off("tap", handleTap);
-    hammerManager.off("swipeleft", moveLeft);
+    hammerManager.off("swipeleft", handleSwipeLeft);
     hammerManager.off("swipedown", hardDrop);
     hammerManager.off("press", softDrop);
     hammerManager.off("pressup", normalSpeed);
