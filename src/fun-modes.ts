@@ -22,8 +22,22 @@ export type FunModeDef = {
   subtitle: string;
   /** Full tooltip / help text */
   description: string;
-  /** Score factor when enabled (<1 easier, >1 harder) */
+  /**
+   * Score factor when enabled.
+   * - Harder modes: >1
+   * - Easier modes: <1
+   * If itemLinked, this is the factor at the baseline 10% item rate and is
+   * scaled with the actual item drop rate (see getFunModeMultiplier).
+   */
   scoreFactor: number;
+  /**
+   * Mode depends on items (carrot / fries). Factor is scaled so that
+   * more items → effect triggers more → easier → factor moves toward 1
+   * from the hard side, or deeper below 1 from the easy side...
+   * For hard item-linked modes (factor>1): higher drop rate → higher factor.
+   * For easy item-linked modes (factor<1): higher drop rate → lower factor (more help).
+   */
+  itemLinked?: boolean;
 };
 
 export const DEFAULT_FUN_MODES: FunModeFlags = {
@@ -64,26 +78,28 @@ export const FUN_MODE_DEFS: FunModeDef[] = [
   {
     id: "shizukuSwap",
     name: "雫のミラー",
-    subtitle: "雫消しで左右操作がひっくり返る",
+    subtitle: "左右移動・左右回転がそれぞれ反転",
     description:
-      "雫を消すと、左右移動と左右回転の操作が入れ替わります。場に志歩がいるあいだは発動しません。志歩を落とすと、効果はすぐに消えます。",
+      "雫を消すと、左右移動が互いに入れ替わり、左右回転も互いに入れ替わります。場に志歩がいるあいだは発動しません。志歩を落とすと、効果はすぐに消えます。",
     scoreFactor: 1.15,
   },
   {
     id: "itemAllergy",
     name: "にんじん嫌い",
-    subtitle: "にんじんが絵名・彰人に当たると即消し",
+    subtitle: "にんじん ↔ 絵名・彰人で即消し",
     description:
-      "にんじん（道具）が絵名または彰人に触れると、そのキャラだけが即座に消えます。にんじん自体は消えず、そのまま落ち続けます。",
+      "にんじんが絵名または彰人に触れると、そのキャラが即座に消えます（ユニットボイスは鳴りません）。逆に絵名・彰人がにんじんの隣に着地しても同様です。操作中、絵名・彰人は「落下後ににんじんに接触する列」（可能列）へ自ら出現／移動できません。重力で隣り合った場合は再チェックして消えます。にんじん自体は消えません。",
     scoreFactor: 1.1,
+    itemLinked: true,
   },
   {
     id: "mizukiShift",
     name: "ポテトと瑞希",
-    subtitle: "薯条着地で、いちばん近い瑞希が上へ",
+    subtitle: "瑞希は可能列のみ / 薯条で吸い寄せ",
     description:
-      "ポテト／薯条が着地すると、いちばん近い瑞希がポテトの真上へ移動します。瑞希がいた場所は空になり、上に乗っていたピースは物理に従って落ちます。",
+      "可能列＝その列に落下着地するとポテトに接触する列。場にポテトがあるとき瑞希は可能列にだけ出現・移動できます（←→は可能列間をジャンプ）。可能列が無いときは通常どおり。またポテトが着地すると、場にいるいちばん近い瑞希がポテトの真上へ移動します。",
     scoreFactor: 1.12,
+    itemLinked: true,
   },
   {
     id: "emuShrink",
@@ -113,11 +129,35 @@ export function isEntertainmentMode(flags: FunModeFlags): boolean {
   return FUN_MODE_IDS.some((id) => flags[id]);
 }
 
-/** Product of enabled factors, clamped. */
-export function getFunModeMultiplier(flags: FunModeFlags): number {
+/**
+ * Scale an item-linked mode factor by drop rate (baseline 10% = 1.0).
+ * Hard modes (factor > 1): more items → more disruption → higher factor.
+ * Easy modes (factor < 1): more items → more help → lower factor.
+ * At 0% items the linked effect almost never fires → factor pulled toward 1.
+ */
+export function scaleItemLinkedFactor(
+  baseFactor: number,
+  itemDropRatePercent: number,
+): number {
+  // weight: 0%→0, 10%→1, 30%→1.5 (clamped)
+  const weight = Math.min(1.5, Math.max(0, itemDropRatePercent / 10));
+  // Interpolate between 1 (no effect) and baseFactor (full effect at 10%+)
+  // weight 0 → 1, weight 1 → baseFactor, weight 1.5 → slightly beyond base
+  return 1 + (baseFactor - 1) * weight;
+}
+
+/** Product of enabled factors, clamped. itemDropRatePercent scales item-linked modes. */
+export function getFunModeMultiplier(
+  flags: FunModeFlags,
+  itemDropRatePercent: number = 10,
+): number {
   let product = 1;
   for (const def of FUN_MODE_DEFS) {
-    if (flags[def.id]) product *= def.scoreFactor;
+    if (!flags[def.id]) continue;
+    const factor = def.itemLinked
+      ? scaleItemLinkedFactor(def.scoreFactor, itemDropRatePercent)
+      : def.scoreFactor;
+    product *= factor;
   }
   return Math.min(1.6, Math.max(0.45, product));
 }
