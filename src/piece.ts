@@ -316,7 +316,7 @@ export const createPiece = async (
 
     // Add accumulated drop score
     if (dropScore > 0) {
-      addDropScore(dropScore, 1);
+      addDropScore(dropScore);
     }
 
     onDropped(kasumi);

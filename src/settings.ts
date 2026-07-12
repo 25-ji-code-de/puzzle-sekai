@@ -110,37 +110,105 @@ export function getSpeedMultiplier(settings: GameSettings): number {
   return SPEED_MULTIPLIERS[settings.speedLevel];
 }
 
+// ---- Difficulty rating (speed + group count; fewer groups = easier) ----
+
+export type DifficultyLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export const DIFFICULTY_LABELS: Record<DifficultyLevel, string> = {
+  1: "★1 かんたん",
+  2: "★2 ふつう",
+  3: "★3 ちょっとむず",
+  4: "★4 むずかしい",
+  5: "★5 かなりむず",
+  6: "★6 ハード",
+  7: "★7 ヘル",
+};
+
+/** Difficulty 1–7: speedLevel + (groupCount - 3). More groups = harder. */
+export function getDifficultyLevel(settings: GameSettings): DifficultyLevel {
+  const groups = Math.min(5, Math.max(3, settings.selectedGroups.length));
+  const level = settings.speedLevel + (groups - 3);
+  return Math.min(7, Math.max(1, level)) as DifficultyLevel;
+}
+
+export function getDifficultyLabel(
+  settingsOrLevel: GameSettings | DifficultyLevel,
+): string {
+  const level =
+    typeof settingsOrLevel === "number"
+      ? settingsOrLevel
+      : getDifficultyLevel(settingsOrLevel);
+  return DIFFICULTY_LABELS[level as DifficultyLevel] ?? `★${level}`;
+}
+
+/** Score multiplier ~0.5 (★1) … ~3.0 (★7) */
+export function getScoreMultiplier(settings: GameSettings): number {
+  const d = getDifficultyLevel(settings);
+  return 0.5 + (d - 1) * (2.5 / 6);
+}
+
 // Game mode type
 export type GameMode = "endless" | "timeAttack";
 
-// Get high score key for a specific mode
+export type HighScoreRecord = {
+  score: number;
+  /** Difficulty when the high score was achieved; 0 = unknown/legacy */
+  difficultyLevel: number;
+};
+
+// Get high score key for a specific mode (not split by difficulty)
 export function getHighScoreKey(mode: GameMode, settings?: GameSettings): string {
   if (mode === "endless") return "highScore_endless";
   return `highScore_timeAttack_${settings?.timeAttackDuration || 90}`;
 }
 
-// Load high score for a specific mode
-export function loadHighScore(mode: GameMode, settings?: GameSettings): number {
+function getHighScoreDifficultyKey(mode: GameMode, settings?: GameSettings): string {
+  return `${getHighScoreKey(mode, settings)}_difficulty`;
+}
+
+// Load high score + difficulty record for a mode
+export function loadHighScoreRecord(
+  mode: GameMode,
+  settings?: GameSettings,
+): HighScoreRecord {
   try {
-    const key = getHighScoreKey(mode, settings);
-    const saved = localStorage.getItem(key);
-    return saved ? parseInt(saved, 10) || 0 : 0;
-  } catch (e) {
-    return 0;
+    const scoreKey = getHighScoreKey(mode, settings);
+    const diffKey = getHighScoreDifficultyKey(mode, settings);
+    const score = parseInt(localStorage.getItem(scoreKey) || "0", 10) || 0;
+    const difficultyLevel =
+      parseInt(localStorage.getItem(diffKey) || "0", 10) || 0;
+    return { score, difficultyLevel };
+  } catch {
+    return { score: 0, difficultyLevel: 0 };
   }
 }
 
-// Save high score for a specific mode
-export function saveHighScore(mode: GameMode, score: number, settings?: GameSettings): boolean {
+// Load high score number only (compat)
+export function loadHighScore(mode: GameMode, settings?: GameSettings): number {
+  return loadHighScoreRecord(mode, settings).score;
+}
+
+// Save high score if higher; also store difficulty of that run
+export function saveHighScore(
+  mode: GameMode,
+  score: number,
+  settings?: GameSettings,
+): boolean {
   try {
-    const key = getHighScoreKey(mode, settings);
-    const current = loadHighScore(mode, settings);
-    if (score > current) {
-      localStorage.setItem(key, score.toString());
-      return true; // New high score
+    const current = loadHighScoreRecord(mode, settings);
+    if (score > current.score) {
+      localStorage.setItem(getHighScoreKey(mode, settings), score.toString());
+      const level = settings
+        ? getDifficultyLevel(settings)
+        : getDifficultyLevel(getCurrentSettings());
+      localStorage.setItem(
+        getHighScoreDifficultyKey(mode, settings),
+        String(level),
+      );
+      return true;
     }
     return false;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

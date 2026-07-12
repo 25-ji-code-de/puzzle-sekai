@@ -1,9 +1,19 @@
 import * as PIXI from "pixi.js-legacy";
 import { app } from ".";
-import { getCurrentGameMode, getCurrentSettings, loadHighScore, saveHighScore } from "./settings";
+import {
+  DifficultyLevel,
+  getCurrentGameMode,
+  getCurrentSettings,
+  getDifficultyLabel,
+  getDifficultyLevel,
+  getScoreMultiplier,
+  loadHighScoreRecord,
+  saveHighScore,
+} from "./settings";
 
 let _score = 0;
 let _highScore = 0;
+let _highScoreDifficulty = 0;
 let _combo = 0;
 let _maxCombo = 0;
 
@@ -19,6 +29,7 @@ let scoreText: PIXI.Container;
 let highScoreText: PIXI.Container;
 let comboText: PIXI.Container;
 let timerText: PIXI.Container;
+let multText: PIXI.Container | undefined;
 
 const SCORE_X = 1700;
 const pad = (n: number, len: number) => String(n).padStart(len, "0");
@@ -56,6 +67,19 @@ const makePaddedText = (num: number, len: number, color: number, fontSize: numbe
   return container;
 };
 
+const makeLabelText = (label: string, color: number, fontSize: number) => {
+  const container = new PIXI.Container();
+  const text = new PIXI.Text(label, {
+    fontSize,
+    fontWeight: "bold",
+    fontFamily: "DroidSansMono, monospace",
+    fill: color,
+  });
+  text.anchor.set(0.5, 0.5);
+  container.addChild(text);
+  return container;
+};
+
 // Format time as MM:SS
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
@@ -80,18 +104,46 @@ const makeTimeText = (seconds: number, fontSize: number) => {
   return container;
 };
 
+const replaceDisplay = (
+  current: PIXI.Container | undefined,
+  next: PIXI.Container,
+): PIXI.Container => {
+  if (current) {
+    next.x = current.x;
+    next.y = current.y;
+    app.stage.addChild(next);
+    app.stage.removeChild(current);
+    current.destroy();
+  } else {
+    app.stage.addChild(next);
+  }
+  return next;
+};
+
+const formatMultBadge = (mult: number, hsDiff: number) => {
+  const multStr = `×${mult.toFixed(2)}`;
+  if (hsDiff >= 1 && hsDiff <= 7) {
+    return `${multStr}  HS★${hsDiff}`;
+  }
+  return multStr;
+};
+
 export const initScoreDisplay = () => {
   // Clean up old displays
   if (scoreText) { app.stage.removeChild(scoreText); scoreText.destroy(); }
   if (highScoreText) { app.stage.removeChild(highScoreText); highScoreText.destroy(); }
   if (comboText) { app.stage.removeChild(comboText); comboText.destroy(); }
   if (timerText) { app.stage.removeChild(timerText); timerText.destroy(); }
+  if (multText) { app.stage.removeChild(multText); multText.destroy(); multText = undefined; }
 
   const mode = getCurrentGameMode();
   const settings = getCurrentSettings();
+  const mult = getScoreMultiplier(settings);
 
-  // Load high score for current mode
-  _highScore = loadHighScore(mode, settings);
+  // Load high score record for current mode
+  const record = loadHighScoreRecord(mode, settings);
+  _highScore = record.score;
+  _highScoreDifficulty = record.difficultyLevel;
 
   scoreText = makePaddedText(_score, 8, 0xff6b8a, 44);
   scoreText.x = SCORE_X;
@@ -104,6 +156,16 @@ export const initScoreDisplay = () => {
   highScoreText.y = 745;
   highScoreText.pivot.x = highScoreText.width / 2;
   app.stage.addChild(highScoreText);
+
+  // Current multiplier + high-score star badge
+  multText = makeLabelText(
+    formatMultBadge(mult, _highScoreDifficulty),
+    0xaaccff,
+    18,
+  );
+  multText.x = SCORE_X;
+  multText.y = 790;
+  app.stage.addChild(multText);
 
   comboText = makePaddedText(_combo, 4, 0xffffff, 42);
   comboText.x = SCORE_X;
@@ -125,33 +187,28 @@ export const initScoreDisplay = () => {
 export const updateScoreDisplay = () => {
   if (scoreText) {
     const newScore = makePaddedText(_score, 8, 0xff6b8a, 44);
-    newScore.x = scoreText.x;
-    newScore.y = scoreText.y;
     newScore.pivot.x = newScore.width / 2;
-    app.stage.addChild(newScore);
-    app.stage.removeChild(scoreText);
-    scoreText.destroy();
-    scoreText = newScore;
+    scoreText = replaceDisplay(scoreText, newScore);
   }
   if (highScoreText) {
     const newHigh = makePaddedText(_highScore, 8, 0xffffff, 36);
-    newHigh.x = highScoreText.x;
-    newHigh.y = highScoreText.y;
     newHigh.pivot.x = newHigh.width / 2;
-    app.stage.addChild(newHigh);
-    app.stage.removeChild(highScoreText);
-    highScoreText.destroy();
-    highScoreText = newHigh;
+    highScoreText = replaceDisplay(highScoreText, newHigh);
   }
   if (comboText) {
     const newCombo = makePaddedText(_combo, 4, 0xffffff, 42);
-    newCombo.x = comboText.x;
-    newCombo.y = comboText.y;
     newCombo.pivot.x = newCombo.width / 2;
-    app.stage.addChild(newCombo);
-    app.stage.removeChild(comboText);
-    comboText.destroy();
-    comboText = newCombo;
+    comboText = replaceDisplay(comboText, newCombo);
+  }
+  if (multText) {
+    const settings = getCurrentSettings();
+    const mult = getScoreMultiplier(settings);
+    const next = makeLabelText(
+      formatMultBadge(mult, _highScoreDifficulty),
+      0xaaccff,
+      18,
+    );
+    multText = replaceDisplay(multText, next);
   }
 };
 
@@ -159,13 +216,8 @@ export const updateScoreDisplay = () => {
 export const updateTimerDisplay = () => {
   if (timerText) {
     const newTimer = makeTimeText(_timeRemaining, 48);
-    newTimer.x = timerText.x;
-    newTimer.y = timerText.y;
     newTimer.pivot.x = newTimer.width / 2;
-    app.stage.addChild(newTimer);
-    app.stage.removeChild(timerText);
-    timerText.destroy();
-    timerText = newTimer;
+    timerText = replaceDisplay(timerText, newTimer);
   }
 };
 
@@ -182,26 +234,29 @@ export const decrementTime = (): boolean => {
   return _timeRemaining <= 0;
 };
 
-// Drop score: faster drops = more points
-export const addDropScore = (points: number, _mult: number) => {
-  _score += points;
+// Drop score: faster drops = more points (difficulty mult applied)
+export const addDropScore = (points: number) => {
+  const mult = getScoreMultiplier(getCurrentSettings());
+  _score += Math.round(points * mult);
   updateScoreDisplay();
 };
 
-// Clear score: pieces cleared + combo bonus
+// Clear score: pieces cleared + combo bonus (difficulty mult applied)
 export const addScore = (piecesCleared: number) => {
   _combo++;
   if (_combo > _maxCombo) _maxCombo = _combo;
   const baseScore = piecesCleared * 10;
   const comboBonus = _combo > 1 ? _combo * 5 : 0;
-  _score += baseScore + comboBonus;
-
-  // Update high score
-  const mode = getCurrentGameMode();
   const settings = getCurrentSettings();
+  const mult = getScoreMultiplier(settings);
+  _score += Math.round((baseScore + comboBonus) * mult);
+
+  // Update high score (global per mode; store difficulty of this run)
+  const mode = getCurrentGameMode();
   const isNewHigh = saveHighScore(mode, _score, settings);
   if (isNewHigh) {
     _highScore = _score;
+    _highScoreDifficulty = getDifficultyLevel(settings);
   }
   updateScoreDisplay();
 };
@@ -223,6 +278,11 @@ export const resetScore = () => {
 export const getScoreSummary = () => ({
   score: _score,
   highScore: _highScore,
+  highScoreDifficulty: _highScoreDifficulty,
+  highScoreLabel:
+    _highScoreDifficulty >= 1 && _highScoreDifficulty <= 7
+      ? getDifficultyLabel(_highScoreDifficulty as DifficultyLevel)
+      : "",
   maxCombo: _maxCombo,
   timeRemaining: _timeRemaining,
 });

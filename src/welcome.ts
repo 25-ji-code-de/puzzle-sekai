@@ -11,7 +11,10 @@ import {
   getCurrentSettings,
   updateCurrentSettings,
   setCurrentGameMode,
-  loadHighScore,
+  loadHighScoreRecord,
+  getDifficultyLabel,
+  getScoreMultiplier,
+  DifficultyLevel,
 } from "./settings";
 
 import maokenFontUrl from "./assets/fonts/MaokenAssortedSans-Lite.woff2";
@@ -175,12 +178,23 @@ const showWelcomePage = () => {
     pointer-events:auto;
   `;
 
-  // 最高分显示
+  // 最高分显示（全局榜 + 打出该分时的难度档）
   const settings = getCurrentSettings();
-  const endlessHigh = loadHighScore("endless");
-  const timeAttackHigh = loadHighScore("timeAttack", settings);
+  const endlessRecord = loadHighScoreRecord("endless");
+  const timeAttackRecord = loadHighScoreRecord("timeAttack", settings);
+  const formatHs = (score: number, diff: number) => {
+    const scoreStr = score.toString().padStart(6, "0");
+    const star =
+      diff >= 1 && diff <= 7
+        ? getDifficultyLabel(diff as DifficultyLevel)
+        : "";
+    return { scoreStr, star };
+  };
+  const endlessHs = formatHs(endlessRecord.score, endlessRecord.difficultyLevel);
+  const taHs = formatHs(timeAttackRecord.score, timeAttackRecord.difficultyLevel);
 
   const highScoreRow = document.createElement("div");
+  highScoreRow.id = "high-score-row";
   highScoreRow.style.cssText = `
     display:flex;justify-content:center;gap:32px;margin-bottom:20px;
     font-size:12px;color:rgba(255,255,255,0.5);
@@ -188,11 +202,13 @@ const showWelcomePage = () => {
   highScoreRow.innerHTML = `
     <div style="text-align:center;">
       <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">ENDLESS</div>
-      <div style="font-size:18px;color:#ff6b8a;font-family:'DroidSansMono',monospace;">${endlessHigh.toString().padStart(6, '0')}</div>
+      <div style="font-size:18px;color:#ff6b8a;font-family:'DroidSansMono',monospace;">${endlessHs.scoreStr}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${endlessHs.star || "—"}</div>
     </div>
     <div style="text-align:center;">
       <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">TIME ATTACK</div>
-      <div style="font-size:18px;color:#44ff88;font-family:'DroidSansMono',monospace;">${timeAttackHigh.toString().padStart(6, '0')}</div>
+      <div style="font-size:18px;color:#44ff88;font-family:'DroidSansMono',monospace;">${taHs.scoreStr}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${taHs.star || "—"}</div>
     </div>
   `;
   footer.appendChild(highScoreRow);
@@ -478,6 +494,21 @@ const showSettingsPanel = () => {
   groupGroup.appendChild(groupOptions);
   settingsPanel.appendChild(groupGroup);
 
+  // 难度摘要（只读，随速度/团数变化）
+  const diffSummary = document.createElement("div");
+  diffSummary.className = "setting-group";
+  const mult = getScoreMultiplier(settings);
+  const label = getDifficultyLabel(settings);
+  diffSummary.innerHTML = `
+    <div class="setting-label">難易度 / スコア倍率</div>
+    <div style="padding:12px 14px;border-radius:8px;background:rgba(100,200,255,0.12);
+      border:1px solid rgba(100,200,255,0.25);color:#fff;font-size:14px;line-height:1.6;">
+      <div>${label}</div>
+      <div style="font-family:DroidSansMono,monospace;color:#aaccff;">×${mult.toFixed(2)}</div>
+    </div>
+  `;
+  settingsPanel.appendChild(diffSummary);
+
   settingsContainer.appendChild(settingsPanel);
   document.body.appendChild(settingsContainer);
 };
@@ -501,8 +532,40 @@ const closeSettingsPanel = () => {
     setTimeout(() => {
       settingsContainer?.remove();
       settingsContainer = null;
+      refreshHighScoreRow();
     }, 300);
   }
+};
+
+// 刷新主菜单最高分（TA 时长变化时）
+const refreshHighScoreRow = () => {
+  const row = document.getElementById("high-score-row");
+  if (!row) return;
+  const settings = getCurrentSettings();
+  const endlessRecord = loadHighScoreRecord("endless");
+  const timeAttackRecord = loadHighScoreRecord("timeAttack", settings);
+  const formatHs = (score: number, diff: number) => {
+    const scoreStr = score.toString().padStart(6, "0");
+    const star =
+      diff >= 1 && diff <= 7
+        ? getDifficultyLabel(diff as DifficultyLevel)
+        : "—";
+    return { scoreStr, star };
+  };
+  const endlessHs = formatHs(endlessRecord.score, endlessRecord.difficultyLevel);
+  const taHs = formatHs(timeAttackRecord.score, timeAttackRecord.difficultyLevel);
+  row.innerHTML = `
+    <div style="text-align:center;">
+      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">ENDLESS</div>
+      <div style="font-size:18px;color:#ff6b8a;font-family:'DroidSansMono',monospace;">${endlessHs.scoreStr}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${endlessHs.star}</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">TIME ATTACK</div>
+      <div style="font-size:18px;color:#44ff88;font-family:'DroidSansMono',monospace;">${taHs.scoreStr}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${taHs.star}</div>
+    </div>
+  `;
 };
 
 
