@@ -427,15 +427,25 @@ export const applyCarrotAllergyOnCharacter = async (
 
   if (!touchesCarrot) return false;
 
+  playCarrotAllergySfx(sp.character?.name);
   const chunk: [number, number][] = sp.coordinates.map(([x, y]) => [x, y]);
   await clearChunk(chunk, { silent: true });
   return true;
 };
 
+const playCarrotAllergySfx = (name?: string) => {
+  const key =
+    name === "Akito" ? "carrotAkito" : name === "Ena" ? "carrotEna" : null;
+  if (!key) return;
+  const sfx = app.loader.resources[key]?.sound;
+  if (sfx) sfx.play({ volume: 0.5 });
+};
+
 const clearAllergyCells = async (
   allergyCells: Set<string>,
 ): Promise<boolean> => {
-  const chunkKeys = new Set<string>();
+  // Collect whole Ena/Akito sprites that hit, and play their SFX once each
+  const toClear: SpriteData[] = [];
   for (const sp of sprites) {
     if (!sp.coordinates?.length) continue;
     if (sp.isItem) continue;
@@ -444,12 +454,25 @@ const clearAllergyCells = async (
       allergyCells.has(`${cx},${cy}`),
     );
     if (!hit) continue;
-    for (const [cx, cy] of sp.coordinates) {
+    toClear.push(sp);
+  }
+  if (toClear.length === 0) return false;
+
+  const played = new Set<string>();
+  for (const sp of toClear) {
+    const n = sp.character?.name;
+    if (n && !played.has(n)) {
+      playCarrotAllergySfx(n);
+      played.add(n);
+    }
+  }
+
+  const chunkKeys = new Set<string>();
+  for (const sp of toClear) {
+    for (const [cx, cy] of sp.coordinates!) {
       chunkKeys.add(`${cx},${cy}`);
     }
   }
-  if (chunkKeys.size === 0) return false;
-
   const chunk: [number, number][] = [...chunkKeys].map((key) => {
     const [x, y] = key.split(",").map(Number);
     return [x, y] as [number, number];
@@ -778,16 +801,22 @@ export const tryEmuShrink = async (): Promise<boolean> => {
       sp.isShrunk = true;
       sp.coordinates = [keep];
 
-      // Visual: 1-cell centered sprite (like items)
+      // Visual: 1-cell size, keep original rotation/orientation
       const sprite = sp.sprite;
       sprite.anchor.set(0.5, 0.5);
-      sprite.rotation = 0;
       sprite.width = BOX_SIZE;
       sprite.height = BOX_SIZE;
+      // Center on the kept cell; do not reset rotation
       sprite.x = BOX_SIZE * keep[0] + LEFT_BORDER + BOX_SIZE / 2;
       sprite.y = BOX_SIZE * keep[1] + BOX_SIZE / 2;
 
       pieces[keep[1]][keep[0]] = "Emu";
+
+      // えむちぢみ SFX (once per shrink)
+      const sfx = app.loader.resources["emuShrink"]?.sound;
+      if (sfx) {
+        sfx.play({ volume: 0.5 });
+      }
 
       shrunkThisPass = true;
       anyShrunk = true;
