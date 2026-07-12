@@ -17,7 +17,7 @@ export const moveToCoordinate = (
   y: number,
 ): void => {
   sprite.x = BOX_SIZE * x + LEFT_BORDER + BOX_SIZE / 2;
-  sprite.y = BOX_SIZE * y;
+  sprite.y = BOX_SIZE * y + BOX_SIZE / 2;
 };
 
 export const willCollide = (

@@ -104,7 +104,8 @@ export const fallChunk = async (sprites: SpriteData[]) => {
     coordinates?.forEach(([cx, cy]) => (pieces[cy][cx] = null));
 
     // Compute target using same logic as original fall()
-    const stackHeight = offset % 2 === 0
+    // Items are 1x1; character offset===2 means a 2-cell vertical piece
+    const stackHeight = isItem || offset % 2 === 0
       ? pieces
           .map((row) => row[x])
           .filter((_, i) => i > y)
@@ -118,7 +119,8 @@ export const fallChunk = async (sprites: SpriteData[]) => {
           .reverse()
           .reduce((acc, row, i) => (row[0] || row[1] ? i + 1 : acc), 0);
 
-    const targetY = ROWS - 1 - stackHeight - (offset === 2 ? 1 : 0);
+    const targetY =
+      ROWS - 1 - stackHeight - (!isItem && offset === 2 ? 1 : 0);
     targets.set(sprite, { x, y: targetY });
 
     // Place on temp grid (mirrors what updateCoordinates does)
