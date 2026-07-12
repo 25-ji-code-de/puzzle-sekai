@@ -120,7 +120,8 @@ app.loader
     bgSprite = bg;
 
     window.addEventListener("keydown", (event) => {
-      if (event.key.toLowerCase() === "r" && state.name !== "end") {
+      if (event.key.toLowerCase() === "r") {
+        // Always allow restart, including during game-over BGM / curtain
         setState(start);
       }
     });
