@@ -138,9 +138,9 @@ export const zh = {
     message: "如果你看到空白页面，可能是浏览器不支持 WebGL。<br/>请尝试使用 Chrome 等现代浏览器。",
   },
   footer: {
-    basedOn: "基于",
-    modified: "(by HamP) 改造",
-    inspiredBy: "原作灵感来自",
-    by: "By",
+    original: "原作",
+    inspiration: "灵感",
+    thisProject: "本作",
+    author: "作者",
   },
 };

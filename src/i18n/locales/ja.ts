@@ -146,9 +146,9 @@ export const ja = {
       "白い画面が表示されている場合、お使いのブラウザが WebGL に対応していない可能性があります。<br/>Chrome などのモダンブラウザをお試しください。",
   },
   footer: {
-    basedOn: "Based on",
-    modified: "(by HamP)",
-    inspiredBy: "Originally inspired by",
-    by: "By",
+    original: "原作",
+    inspiration: "インスピレーション",
+    thisProject: "本作",
+    author: "作者",
   },
 };

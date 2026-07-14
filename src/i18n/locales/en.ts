@@ -146,9 +146,9 @@ export const en = {
       "If you see a blank page, your browser may not support WebGL.<br/>Please try a modern browser such as Chrome.",
   },
   footer: {
-    basedOn: "Based on",
-    modified: "(by HamP)",
-    inspiredBy: "Originally inspired by",
-    by: "By",
+    original: "Original",
+    inspiration: "Inspired by",
+    thisProject: "This project",
+    author: "Author",
   },
 };

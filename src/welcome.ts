@@ -362,6 +362,48 @@ const buildMenu = () => {
   toolbar.appendChild(controlsBtn);
 
   footer.appendChild(toolbar);
+
+  // 页脚信息条（移动游戏风格：分组标签 + 链接）
+  const credits = document.createElement("div");
+  credits.className = "credits-bar";
+  const cLabel = "c-label";
+  const cLink = "c-link";
+  const cSep = `<span class="c-sep">·</span>`;
+  const link = (text: string, href: string) =>
+    `<a class="${cLink}" href="${href}" target="_blank" rel="noopener">${text}</a>`;
+  const labeled = (label: string, text: string, href: string) =>
+    `<span class="${cLabel}">${label}</span>${link(text, href)}`;
+  credits.innerHTML = `
+    <style>
+      .credits-bar {
+        margin-top:18px;padding:12px 16px;border-radius:10px;
+        background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.08);
+        text-align:center;font-size:11px;line-height:1.9;
+        color:rgba(255,255,255,0.5);pointer-events:auto;
+      }
+      .credits-bar .c-label { color:rgba(255,255,255,0.4);margin-right:5px; }
+      .credits-bar .c-sep { color:rgba(255,255,255,0.2);margin:0 8px; }
+      .credits-bar .c-link {
+        color:rgba(170,210,255,0.85);text-decoration:none;
+        transition:color .15s ease;
+      }
+      .credits-bar .c-link:hover { color:#dcefff;text-decoration:underline; }
+    </style>
+    <div>
+      ${labeled(t("footer.original"), "Pazuru-Pico", "https://github.com/hamzaabamboo/pazuru-pico")}
+      (<a class="${cLink}" href="https://ham-san.net/" target="_blank" rel="noopener">HamP</a>)
+    </div>
+    <div>
+      ${labeled(t("footer.inspiration"), "BanG Dream! ☆PICO ～OHMORI～ Ep.9", "https://www.youtube.com/watch?v=q5YETLAebUY")}
+    </div>
+    <div>
+      ${labeled(t("footer.thisProject"), "GitHub", "https://github.com/25-ji-code-de/puzzle-sekai")}
+      ${cSep}
+      ${labeled(t("footer.author"), "bili_47177171806", "https://space.bilibili.com/3546904856103196")}
+    </div>
+  `;
+  footer.appendChild(credits);
+
   menuOverlay.appendChild(footer);
 
   // 添加全局样式
