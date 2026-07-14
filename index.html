@@ -7,25 +7,40 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
     />
+    <script>
+      // Early locale detection: set <html lang> and <title> before paint
+      (function () {
+        var saved = localStorage.getItem("puzzleSekaiLocale");
+        var lang = saved || (navigator.language || "").toLowerCase();
+        var locale = lang.startsWith("ja") ? "ja" : lang.startsWith("en") ? "en" : "zh";
+        document.documentElement.lang = locale === "zh" ? "zh-CN" : locale;
+        var titles = {
+          zh: "パズル⭐︎セカ | Puzzle × SEKAI",
+          ja: "パズル⭐︎セカ | Puzzle × SEKAI",
+          en: "Puzzle ⭐︎ SEKAI",
+        };
+        document.title = titles[locale] || titles.zh;
+      })();
+    </script>
   </head>
   <body>
     <main class="main">
       <div class="game">
-        <small>
+        <small data-i18n="noscript">
           如果你看到空白页面，可能是浏览器不支持 WebGL。<br />
           请尝试使用 Chrome 等现代浏览器。
         </small><br />
       </div>
       <footer>
         <span>
-          基于
+          <span data-i18n="footer.basedOn">基于</span>
           <a href="https://github.com/hamzaabamboo/pazuru-pico" target="_blank">Pazuru-Pico</a>
-          (by HamP) 改造<br />
-          原作灵感来自
+          (by HamP) <span data-i18n="footer.modified">改造</span><br />
+          <span data-i18n="footer.inspiredBy">原作灵感来自</span>
           <a href="https://www.youtube.com/watch?v=q5YETLAebUY" target="_blank">
             BanG Dream! Girls Band Party!☆PICO ～ OHMORI ～ Episode 9 (BanG Dream! 少女乐团派对！☆PICO～大份～ 第 9 话 消消乐☆PICO)
           </a><br />
-          By
+          <span data-i18n="footer.by">By</span>
           <a href="https://space.bilibili.com/3546904856103196" target="_blank">bili_47177171806</a>
         </span>
       </footer>

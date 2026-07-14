@@ -1,0 +1,146 @@
+export const zh = {
+  loading: "加载中",
+  page: {
+    title: "パズル⭐︎セカ | Puzzle × SEKAI",
+  },
+  welcome: {
+    title: "パズル⭐︎セカ",
+    subtitle: "～ Puzzle × SEKAI ～",
+    desc: "收集 Project SEKAI 的成员<br>消除方块，达成最高分！",
+    click: "点击继续",
+  },
+  menu: {
+    title: "パズル⭐︎セカ",
+    subtitle: "Puzzle × SEKAI",
+    endless: "无尽模式",
+    timeAttack: "限时挑战",
+    settings: "设置",
+    controls: "操作说明",
+    highScore: {
+      endless: "无尽模式",
+      timeAttack: "限时挑战",
+    },
+  },
+  settings: {
+    title: "设置",
+    speed: {
+      label: "速度等级",
+      slow: "慢速",
+      normal: "普通",
+      fast: "快速",
+      faster: "极速",
+      hell: "地狱",
+    },
+    ta: {
+      label: "限时挑战时长",
+      duration: "{seconds}秒",
+    },
+    groups: {
+      label: "出现组合（最少3个）",
+    },
+    item: {
+      label: "道具掉落概率",
+      none: "无",
+      tooltip: "得分倍率 ×{factor}",
+    },
+    fun: {
+      label: "娱乐模式（开启任一即生效）",
+      help: "选择标签查看说明",
+      itemLinked: "（道具率联动）",
+    },
+    difficulty: {
+      label: "难度 / 得分倍率",
+      entertainment: "娱乐",
+      info: "ⓘ 详情",
+      breakdownTitle: "得分倍率明细",
+      total: "合计",
+      diffLine: "难度 {difficulty}（速度{speed} · {groups}个组合）",
+      itemLine: "道具掉落 {rate}",
+      funLineItemLinked: "{name}（道具率联动）",
+    },
+    lang: {
+      label: "语言 / Language",
+    },
+  },
+  difficulty: {
+    1: "Easy",
+    2: "Normal",
+    3: "Hard",
+    4: "Expert",
+    5: "Master",
+    6: "Re:Master",
+    7: "Append",
+  },
+  fun: {
+    mikudayo: {
+      name: "「Mikudayo！」",
+      subtitle: "「世界」的造访者",
+      description: "Mikudayo 将作为特制的 2×2 巨型方块下落。该方块在判定时可视为任意「Miku」组合的一员。同时，当她被消除时，能将与之相邻的不同组合连带一起消除。",
+    },
+    kanadeSlow: {
+      name: "奏明天空",
+      subtitle: "微弱的呼吸与消逝的引力",
+      description: "「奏」在下落期间，自身的下落速度固定降低 50%。\n当「奏」着地后，该减速效果将转化为「余韵」状态传递给后续方块，使整体下落速度随时间逐渐恢复。若「奏」在场上被消除，该减速恢复效果将立即解除。\n\n「只要音符还没有完全止息……」",
+    },
+    wonderBlast: {
+      name: "奇迹爆破",
+      subtitle: "It's Showtime！",
+      description: "当「类」与「NeneRobo」相邻并被成功消除时，将引发舞台大爆炸，随机炸飞场上的其他方块。\n爆炸波及的方块数量与本次消除中包含的「类」与「NeneRobo」总数成正比。此效果触发的连击数按「消除块数 ÷ 5（向下取整）」进行结算。\n\n「接下来，就是最精彩的 Showtime 了！NeneRobo，出力最大化——！」",
+    },
+    shizukuSwap: {
+      name: "指南针的恶作剧",
+      subtitle: "「诶？这里是哪里……？」",
+      description: "消除「雫」后将触发「异变」：玩家的左右移动方向、左右旋转方向将全部反转。\n若当前场上存在「志步」，则无法触发该效果；若在异变期间「志步」落入场地，「异变」将无视剩余持续时间，立即强制解除。\n\n「哎呀……方向原来是反的吗？总觉得，有点绕远路了呢……」",
+    },
+    itemAllergy: {
+      name: "橙色警报！",
+      subtitle: "绝对不可直视的「那个东西」",
+      description: "当落下的「绘名」或「彰人」与场上的「胡萝卜」接触时，将引发「本能排斥」，使角色方块瞬间消失。\n在操作阶段，玩家无法主动将这两位角色移动至会引发排斥的列；若因重力下落至相邻格子，将重新触发排斥检查。注意：「胡萝卜」本身不会因该效果消失。\n\n「笨蛋彰人！快把那个橙色的东西拿开！」「……这句话原封不动地还给你，绘名。」",
+    },
+    mizukiShift: {
+      name: "薯条重力场",
+      subtitle: "顺着香味，捕获成功♪",
+      description: "当场上存在「薯条」时，将锁定所有下落着地后必定会与薯条相邻的列。此时「瑞希」只能在这些「触发列」之间进行跳跃移动。若场上没有可接触的列，则移动恢复正常。\n此外，当「薯条」着地时，距离其最近的「瑞希」会被强制吸引，自动位移至该「薯条」的正上方。\n\n「只要顺着薯条的香味看过去，就一定能捕捉到那个悄悄凑过来的身影吧♪」",
+    },
+    emuShrink: {
+      name: "凤的生存法则",
+      subtitle: "「噫——！要缩起来才行……！」",
+      description: "当「笑梦」与「真冬」处于相邻格子时，「笑梦」将受到惊吓并坍缩为 1×1 的单格大小。坍缩位移将优先选择远离「真冬」的一侧。坍缩完成后，全场方块将重新触发一次重力与物理下落判定。\n\n「总觉得……在朝比奈学姐身边的时候，如果不悄悄地缩起来，就会有非常可怕的事情发生……！」",
+    },
+  },
+  inGame: {
+    combo: "连击",
+    timeLeft: "剩余时间",
+  },
+  hsTags: {
+    record: "纪录",
+    entertainment: "娱乐",
+    entCompact: "FUN",
+  },
+  controls: {
+    title: "操作说明",
+    keyboard: "键盘",
+    mobile: "手机",
+    close: "关闭",
+    moveLeftRight: "← → 左右移动",
+    rotateClockwise: "↑ / X 顺时针旋转",
+    rotateCounter: "Z / Ctrl 逆时针旋转",
+    softDrop: "↓ 加速下落",
+    hardDrop: "Space 直接落到底部",
+    restart: "R 重新开始",
+    swipeMove: "← → 滑动 左右移动",
+    tapRotate: "点击左/右半屏 旋转",
+    swipeHardDrop: "下滑 直接落到底部",
+    pressSoftDrop: "长按 加速下落",
+  },
+  noscript: {
+    title: "浏览器不支持",
+    message: "如果你看到空白页面，可能是浏览器不支持 WebGL。<br/>请尝试使用 Chrome 等现代浏览器。",
+  },
+  footer: {
+    basedOn: "基于",
+    modified: "(by HamP) 改造",
+    inspiredBy: "原作灵感来自",
+    by: "By",
+  },
+};
