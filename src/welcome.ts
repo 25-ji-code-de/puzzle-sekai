@@ -7,25 +7,37 @@ import {
   ItemDropRate,
   GAME_GROUPS,
   GROUP_LABELS,
-  SPEED_LABELS,
-  TIME_LABELS,
+  getSpeedLabel,
+  getTimeLabel,
   ITEM_DROP_RATES,
-  ITEM_DROP_LABELS,
+  getItemDropLabel,
   ITEM_DROP_SCORE_FACTORS,
   getCurrentSettings,
   updateCurrentSettings,
   setCurrentGameMode,
   loadHighScoreRecord,
   getDifficultyLabel,
+  getDifficultyLevel,
+  getDifficultyColor,
   getScoreMultiplierBreakdown,
   isEntertainmentMode,
   DifficultyLevel,
 } from "./settings";
 import { FUN_MODE_DEFS, FunModeId, scaleItemLinkedFactor } from "./fun-modes";
+import { t, setLocale, onLocaleChange, SUPPORTED_LOCALES, getLocale, Locale } from "./i18n";
 
 import maokenFontUrl from "./assets/fonts/MaokenAssortedSans-Lite.woff2";
 import nishikiFontUrl from "./assets/fonts/nishiki-teki.woff2";
 import droidSansMonoFontUrl from "./assets/fonts/DroidSansMono.woff2";
+
+/** CSS inline style for colored difficulty text (supports gradient for Append) */
+const diffColorStyle = (level: number): string => {
+  if (level === 7) {
+    return `background:linear-gradient(90deg,#ff88cc,#ddbbff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;`;
+  }
+  const c = getDifficultyColor(level);
+  return c ? `color:${c};` : "";
+};
 
 let welcomeSprite: PIXI.Sprite;
 let welcomeInitialized = false;
@@ -84,17 +96,17 @@ export const welcome = () => {
     <div style="font-size:42px;color:#fff;letter-spacing:3px;
       text-shadow:0 2px 12px rgba(100,200,255,0.4);
       font-family:'NishikiTeki','MaokenAssortedSans','Hiragino Sans','Yu Gothic',sans-serif;margin-bottom:24px;">
-      パズル⭐︎セカ
+      ${t("welcome.title")}
     </div>
     <div style="font-size:16px;color:rgba(180,220,255,0.7);letter-spacing:4px;margin-bottom:24px;">
-      ～ Puzzle × SEKAI ～
+      ${t("welcome.subtitle")}
     </div>
     <div style="font-size:15px;color:rgba(255,255,255,0.6);line-height:1.8;margin-bottom:24px;">
-      收集 Project SEKAI 的成员<br>消除方块，达成最高分！
+      ${t("welcome.desc")}
     </div>
     <div style="font-size:18px;color:rgba(255,255,255,0.85);
       letter-spacing:6px;margin-top:24px;animation:promptPulse 1.8s ease-in-out infinite;">
-      CLICK TO CONTINUE
+      ${t("welcome.click")}
     </div>
   `;
 
@@ -131,18 +143,43 @@ let menuOverlay: HTMLDivElement | null = null;
 let settingsContainer: HTMLDivElement | null = null;
 
 const showWelcomePage = () => {
+  if (menuOverlay) return; // Prevent duplicate menu
+
   if (bgSprite && !bgSprite.parent) {
     app.stage.addChild(bgSprite);
   }
 
-  const texture = app.loader.resources["welcome"]?.texture;
-  if (!texture) return;
+  if (!welcomeSprite) {
+    const texture = app.loader.resources["welcome"]?.texture;
+    if (!texture) return;
+    welcomeSprite = new PIXI.Sprite(texture);
+    welcomeSprite.anchor.set(0.5);
+    welcomeSprite.x = app.renderer.width / 2;
+    welcomeSprite.y = app.renderer.height / 2;
+    app.stage.addChild(welcomeSprite);
+  }
 
-  welcomeSprite = new PIXI.Sprite(texture);
-  welcomeSprite.anchor.set(0.5);
-  welcomeSprite.x = app.renderer.width / 2;
-  welcomeSprite.y = app.renderer.height / 2;
-  app.stage.addChild(welcomeSprite);
+  buildMenu();
+
+  // Register locale change listener ONCE (not inside buildMenu to avoid exponential growth)
+  onLocaleChange(() => {
+    // Close settings panel if open (it will be recreated with new locale on next open)
+    if (settingsContainer) {
+      settingsContainer.remove();
+      settingsContainer = null;
+    }
+    // Rebuild menu with new locale
+    if (menuOverlay) {
+      menuOverlay.remove();
+      menuOverlay = null;
+      buildMenu();
+    }
+  });
+};
+
+/** Build (or rebuild) the menu DOM overlay. Sprites are kept across locale changes. */
+const buildMenu = () => {
+  if (menuOverlay) return;
 
   // 主菜单覆盖层
   menuOverlay = document.createElement("div");
@@ -162,11 +199,11 @@ const showWelcomePage = () => {
     <div style="font-size:36px;color:#fff;letter-spacing:2px;
       text-shadow:0 2px 20px rgba(0,0,0,0.8),0 0 40px rgba(100,200,255,0.3);
       font-family:'NishikiTeki','MaokenAssortedSans','Hiragino Sans','Yu Gothic',sans-serif;">
-      パズル⭐︎セカ
+      ${t("menu.title")}
     </div>
     <div style="font-size:12px;color:rgba(255,255,255,0.6);letter-spacing:6px;margin-top:8px;
       text-shadow:0 1px 10px rgba(0,0,0,0.8);">
-      PUZZLE × SEKAI
+      ${t("menu.subtitle")}
     </div>
   `;
   menuOverlay.appendChild(header);
@@ -194,8 +231,8 @@ const showWelcomePage = () => {
       diff >= 1 && diff <= 7
         ? getDifficultyLabel(diff as DifficultyLevel)
         : "";
-    const entTag = ent ? " 娯楽" : "";
-    return { scoreStr, star, entTag };
+    const entTag = ent ? ` · ${t("hsTags.entertainment")}` : "";
+    return { scoreStr, star, entTag, diff };
   };
   const endlessHs = formatHs(
     endlessRecord.score,
@@ -216,14 +253,14 @@ const showWelcomePage = () => {
   `;
   highScoreRow.innerHTML = `
     <div style="text-align:center;">
-      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">ENDLESS</div>
+      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">${t("menu.highScore.endless")}</div>
       <div style="font-size:18px;color:#ff6b8a;font-family:'DroidSansMono',monospace;">${endlessHs.scoreStr}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${endlessHs.star || "—"}${endlessHs.entTag}</div>
+      <div style="font-size:11px;margin-top:2px;${diffColorStyle(endlessHs.diff)}">${endlessHs.star || "—"}${endlessHs.entTag}</div>
     </div>
     <div style="text-align:center;">
-      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">TIME ATTACK</div>
+      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">${t("menu.highScore.timeAttack")}</div>
       <div style="font-size:18px;color:#44ff88;font-family:'DroidSansMono',monospace;">${taHs.scoreStr}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${taHs.star || "—"}${taHs.entTag}</div>
+      <div style="font-size:11px;margin-top:2px;${diffColorStyle(taHs.diff)}">${taHs.star || "—"}${taHs.entTag}</div>
     </div>
   `;
   footer.appendChild(highScoreRow);
@@ -245,7 +282,7 @@ const showWelcomePage = () => {
     pointer-events:auto;
   `;
   endlessBtn.innerHTML = `
-    <span style="font-size:18px;color:#fff;">エンドレス / 无尽模式</span>
+    <span style="font-size:18px;color:#fff;">${t("menu.endless")}</span>
   `;
   endlessBtn.onmouseenter = () => {
     endlessBtn.style.background = "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 50%, rgba(0,0,0,0) 100%)";
@@ -267,7 +304,7 @@ const showWelcomePage = () => {
     pointer-events:auto;
   `;
   timeAttackBtn.innerHTML = `
-    <span style="font-size:18px;color:#fff;">タイムアタック / 限时挑战</span>
+    <span style="font-size:18px;color:#fff;">${t("menu.timeAttack")}</span>
   `;
   timeAttackBtn.onmouseenter = () => {
     timeAttackBtn.style.background = "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 50%, rgba(0,0,0,0) 100%)";
@@ -293,7 +330,7 @@ const showWelcomePage = () => {
     cursor:pointer;font-family:'Hiragino Sans','Yu Gothic',sans-serif;
     transition:all 0.2s ease;pointer-events:auto;
   `;
-  settingsBtn.textContent = "設定";
+  settingsBtn.textContent = t("menu.settings");
   settingsBtn.onmouseenter = () => {
     settingsBtn.style.background = "rgba(255,255,255,0.2)";
     settingsBtn.style.borderColor = "rgba(255,255,255,0.5)";
@@ -312,7 +349,7 @@ const showWelcomePage = () => {
     cursor:pointer;font-family:'Hiragino Sans','Yu Gothic',sans-serif;
     transition:all 0.2s ease;pointer-events:auto;
   `;
-  controlsBtn.textContent = "操作説明";
+  controlsBtn.textContent = t("menu.controls");
   controlsBtn.onmouseenter = () => {
     controlsBtn.style.background = "rgba(255,255,255,0.2)";
     controlsBtn.style.borderColor = "rgba(255,255,255,0.5)";
@@ -419,7 +456,7 @@ const showSettingsPanel = () => {
     border-bottom:1px solid rgba(100,200,255,0.1);
   `;
   header.innerHTML = `
-    <div style="font-size:18px;color:#fff;letter-spacing:1px;">設定</div>
+    <div style="font-size:18px;color:#fff;letter-spacing:1px;">${t("settings.title")}</div>
   `;
 
   const closeBtn = document.createElement("button");
@@ -435,10 +472,30 @@ const showSettingsPanel = () => {
   header.appendChild(closeBtn);
   settingsPanel.appendChild(header);
 
+  // 语言切换
+  const langGroup = document.createElement("div");
+  langGroup.className = "setting-group";
+  langGroup.innerHTML = `<div class="setting-label">${t("settings.lang.label")}</div>`;
+  const langOptions = document.createElement("div");
+  langOptions.className = "setting-options";
+  const currentLocale = getLocale();
+  SUPPORTED_LOCALES.forEach(({ value, label }) => {
+    const opt = document.createElement("div");
+    opt.className = `setting-opt ${value === currentLocale ? "active" : ""}`;
+    opt.textContent = label;
+    opt.onclick = () => {
+      setLocale(value as Locale);
+      refreshSettingsPanel();
+    };
+    langOptions.appendChild(opt);
+  });
+  langGroup.appendChild(langOptions);
+  settingsPanel.appendChild(langGroup);
+
   // 速度设置
   const speedGroup = document.createElement("div");
   speedGroup.className = "setting-group";
-  speedGroup.innerHTML = `<div class="setting-label">速度レベル</div>`;
+  speedGroup.innerHTML = `<div class="setting-label">${t("settings.speed.label")}</div>`;
 
   const speedOptions = document.createElement("div");
   speedOptions.className = "setting-options";
@@ -446,7 +503,7 @@ const showSettingsPanel = () => {
     const level = i as SpeedLevel;
     const opt = document.createElement("div");
     opt.className = `setting-opt ${level === settings.speedLevel ? "active" : ""}`;
-    opt.textContent = SPEED_LABELS[level];
+    opt.textContent = getSpeedLabel(level);
     opt.onclick = () => {
       settings.speedLevel = level;
       updateCurrentSettings(settings);
@@ -460,14 +517,14 @@ const showSettingsPanel = () => {
   // 限时模式时长
   const timeGroup = document.createElement("div");
   timeGroup.className = "setting-group";
-  timeGroup.innerHTML = `<div class="setting-label">タイムアタック時間</div>`;
+  timeGroup.innerHTML = `<div class="setting-label">${t("settings.ta.label")}</div>`;
 
   const timeOptions = document.createElement("div");
   timeOptions.className = "setting-options";
   ([60, 90, 120, 180] as TimeAttackDuration[]).forEach((duration) => {
     const opt = document.createElement("div");
     opt.className = `setting-opt ${duration === settings.timeAttackDuration ? "active" : ""}`;
-    opt.textContent = TIME_LABELS[duration];
+    opt.textContent = getTimeLabel(duration);
     opt.onclick = () => {
       settings.timeAttackDuration = duration;
       updateCurrentSettings(settings);
@@ -481,7 +538,7 @@ const showSettingsPanel = () => {
   // 团体选择
   const groupGroup = document.createElement("div");
   groupGroup.className = "setting-group";
-  groupGroup.innerHTML = `<div class="setting-label">出現グループ（最少3个）</div>`;
+  groupGroup.innerHTML = `<div class="setting-label">${t("settings.groups.label")}</div>`;
 
   const groupOptions = document.createElement("div");
   groupOptions.className = "setting-options";
@@ -512,15 +569,15 @@ const showSettingsPanel = () => {
   // 道具掉落概率
   const itemGroup = document.createElement("div");
   itemGroup.className = "setting-group";
-  itemGroup.innerHTML = `<div class="setting-label">道具ドロップ確率（山が低い時）</div>`;
+  itemGroup.innerHTML = `<div class="setting-label">${t("settings.item.label")}</div>`;
   const itemOptions = document.createElement("div");
   itemOptions.className = "setting-options";
   const currentItemRate = (settings.itemDropRate ?? 10) as ItemDropRate;
   ITEM_DROP_RATES.forEach((rate) => {
     const opt = document.createElement("div");
     opt.className = `setting-opt ${rate === currentItemRate ? "active" : ""}`;
-    opt.title = `スコア倍率 ×${ITEM_DROP_SCORE_FACTORS[rate].toFixed(2)}（道具が多いほど盤面が乱れて倍率↑）`;
-    opt.innerHTML = `<div>${ITEM_DROP_LABELS[rate]}</div>
+    opt.title = t("settings.item.tooltip", { factor: ITEM_DROP_SCORE_FACTORS[rate].toFixed(2) });
+    opt.innerHTML = `<div>${getItemDropLabel(rate)}</div>
       <div style="font-size:10px;opacity:0.65;margin-top:2px;">×${ITEM_DROP_SCORE_FACTORS[rate].toFixed(2)}</div>`;
     opt.onclick = () => {
       settings.itemDropRate = rate;
@@ -542,7 +599,7 @@ const showSettingsPanel = () => {
 
   const funGroup = document.createElement("div");
   funGroup.className = "setting-group";
-  funGroup.innerHTML = `<div class="setting-label">娯楽モード（1つでもONで娯楽）</div>`;
+  funGroup.innerHTML = `<div class="setting-label">${t("settings.fun.label")}</div>`;
 
   const funOptions = document.createElement("div");
   funOptions.className = "setting-options";
@@ -557,22 +614,23 @@ const showSettingsPanel = () => {
     margin-top:10px;padding:10px 12px;border-radius:8px;
     background:rgba(0,0,0,0.25);border:1px solid rgba(100,200,255,0.15);
     color:rgba(255,255,255,0.7);font-size:12px;line-height:1.55;min-height:3.2em;
+    white-space:pre-wrap;
   `;
-  funHelp.textContent = "チップを選ぶと説明が表示されます";
+  funHelp.textContent = t("settings.fun.help");
 
   FUN_MODE_DEFS.forEach((def) => {
     const on = !!settings.funModes[def.id];
     const opt = document.createElement("div");
     opt.className = `setting-opt ${on ? "active" : ""}`;
-    opt.title = def.description;
+    opt.title = t(`fun.${def.id}.description`);
     const shownFactor = def.itemLinked
       ? scaleItemLinkedFactor(def.scoreFactor, currentItemRate)
       : def.scoreFactor;
-    const factorNote = def.itemLinked ? "（道具率連動）" : "";
-    opt.innerHTML = `<div style="font-size:13px;">${def.name}</div>
-      <div style="font-size:10px;opacity:0.65;margin-top:2px;">${def.subtitle} · ×${shownFactor.toFixed(2)}${factorNote}</div>`;
+    const factorNote = def.itemLinked ? t("settings.fun.itemLinked") : "";
+    opt.innerHTML = `<div style="font-size:13px;">${t(`fun.${def.id}.name`)}</div>
+      <div style="font-size:10px;opacity:0.65;margin-top:2px;">${t(`fun.${def.id}.subtitle`)} · ×${shownFactor.toFixed(2)}${factorNote}</div>`;
     opt.onmouseenter = () => {
-      funHelp.textContent = def.description;
+      funHelp.textContent = t(`fun.${def.id}.description`);
     };
     opt.onclick = () => {
       settings.funModes[def.id] = !settings.funModes[def.id];
@@ -593,6 +651,7 @@ const showSettingsPanel = () => {
   const breakdown = getScoreMultiplierBreakdown(settings);
   const mult = breakdown.final;
   const label = breakdown.difficultyLabel;
+  const diffLevel = getDifficultyLevel(settings);
   const entOn = isEntertainmentMode(settings);
 
   const linesHtml = breakdown.lines
@@ -612,10 +671,10 @@ const showSettingsPanel = () => {
     color:#fff;font-size:14px;line-height:1.6;cursor:help;
   `;
   card.innerHTML = `
-    <div>${label}${entOn ? ' <span style="color:#ffcc66;">娯楽</span>' : ""}</div>
+    <div><span style="${diffColorStyle(diffLevel)}">${label}</span>${entOn ? ` <span style="color:#ffcc66;">${t("settings.difficulty.entertainment")}</span>` : ""}</div>
     <div style="font-family:DroidSansMono,monospace;color:#aaccff;">
       ×${mult.toFixed(2)}
-      <span style="font-size:11px;opacity:0.55;margin-left:6px;">ⓘ 内訳</span>
+      <span style="font-size:11px;opacity:0.55;margin-left:6px;">${t("settings.difficulty.info")}</span>
     </div>
   `;
 
@@ -627,10 +686,10 @@ const showSettingsPanel = () => {
     box-shadow:0 8px 28px rgba(0,0,0,0.45);font-size:12px;line-height:1.45;
   `;
   tip.innerHTML = `
-    <div style="font-size:11px;color:rgba(180,220,255,0.8);letter-spacing:1px;margin-bottom:8px;">スコア倍率の内訳</div>
+    <div style="font-size:11px;color:rgba(180,220,255,0.8);letter-spacing:1px;margin-bottom:8px;">${t("settings.difficulty.breakdownTitle")}</div>
     ${linesHtml}
     <div style="display:flex;justify-content:space-between;gap:12px;padding-top:8px;margin-top:4px;border-top:1px solid rgba(100,200,255,0.25);font-weight:600;">
-      <span>合計</span>
+      <span>${t("settings.difficulty.total")}</span>
       <span style="font-family:DroidSansMono,monospace;color:#fff;">×${mult.toFixed(2)}</span>
     </div>
   `;
@@ -647,7 +706,7 @@ const showSettingsPanel = () => {
     tip.style.display = tip.style.display === "block" ? "none" : "block";
   };
 
-  diffSummary.innerHTML = `<div class="setting-label">難易度 / スコア倍率</div>`;
+  diffSummary.innerHTML = `<div class="setting-label">${t("settings.difficulty.label")}</div>`;
   diffSummary.appendChild(card);
   settingsPanel.appendChild(diffSummary);
 
@@ -692,8 +751,8 @@ const refreshHighScoreRow = () => {
       diff >= 1 && diff <= 7
         ? getDifficultyLabel(diff as DifficultyLevel)
         : "—";
-    const entTag = ent ? " 娯楽" : "";
-    return { scoreStr, star, entTag };
+    const entTag = ent ? ` · ${t("hsTags.entertainment")}` : "";
+    return { scoreStr, star, entTag, diff };
   };
   const endlessHs = formatHs(
     endlessRecord.score,
@@ -707,14 +766,14 @@ const refreshHighScoreRow = () => {
   );
   row.innerHTML = `
     <div style="text-align:center;">
-      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">ENDLESS</div>
+      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">${t("menu.highScore.endless")}</div>
       <div style="font-size:18px;color:#ff6b8a;font-family:'DroidSansMono',monospace;">${endlessHs.scoreStr}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${endlessHs.star}${endlessHs.entTag}</div>
+      <div style="font-size:11px;margin-top:2px;${diffColorStyle(endlessHs.diff)}">${endlessHs.star}${endlessHs.entTag}</div>
     </div>
     <div style="text-align:center;">
-      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">TIME ATTACK</div>
+      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">${t("menu.highScore.timeAttack")}</div>
       <div style="font-size:18px;color:#44ff88;font-family:'DroidSansMono',monospace;">${taHs.scoreStr}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:2px;">${taHs.star}${taHs.entTag}</div>
+      <div style="font-size:11px;margin-top:2px;${diffColorStyle(taHs.diff)}">${taHs.star}${taHs.entTag}</div>
     </div>
   `;
 };
@@ -754,55 +813,55 @@ const showControlsOverlay = () => {
   `;
   card.innerHTML = `
     <div style="font-size:20px;color:#fff;text-align:center;margin-bottom:20px;letter-spacing:2px;">
-      操作説明
+      ${t("controls.title")}
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:14px;color:rgba(255,255,255,0.8);">
       <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;color:#667eea;width:80px;">键盘</td>
-        <td style="padding:10px 0;">← → 左右移动</td>
+        <td style="padding:10px 0;color:#667eea;width:80px;">${t("controls.keyboard")}</td>
+        <td style="padding:10px 0;">${t("controls.moveLeftRight")}</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
         <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">↑ / X 顺时针旋转</td>
+        <td style="padding:10px 0;">${t("controls.rotateClockwise")}</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
         <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">Z / Ctrl 逆时针旋转</td>
+        <td style="padding:10px 0;">${t("controls.rotateCounter")}</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
         <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">↓ 加速下落</td>
+        <td style="padding:10px 0;">${t("controls.softDrop")}</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
         <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">Space 直接落到底部</td>
+        <td style="padding:10px 0;">${t("controls.hardDrop")}</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(100,200,255,0.15);">
         <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">R 重新开始</td>
+        <td style="padding:10px 0;">${t("controls.restart")}</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;color:#f5576c;">手机</td>
-        <td style="padding:10px 0;">← → 滑动 左右移动</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">点击左/右半屏 旋转</td>
+        <td style="padding:10px 0;color:#f5576c;">${t("controls.mobile")}</td>
+        <td style="padding:10px 0;">${t("controls.swipeMove")}</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
         <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">下滑 直接落到底部</td>
+        <td style="padding:10px 0;">${t("controls.tapRotate")}</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
+        <td style="padding:10px 0;"></td>
+        <td style="padding:10px 0;">${t("controls.swipeHardDrop")}</td>
       </tr>
       <tr>
         <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">长按 加速下落</td>
+        <td style="padding:10px 0;">${t("controls.pressSoftDrop")}</td>
       </tr>
     </table>
     <div style="text-align:center;margin-top:20px;">
       <button style="padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
         background:rgba(255,255,255,0.1);color:#fff;font-size:14px;cursor:pointer;
         transition:all 0.2s ease;" onclick="this.parentElement.parentElement.parentElement.remove()">
-        閉じる
+        ${t("controls.close")}
       </button>
     </div>
   `;

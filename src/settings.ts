@@ -9,6 +9,7 @@ import {
   normalizeFunModes,
   scaleItemLinkedFactor,
 } from "./fun-modes";
+import { t } from "./i18n";
 
 export type SpeedLevel = 1 | 2 | 3 | 4 | 5;
 export type TimeAttackDuration = 60 | 90 | 120 | 180;
@@ -44,33 +45,19 @@ export const SPEED_MULTIPLIERS: Record<SpeedLevel, number> = {
   5: 3.0,   // 地狱 (Hell)
 };
 
-// Speed level labels
-export const SPEED_LABELS: Record<SpeedLevel, string> = {
-  1: "慢速",
-  2: "普通",
-  3: "快速",
-  4: "极速",
-  5: "地狱",
-};
+// Speed level labels (i18n-aware)
+export const getSpeedLabel = (level: SpeedLevel): string =>
+  t(`settings.speed.${(["slow", "normal", "fast", "faster", "hell"] as const)[level - 1]}`);
 
-// Time attack duration labels
-export const TIME_LABELS: Record<TimeAttackDuration, string> = {
-  60: "60秒",
-  90: "90秒",
-  120: "120秒",
-  180: "180秒",
-};
+// Time attack duration labels (i18n-aware)
+export const getTimeLabel = (duration: TimeAttackDuration): string =>
+  t("settings.ta.duration", { seconds: duration });
 
 export const ITEM_DROP_RATES: ItemDropRate[] = [0, 5, 10, 15, 20, 30];
 
-export const ITEM_DROP_LABELS: Record<ItemDropRate, string> = {
-  0: "なし",
-  5: "5%",
-  10: "10%",
-  15: "15%",
-  20: "20%",
-  30: "30%",
-};
+// Item drop rate labels (i18n-aware)
+export const getItemDropLabel = (rate: ItemDropRate): string =>
+  rate === 0 ? t("settings.item.none") : `${rate}%`;
 
 /**
  * Score factor for item drop rate.
@@ -166,16 +153,6 @@ export function getSpeedMultiplier(settings: GameSettings): number {
 
 export type DifficultyLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
-export const DIFFICULTY_LABELS: Record<DifficultyLevel, string> = {
-  1: "★1 かんたん",
-  2: "★2 ふつう",
-  3: "★3 ちょっとむず",
-  4: "★4 むずかしい",
-  5: "★5 かなりむず",
-  6: "★6 ハード",
-  7: "★7 ヘル",
-};
-
 /** Difficulty 1–7: speedLevel + (groupCount - 3). More groups = harder. */
 export function getDifficultyLevel(settings: GameSettings): DifficultyLevel {
   const groups = Math.min(5, Math.max(3, settings.selectedGroups.length));
@@ -183,6 +160,7 @@ export function getDifficultyLevel(settings: GameSettings): DifficultyLevel {
   return Math.min(7, Math.max(1, level)) as DifficultyLevel;
 }
 
+/** Get difficulty label (i18n-aware) */
 export function getDifficultyLabel(
   settingsOrLevel: GameSettings | DifficultyLevel,
 ): string {
@@ -190,7 +168,42 @@ export function getDifficultyLabel(
     typeof settingsOrLevel === "number"
       ? settingsOrLevel
       : getDifficultyLevel(settingsOrLevel);
-  return DIFFICULTY_LABELS[level as DifficultyLevel] ?? `★${level}`;
+  const i18nKey = `difficulty.${level}`;
+  const translated = t(i18nKey);
+  return translated !== i18nKey ? translated : `${level}`;
+}
+
+/** Difficulty colors (Project SEKAI style) */
+export const DIFFICULTY_COLORS: Record<DifficultyLevel, string> = {
+  1: "#88ee55", // Easy – soft green
+  2: "#55ccee", // Normal – sky blue
+  3: "#ffbb33", // Hard – warm amber
+  4: "#ff5577", // Expert – coral red
+  5: "#bb66ff", // Master – vivid purple
+  6: "#ddbbff", // Re:Master – soft lavender
+  7: "#ff88cc", // Append – pink (gradient base)
+};
+
+/** Append uses a pink → lavender gradient */
+export const APPEND_GRADIENT = "linear-gradient(90deg, #ff88cc, #ddbbff)";
+
+/** Get hex color for a difficulty level (single color) */
+export function getDifficultyColor(level: number): string {
+  return DIFFICULTY_COLORS[level as DifficultyLevel] ?? "#ffffff";
+}
+
+/**
+ * Get CSS color string for a difficulty level.
+ * Append (level 7) returns a gradient; others return a flat color.
+ */
+export function getDifficultyCssColor(level: number): string {
+  if (level === 7) return APPEND_GRADIENT;
+  return getDifficultyColor(level);
+}
+
+/** Convert "#rrggbb" → 0xrrggbb for PixiJS */
+export function hexToPixi(hex: string): number {
+  return parseInt(hex.replace("#", ""), 16);
 }
 
 /** Base score multiplier from difficulty only ~0.5 (★1) … ~3.0 (★7) */
@@ -238,11 +251,15 @@ export function getScoreMultiplierBreakdown(
 
   const lines: ScoreMultLine[] = [
     {
-      label: `難易度 ${getDifficultyLabel(settings)}（速度${settings.speedLevel} · ${settings.selectedGroups.length}ユニット）`,
+      label: t("settings.difficulty.diffLine", {
+        difficulty: getDifficultyLabel(settings),
+        speed: settings.speedLevel,
+        groups: settings.selectedGroups.length,
+      }),
       factor: base,
     },
     {
-      label: `道具ドロップ ${ITEM_DROP_LABELS[rate]}`,
+      label: t("settings.difficulty.itemLine", { rate: getItemDropLabel(rate) }),
       factor: item,
     },
   ];
@@ -252,10 +269,11 @@ export function getScoreMultiplierBreakdown(
     const factor = def.itemLinked
       ? scaleItemLinkedFactor(def.scoreFactor, rate)
       : def.scoreFactor;
+    const funName = t(`fun.${def.id}.name`);
     lines.push({
       label: def.itemLinked
-        ? `${def.name}（道具率連動）`
-        : def.name,
+        ? t("settings.difficulty.funLineItemLinked", { name: funName })
+        : funName,
       factor,
     });
   }

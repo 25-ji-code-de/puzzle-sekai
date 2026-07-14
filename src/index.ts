@@ -21,6 +21,7 @@ import welcomeImg from "./assets/welcome.png";
 import barrelTexture from "./assets/objects/barrel.png";
 import { start, welcome } from "./states";
 import { items } from "./items";
+import { t } from "./i18n";
 
 // The application will create a renderer using WebGL, if possible,
 // with a fallback to a canvas render. It will also setup the ticker
@@ -85,14 +86,14 @@ items.forEach((img) => {
 avatarTextures.forEach((t) => app.loader.add(t));
 app.stage.sortableChildren = true;
 
-const loading = new PIXI.Text("Loading...", {
+const loading = new PIXI.Text(t("loading"), {
   fontSize: 64,
   fill: 0xffffff,
   align: "center",
 });
 
 const updatePercent = () => {
-  loading.text = "Loading... " + Math.floor(app.loader.progress) + "%";
+  loading.text = t("loading") + " " + Math.floor(app.loader.progress) + "%";
 };
 loading.anchor.x = 0.5;
 loading.anchor.y = 0.5;

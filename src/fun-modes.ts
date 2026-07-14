@@ -1,4 +1,5 @@
 // Entertainment / fun-mode definitions (no gameplay logic here)
+// Display strings (name / subtitle / description) live in i18n: fun.<id>.*
 
 export const FUN_MODE_IDS = [
   "mikudayo",
@@ -16,12 +17,6 @@ export type FunModeFlags = Record<FunModeId, boolean>;
 
 export type FunModeDef = {
   id: FunModeId;
-  /** Chip title */
-  name: string;
-  /** Small subtitle under / beside chip */
-  subtitle: string;
-  /** Full tooltip / help text */
-  description: string;
   /**
    * Score factor when enabled.
    * - Harder modes: >1
@@ -51,69 +46,14 @@ export const DEFAULT_FUN_MODES: FunModeFlags = {
 };
 
 export const FUN_MODE_DEFS: FunModeDef[] = [
-  {
-    id: "mikudayo",
-    name: "ミクダヨー参戦",
-    subtitle: "どのユニットにもなれる 2×2",
-    description:
-      "ミクダヨーが落ちてくる、ひと回り大きい 2×2 ピース。どのユニットのミクとしても数えられ、隣り合う別ユニットをつないでまとめて消すことができます。",
-    scoreFactor: 0.85,
-  },
-  {
-    id: "kanadeSlow",
-    name: "カナデの余韻",
-    subtitle: "奏を落とすと、世界がゆっくりに",
-    description:
-      "奏の落下は常に 0.5 倍速。着地後は「余韻」として後続ピースにも減速が伝わり、時間とともに薄れていきます。奏を消すと、効果はすぐに消えます。",
-    scoreFactor: 0.9,
-  },
-  {
-    id: "wonderBlast",
-    name: "ショウタイム爆破",
-    subtitle: "類＋ネネロボ隣接消しでフィナーレ",
-    description:
-      "類とネネロボが隣り合った状態で消すと、場のピースがランダムに吹き飛びます。消した塊の中に類・ネネロボが多いほど、消える数も増えます。コンボは「消した塊の数 ÷ 5（切り捨て）」として扱います。",
-    scoreFactor: 0.8,
-  },
-  {
-    id: "shizukuSwap",
-    name: "雫のミラー",
-    subtitle: "左右移動・左右回転がそれぞれ反転",
-    description:
-      "雫を消すと、左右移動が互いに入れ替わり、左右回転も互いに入れ替わります。場に志歩がいるあいだは発動しません。志歩を落とすと、効果はすぐに消えます。",
-    scoreFactor: 1.15,
-  },
-  {
-    id: "itemAllergy",
-    name: "にんじん嫌い",
-    subtitle: "にんじん ↔ 絵名・彰人で即消し",
-    description:
-      "にんじんが絵名または彰人に触れると、そのキャラが即座に消えます（ユニットボイスは鳴りません）。逆に絵名・彰人がにんじんの隣に着地しても同様です。操作中、絵名・彰人は「落下後ににんじんに接触する列」（可能列）へ自ら出現／移動できません。重力で隣り合った場合は再チェックして消えます。にんじん自体は消えません。",
-    scoreFactor: 1.1,
-    itemLinked: true,
-  },
-  {
-    id: "mizukiShift",
-    name: "ポテトと瑞希",
-    subtitle: "瑞希は可能列のみ / 薯条で吸い寄せ",
-    description:
-      "可能列＝その列に落下着地するとポテトに接触する列。場にポテトがあるとき瑞希は可能列にだけ出現・移動できます（←→は可能列間をジャンプ）。可能列が無いときは通常どおり。またポテトが着地すると、場にいるいちばん近い瑞希がポテトの真上へ移動します。",
-    scoreFactor: 1.12,
-    itemLinked: true,
-  },
-  {
-    id: "emuShrink",
-    name: "えむちぢみ",
-    subtitle: "まふゆの隣で、えむが 1 マスに",
-    description:
-      "まふゆとえむが隣り合うと、えむは 1 マスサイズに縮みます。縮む向きは、まふゆからできるだけ離れる方向を選びます。そのあと、場のピースが物理落下します。",
-    scoreFactor: 1.08,
-  },
+  { id: "mikudayo", scoreFactor: 0.85 },
+  { id: "kanadeSlow", scoreFactor: 0.9 },
+  { id: "wonderBlast", scoreFactor: 0.8 },
+  { id: "shizukuSwap", scoreFactor: 1.15 },
+  { id: "itemAllergy", scoreFactor: 1.1, itemLinked: true },
+  { id: "mizukiShift", scoreFactor: 1.12, itemLinked: true },
+  { id: "emuShrink", scoreFactor: 1.08 },
 ];
-
-export const FUN_MODE_MAP: Record<FunModeId, FunModeDef> = Object.fromEntries(
-  FUN_MODE_DEFS.map((d) => [d.id, d]),
-) as Record<FunModeId, FunModeDef>;
 
 export function normalizeFunModes(raw: unknown): FunModeFlags {
   const result = { ...DEFAULT_FUN_MODES };
