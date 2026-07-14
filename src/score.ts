@@ -6,11 +6,13 @@ import {
   getCurrentSettings,
   getDifficultyLabel,
   getDifficultyLevel,
+  getDifficultyColor,
   getScoreMultiplier,
   isEntertainmentMode,
   loadHighScoreRecord,
   saveHighScore,
 } from "./settings";
+import { t } from "./i18n";
 
 let _score = 0;
 let _highScore = 0;
@@ -76,6 +78,7 @@ const makeLabelText = (label: string, color: number, fontSize: number) => {
     fontWeight: "bold",
     fontFamily: "DroidSansMono, monospace",
     fill: color,
+    align: "center",
   });
   text.anchor.set(0.5, 0.5);
   container.addChild(text);
@@ -123,12 +126,34 @@ const replaceDisplay = (
 };
 
 const formatMultBadge = (mult: number, hsDiff: number, hsEnt: boolean) => {
-  const multStr = `×${mult.toFixed(2)}`;
-  const parts = [multStr];
-  if (hsDiff >= 1 && hsDiff <= 7) parts.push(`HS★${hsDiff}`);
-  if (hsEnt) parts.push("娯楽");
-  if (isEntertainmentMode(getCurrentSettings())) parts.push("ENT");
-  return parts.join("  ");
+  // Line 1: current run — multiplier + entertainment compact tag
+  const currentParts = [`×${mult.toFixed(2)}`];
+  if (isEntertainmentMode(getCurrentSettings())) {
+    currentParts.push(t("hsTags.entCompact"));
+  }
+
+  // Line 2: high-score record — "纪录 Hard · 娱乐"
+  const recordParts: string[] = [];
+  if (hsDiff >= 1 && hsDiff <= 7) {
+    recordParts.push(getDifficultyLabel(hsDiff as DifficultyLevel));
+  }
+  if (hsEnt) {
+    recordParts.push(t("hsTags.entertainment"));
+  }
+
+  if (recordParts.length === 0) {
+    return currentParts.join("  ");
+  }
+  return `${currentParts.join("  ")}\n${t("hsTags.record")} ${recordParts.join(" · ")}`;
+};
+
+/** Badge color: difficulty color if high-score has a known level, else default blue */
+const getBadgeColor = (hsDiff: number): number => {
+  if (hsDiff >= 1 && hsDiff <= 7) {
+    const hex = getDifficultyColor(hsDiff);
+    return parseInt(hex.replace("#", ""), 16);
+  }
+  return 0xaaccff;
 };
 
 export const initScoreDisplay = () => {
@@ -161,14 +186,16 @@ export const initScoreDisplay = () => {
   highScoreText.pivot.x = highScoreText.width / 2;
   app.stage.addChild(highScoreText);
 
-  // Current multiplier + high-score star badge
+  // Current multiplier + high-score star badge (colored by difficulty)
   multText = makeLabelText(
     formatMultBadge(mult, _highScoreDifficulty, _highScoreEntertainment),
-    0xaaccff,
+    getBadgeColor(_highScoreDifficulty),
     18,
   );
   multText.x = SCORE_X;
-  multText.y = 790;
+  // Slightly lower than the old single-line slot so a 2-line record badge
+  // doesn't collide with the high-score number above.
+  multText.y = 805;
   app.stage.addChild(multText);
 
   comboText = makePaddedText(_combo, 4, 0xffffff, 42);
@@ -209,7 +236,7 @@ export const updateScoreDisplay = () => {
     const mult = getScoreMultiplier(settings);
     const next = makeLabelText(
       formatMultBadge(mult, _highScoreDifficulty, _highScoreEntertainment),
-      0xaaccff,
+      getBadgeColor(_highScoreDifficulty),
       18,
     );
     multText = replaceDisplay(multText, next);
