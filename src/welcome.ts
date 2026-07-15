@@ -1,95 +1,19 @@
 import * as PIXI from "pixi.js-legacy";
 import { app, bgSprite, setState } from ".";
 import { start, stopBgm, playBgm } from "./states";
-import {
-  SpeedLevel,
-  TimeAttackDuration,
-  ItemDropRate,
-  GAME_GROUPS,
-  GROUP_LABELS,
-  getSpeedLabel,
-  getTimeLabel,
-  ITEM_DROP_RATES,
-  getItemDropLabel,
-  ITEM_DROP_SCORE_FACTORS,
-  getCurrentSettings,
-  updateCurrentSettings,
-  setCurrentGameMode,
-  loadHighScoreRecord,
-  getDifficultyLabel,
-  getDifficultyLevel,
-  getDifficultyColor,
-  getScoreMultiplierBreakdown,
-  isEntertainmentMode,
-  DifficultyLevel,
-} from "./settings";
-import { FUN_MODE_DEFS, FunModeId, scaleItemLinkedFactor } from "./fun-modes";
-import {
-  t,
-  setLocale,
-  onLocaleChange,
-  SUPPORTED_LOCALES,
-  getLocale,
-  Locale,
-} from "./i18n";
+import { setCurrentGameMode } from "./settings";
+import { t, onLocaleChange } from "./i18n";
 import { domFontStyle } from "./fonts";
-
-/** CSS inline style for colored difficulty text (supports gradient for Append) */
-const diffColorStyle = (level: number): string => {
-  if (level === 7) {
-    return `background:linear-gradient(90deg,#ff88cc,#ddbbff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;`;
-  }
-  const c = getDifficultyColor(level);
-  return c ? `color:${c};` : "";
-};
-
-const highScoreRowHtml = (): string => {
-  const settings = getCurrentSettings();
-  const formatRecord = (score: number, diff: number, ent: boolean) => {
-    const scoreStr = score.toString().padStart(6, "0");
-    const star =
-      diff >= 1 && diff <= 7
-        ? getDifficultyLabel(diff as DifficultyLevel)
-        : "—";
-    const entTag = ent ? ` · ${t("hsTags.entertainment")}` : "";
-    return { scoreStr, star, entTag, diff };
-  };
-  const endless = loadHighScoreRecord("endless");
-  const timeAttack = loadHighScoreRecord("timeAttack", settings);
-  const endlessHs = formatRecord(
-    endless.score,
-    endless.difficultyLevel,
-    endless.entertainment,
-  );
-  const timeAttackHs = formatRecord(
-    timeAttack.score,
-    timeAttack.difficultyLevel,
-    timeAttack.entertainment,
-  );
-
-  const column = (
-    label: string,
-    scoreColor: string,
-    record: ReturnType<typeof formatRecord>,
-  ) => `
-    <div style="text-align:center;">
-      <div style="font-size:12px;opacity:0.6;margin-bottom:2px;${domFontStyle(
-        "caption",
-      )}">${label}</div>
-      <div style="font-size:18px;color:${scoreColor};${domFontStyle(
-    "numericStrong",
-  )}">${record.scoreStr}</div>
-      <div style="font-size:13px;margin-top:2px;${domFontStyle(
-        "caption",
-      )}${diffColorStyle(record.diff)}">${record.star}${record.entTag}</div>
-    </div>`;
-
-  return `${column(t("menu.highScore.endless"), "#ff6b8a", endlessHs)}${column(
-    t("menu.highScore.timeAttack"),
-    "#44ff88",
-    timeAttackHs,
-  )}`;
-};
+import { highScoreRowHtml, refreshHighScoreRow } from "./menu-utils";
+import {
+  showSettingsPanel,
+  disposeSettingsPanel,
+} from "./settings-panel";
+import {
+  showControlsOverlay,
+  showAboutOverlay,
+  disposeMenuOverlays,
+} from "./menu-overlays";
 
 let welcomeSprite: PIXI.Sprite;
 let welcomeInitialized = false;
@@ -186,7 +110,6 @@ export const welcome = () => {
 // ============== 第二个页面：游戏欢迎页（H5 风格） ==============
 
 let menuOverlay: HTMLDivElement | null = null;
-let settingsContainer: HTMLDivElement | null = null;
 
 const showWelcomePage = () => {
   if (menuOverlay) return; // Prevent duplicate menu
@@ -209,15 +132,8 @@ const showWelcomePage = () => {
 
   // Register locale change listener ONCE (not inside buildMenu to avoid exponential growth)
   onLocaleChange(() => {
-    // Close settings panel if open (it will be recreated with new locale on next open)
-    if (settingsContainer) {
-      settingsContainer.remove();
-      settingsContainer = null;
-    }
-    // Drop ephemeral overlays so they don't keep the previous locale's copy
-    document.getElementById("about-overlay")?.remove();
-    document.getElementById("controls-overlay")?.remove();
-    // Rebuild menu with new locale
+    disposeSettingsPanel();
+    disposeMenuOverlays();
     if (menuOverlay) {
       menuOverlay.remove();
       menuOverlay = null;
@@ -230,7 +146,6 @@ const showWelcomePage = () => {
 const buildMenu = () => {
   if (menuOverlay) return;
 
-  // 主菜单覆盖层
   menuOverlay = document.createElement("div");
   menuOverlay.style.cssText = `
     position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;
@@ -238,7 +153,6 @@ const buildMenu = () => {
     pointer-events:none;
   `;
 
-  // 顶部标题区域
   const header = document.createElement("div");
   header.style.cssText = `
     text-align:center;padding:40px 20px 20px;
@@ -257,12 +171,10 @@ const buildMenu = () => {
   `;
   menuOverlay.appendChild(header);
 
-  // 中间留空，让背景显示
   const spacer = document.createElement("div");
   spacer.style.cssText = "flex:1;pointer-events:none;";
   menuOverlay.appendChild(spacer);
 
-  // 底部菜单区域
   const footer = document.createElement("div");
   footer.style.cssText = `
     padding:20px 24px 28px;
@@ -270,7 +182,6 @@ const buildMenu = () => {
     pointer-events:auto;
   `;
 
-  // 最高分显示（全局榜 + 打出该分时的难度档 + 娱乐标记）
   const highScoreRow = document.createElement("div");
   highScoreRow.id = "high-score-row";
   highScoreRow.style.cssText = `
@@ -280,130 +191,75 @@ const buildMenu = () => {
   highScoreRow.innerHTML = highScoreRowHtml();
   footer.appendChild(highScoreRow);
 
-  // 模式选择按钮
   const btnContainer = document.createElement("div");
   btnContainer.style.cssText = `
     display:flex;gap:12px;margin-bottom:16px;
   `;
 
-  // 无尽模式按钮
-  const endlessBtn = document.createElement("button");
-  endlessBtn.style.cssText = `
-    flex:1;padding:10px 16px;border:none;border-radius:8px;
-    background:linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%);
-    cursor:pointer;
-    ${domFontStyle("action")}
-    transition:all 0.3s ease;
-    pointer-events:auto;
-  `;
-  endlessBtn.innerHTML = `
-    <span style="font-size:20px;color:#fff;">${t("menu.endless")}</span>
-  `;
-  endlessBtn.onmouseenter = () => {
-    endlessBtn.style.background =
-      "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 50%, rgba(0,0,0,0) 100%)";
+  const makeModeBtn = (label: string, mode: "endless" | "timeAttack") => {
+    const btn = document.createElement("button");
+    btn.style.cssText = `
+      flex:1;padding:10px 16px;border:none;border-radius:8px;
+      background:linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%);
+      cursor:pointer;
+      ${domFontStyle("action")}
+      transition:all 0.3s ease;
+      pointer-events:auto;
+    `;
+    btn.innerHTML = `<span style="font-size:20px;color:#fff;">${label}</span>`;
+    btn.onmouseenter = () => {
+      btn.style.background =
+        "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 50%, rgba(0,0,0,0) 100%)";
+    };
+    btn.onmouseleave = () => {
+      btn.style.background =
+        "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%)";
+    };
+    btn.onclick = () => startGame(mode);
+    return btn;
   };
-  endlessBtn.onmouseleave = () => {
-    endlessBtn.style.background =
-      "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%)";
-  };
-  endlessBtn.onclick = () => startGame("endless");
-  btnContainer.appendChild(endlessBtn);
 
-  // 限时挑战按钮
-  const timeAttackBtn = document.createElement("button");
-  timeAttackBtn.style.cssText = `
-    flex:1;padding:10px 16px;border:none;border-radius:8px;
-    background:linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%);
-    cursor:pointer;
-    ${domFontStyle("action")}
-    transition:all 0.3s ease;
-    pointer-events:auto;
-  `;
-  timeAttackBtn.innerHTML = `
-    <span style="font-size:20px;color:#fff;">${t("menu.timeAttack")}</span>
-  `;
-  timeAttackBtn.onmouseenter = () => {
-    timeAttackBtn.style.background =
-      "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 50%, rgba(0,0,0,0) 100%)";
-  };
-  timeAttackBtn.onmouseleave = () => {
-    timeAttackBtn.style.background =
-      "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%)";
-  };
-  timeAttackBtn.onclick = () => startGame("timeAttack");
-  btnContainer.appendChild(timeAttackBtn);
-
+  btnContainer.appendChild(makeModeBtn(t("menu.endless"), "endless"));
+  btnContainer.appendChild(makeModeBtn(t("menu.timeAttack"), "timeAttack"));
   footer.appendChild(btnContainer);
 
-  // 底部工具栏
   const toolbar = document.createElement("div");
   toolbar.style.cssText = `
     display:flex;justify-content:center;gap:24px;
   `;
 
-  const settingsBtn = document.createElement("button");
-  settingsBtn.style.cssText = `
-    padding:10px 20px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
-    background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:15px;
-    cursor:pointer;${domFontStyle("body")}
-    transition:all 0.2s ease;pointer-events:auto;
-  `;
-  settingsBtn.textContent = t("menu.settings");
-  settingsBtn.onmouseenter = () => {
-    settingsBtn.style.background = "rgba(255,255,255,0.2)";
-    settingsBtn.style.borderColor = "rgba(255,255,255,0.5)";
+  const makeToolbarBtn = (label: string, onClick: () => void) => {
+    const btn = document.createElement("button");
+    btn.style.cssText = `
+      padding:10px 20px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
+      background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:15px;
+      cursor:pointer;${domFontStyle("body")}
+      transition:all 0.2s ease;pointer-events:auto;
+    `;
+    btn.textContent = label;
+    btn.onmouseenter = () => {
+      btn.style.background = "rgba(255,255,255,0.2)";
+      btn.style.borderColor = "rgba(255,255,255,0.5)";
+    };
+    btn.onmouseleave = () => {
+      btn.style.background = "rgba(255,255,255,0.1)";
+      btn.style.borderColor = "rgba(255,255,255,0.3)";
+    };
+    btn.onclick = onClick;
+    return btn;
   };
-  settingsBtn.onmouseleave = () => {
-    settingsBtn.style.background = "rgba(255,255,255,0.1)";
-    settingsBtn.style.borderColor = "rgba(255,255,255,0.3)";
-  };
-  settingsBtn.onclick = () => showSettingsPanel();
-  toolbar.appendChild(settingsBtn);
 
-  const controlsBtn = document.createElement("button");
-  controlsBtn.style.cssText = `
-    padding:10px 20px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
-    background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:15px;
-    cursor:pointer;${domFontStyle("body")}
-    transition:all 0.2s ease;pointer-events:auto;
-  `;
-  controlsBtn.textContent = t("menu.controls");
-  controlsBtn.onmouseenter = () => {
-    controlsBtn.style.background = "rgba(255,255,255,0.2)";
-    controlsBtn.style.borderColor = "rgba(255,255,255,0.5)";
-  };
-  controlsBtn.onmouseleave = () => {
-    controlsBtn.style.background = "rgba(255,255,255,0.1)";
-    controlsBtn.style.borderColor = "rgba(255,255,255,0.3)";
-  };
-  controlsBtn.onclick = () => showControlsOverlay();
-  toolbar.appendChild(controlsBtn);
-
-  const aboutBtn = document.createElement("button");
-  aboutBtn.style.cssText = `
-    padding:10px 20px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
-    background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:15px;
-    cursor:pointer;${domFontStyle("body")}
-    transition:all 0.2s ease;pointer-events:auto;
-  `;
-  aboutBtn.textContent = t("menu.about");
-  aboutBtn.onmouseenter = () => {
-    aboutBtn.style.background = "rgba(255,255,255,0.2)";
-    aboutBtn.style.borderColor = "rgba(255,255,255,0.5)";
-  };
-  aboutBtn.onmouseleave = () => {
-    aboutBtn.style.background = "rgba(255,255,255,0.1)";
-    aboutBtn.style.borderColor = "rgba(255,255,255,0.3)";
-  };
-  aboutBtn.onclick = () => showAboutOverlay();
-  toolbar.appendChild(aboutBtn);
-
+  toolbar.appendChild(
+    makeToolbarBtn(t("menu.settings"), () =>
+      showSettingsPanel({ onClosed: refreshHighScoreRow }),
+    ),
+  );
+  toolbar.appendChild(makeToolbarBtn(t("menu.controls"), showControlsOverlay));
+  toolbar.appendChild(makeToolbarBtn(t("menu.about"), showAboutOverlay));
   footer.appendChild(toolbar);
 
   menuOverlay.appendChild(footer);
 
-  // 添加全局样式
   const style = document.createElement("style");
   style.textContent = `
     @keyframes slideUp {
@@ -419,420 +275,6 @@ const buildMenu = () => {
   document.body.appendChild(menuOverlay);
 };
 
-// 设置面板（从右侧滑出）
-const showSettingsPanel = () => {
-  if (settingsContainer) return;
-
-  const settings = getCurrentSettings();
-
-  // 创建容器
-  settingsContainer = document.createElement("div");
-  settingsContainer.style.cssText = `
-    position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;
-    display:flex;justify-content:flex-end;
-  `;
-
-  // 背景遮罩
-  const backdrop = document.createElement("div");
-  backdrop.style.cssText = `
-    position:absolute;top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.5);
-  `;
-  backdrop.onclick = () => closeSettingsPanel();
-  settingsContainer.appendChild(backdrop);
-
-  // 设置面板
-  const settingsPanel = document.createElement("div");
-  settingsPanel.style.cssText = `
-    position:relative;width:320px;height:100%;
-    background:rgba(15,20,40,0.95);border-left:1px solid rgba(100,200,255,0.2);
-    box-shadow:-10px 0 40px rgba(0,0,0,0.5);
-    padding:24px;overflow-y:auto;
-    animation:slideIn 0.3s ease;
-  `;
-
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes slideIn {
-      from { transform: translateX(100%); }
-      to { transform: translateX(0); }
-    }
-    @keyframes slideOut {
-      from { transform: translateX(0); }
-      to { transform: translateX(100%); }
-    }
-    .setting-group { margin-bottom:24px; }
-    .setting-label {
-      font-size:15px;color:rgba(180,220,255,0.8);margin-bottom:10px;
-      letter-spacing:1px;
-    }
-    .setting-options { display:flex;gap:6px;flex-wrap:wrap; }
-    .setting-opt {
-      padding:9px 13px;border-radius:6px;font-size:15px;cursor:pointer;
-      background:rgba(100,200,255,0.1);border:1px solid rgba(100,200,255,0.2);
-      color:rgba(255,255,255,0.7);transition:all 0.2s ease;
-      ${domFontStyle("body")}
-    }
-    .setting-opt:hover { background:rgba(100,200,255,0.2); }
-    .setting-opt.active {
-      background:rgba(100,200,255,0.3);border-color:rgba(100,200,255,0.8);
-      color:#fff;
-    }
-    .setting-opt.group-opt {
-      flex:1;min-width:80px;text-align:center;
-    }
-    .setting-opt.group-opt.active {
-      background:rgba(100,200,255,0.4);border-color:#4488ff;
-    }
-  `;
-  settingsPanel.appendChild(style);
-
-  // 标题
-  const header = document.createElement("div");
-  header.style.cssText = `
-    display:flex;justify-content:space-between;align-items:center;
-    margin-bottom:24px;padding-bottom:16px;
-    border-bottom:1px solid rgba(100,200,255,0.1);
-  `;
-  header.innerHTML = `
-    <div style="font-size:20px;color:#fff;letter-spacing:1px;${domFontStyle(
-      "heading",
-    )}">${t("settings.title")}</div>
-  `;
-
-  const closeBtn = document.createElement("button");
-  closeBtn.style.cssText = `
-    width:32px;height:32px;border:none;border-radius:6px;
-    background:rgba(255,255,255,0.1);color:#fff;font-size:18px;
-    cursor:pointer;transition:all 0.2s ease;
-  `;
-  closeBtn.textContent = "✕";
-  closeBtn.onmouseenter = () =>
-    (closeBtn.style.background = "rgba(255,255,255,0.2)");
-  closeBtn.onmouseleave = () =>
-    (closeBtn.style.background = "rgba(255,255,255,0.1)");
-  closeBtn.onclick = () => closeSettingsPanel();
-  header.appendChild(closeBtn);
-  settingsPanel.appendChild(header);
-
-  // 语言切换
-  const langGroup = document.createElement("div");
-  langGroup.className = "setting-group";
-  langGroup.innerHTML = `<div class="setting-label">${t(
-    "settings.lang.label",
-  )}</div>`;
-  const langOptions = document.createElement("div");
-  langOptions.className = "setting-options";
-  const currentLocale = getLocale();
-  SUPPORTED_LOCALES.forEach(({ value, label }) => {
-    const opt = document.createElement("div");
-    opt.className = `setting-opt ${value === currentLocale ? "active" : ""}`;
-    opt.textContent = label;
-    opt.onclick = () => {
-      setLocale(value as Locale);
-      refreshSettingsPanel();
-    };
-    langOptions.appendChild(opt);
-  });
-  langGroup.appendChild(langOptions);
-  settingsPanel.appendChild(langGroup);
-
-  // 速度设置
-  const speedGroup = document.createElement("div");
-  speedGroup.className = "setting-group";
-  speedGroup.innerHTML = `<div class="setting-label">${t(
-    "settings.speed.label",
-  )}</div>`;
-
-  const speedOptions = document.createElement("div");
-  speedOptions.className = "setting-options";
-  for (let i = 1; i <= 5; i++) {
-    const level = i as SpeedLevel;
-    const opt = document.createElement("div");
-    opt.className = `setting-opt ${
-      level === settings.speedLevel ? "active" : ""
-    }`;
-    opt.textContent = getSpeedLabel(level);
-    opt.onclick = () => {
-      settings.speedLevel = level;
-      updateCurrentSettings(settings);
-      refreshSettingsPanel();
-    };
-    speedOptions.appendChild(opt);
-  }
-  speedGroup.appendChild(speedOptions);
-  settingsPanel.appendChild(speedGroup);
-
-  // 限时模式时长
-  const timeGroup = document.createElement("div");
-  timeGroup.className = "setting-group";
-  timeGroup.innerHTML = `<div class="setting-label">${t(
-    "settings.ta.label",
-  )}</div>`;
-
-  const timeOptions = document.createElement("div");
-  timeOptions.className = "setting-options";
-  ([60, 90, 120, 180] as TimeAttackDuration[]).forEach((duration) => {
-    const opt = document.createElement("div");
-    opt.className = `setting-opt ${
-      duration === settings.timeAttackDuration ? "active" : ""
-    }`;
-    opt.textContent = getTimeLabel(duration);
-    opt.onclick = () => {
-      settings.timeAttackDuration = duration;
-      updateCurrentSettings(settings);
-      refreshSettingsPanel();
-    };
-    timeOptions.appendChild(opt);
-  });
-  timeGroup.appendChild(timeOptions);
-  settingsPanel.appendChild(timeGroup);
-
-  // 团体选择
-  const groupGroup = document.createElement("div");
-  groupGroup.className = "setting-group";
-  groupGroup.innerHTML = `<div class="setting-label">${t(
-    "settings.groups.label",
-  )}</div>`;
-
-  const groupOptions = document.createElement("div");
-  groupOptions.className = "setting-options";
-  GAME_GROUPS.forEach((group) => {
-    const isSelected = settings.selectedGroups.includes(group);
-    const opt = document.createElement("div");
-    opt.className = `setting-opt group-opt ${isSelected ? "active" : ""}`;
-    opt.textContent = GROUP_LABELS[group];
-    opt.onclick = () => {
-      const idx = settings.selectedGroups.indexOf(group);
-      if (idx >= 0) {
-        if (settings.selectedGroups.length > 3) {
-          settings.selectedGroups.splice(idx, 1);
-        }
-      } else {
-        if (settings.selectedGroups.length < 5) {
-          settings.selectedGroups.push(group);
-        }
-      }
-      updateCurrentSettings(settings);
-      refreshSettingsPanel();
-    };
-    groupOptions.appendChild(opt);
-  });
-  groupGroup.appendChild(groupOptions);
-  settingsPanel.appendChild(groupGroup);
-
-  // 道具掉落概率
-  const itemGroup = document.createElement("div");
-  itemGroup.className = "setting-group";
-  itemGroup.innerHTML = `<div class="setting-label">${t(
-    "settings.item.label",
-  )}</div>`;
-  const itemOptions = document.createElement("div");
-  itemOptions.className = "setting-options";
-  const currentItemRate = (settings.itemDropRate ?? 10) as ItemDropRate;
-  ITEM_DROP_RATES.forEach((rate) => {
-    const opt = document.createElement("div");
-    opt.className = `setting-opt ${rate === currentItemRate ? "active" : ""}`;
-    opt.title = t("settings.item.tooltip", {
-      factor: ITEM_DROP_SCORE_FACTORS[rate].toFixed(2),
-    });
-    opt.innerHTML = `<div>${getItemDropLabel(rate)}</div>
-      <div style="font-size:12px;opacity:0.65;margin-top:2px;">×${ITEM_DROP_SCORE_FACTORS[
-        rate
-      ].toFixed(2)}</div>`;
-    opt.onclick = () => {
-      settings.itemDropRate = rate;
-      updateCurrentSettings(settings);
-      refreshSettingsPanel();
-    };
-    itemOptions.appendChild(opt);
-  });
-  itemGroup.appendChild(itemOptions);
-  settingsPanel.appendChild(itemGroup);
-
-  // 娯楽モード
-  if (!settings.funModes) {
-    settings.funModes = {
-      ...FUN_MODE_DEFS.reduce((acc, d) => {
-        acc[d.id] = false;
-        return acc;
-      }, {} as Record<FunModeId, boolean>),
-    };
-  }
-
-  const funGroup = document.createElement("div");
-  funGroup.className = "setting-group";
-  funGroup.innerHTML = `<div class="setting-label">${t(
-    "settings.fun.label",
-  )}</div>`;
-
-  const funOptions = document.createElement("div");
-  funOptions.className = "setting-options";
-  funOptions.style.flexDirection = "column";
-  funOptions.style.alignItems = "stretch";
-
-  const funChipRow = document.createElement("div");
-  funChipRow.className = "setting-options";
-
-  const funHelp = document.createElement("div");
-  funHelp.style.cssText = `
-    margin-top:10px;padding:10px 12px;border-radius:8px;
-    background:rgba(0,0,0,0.25);border:1px solid rgba(100,200,255,0.15);
-    color:rgba(255,255,255,0.7);font-size:14px;line-height:1.65;min-height:3.4em;
-    white-space:pre-wrap;
-  `;
-  funHelp.textContent = t("settings.fun.help");
-
-  FUN_MODE_DEFS.forEach((def) => {
-    const on = !!settings.funModes[def.id];
-    const opt = document.createElement("div");
-    opt.className = `setting-opt ${on ? "active" : ""}`;
-    opt.title = t(`fun.${def.id}.description`);
-    const shownFactor = def.itemLinked
-      ? scaleItemLinkedFactor(def.scoreFactor, currentItemRate)
-      : def.scoreFactor;
-    const factorNote = def.itemLinked ? t("settings.fun.itemLinked") : "";
-    opt.innerHTML = `<div style="font-size:15px;">${t(
-      `fun.${def.id}.name`,
-    )}</div>
-      <div style="font-size:12px;opacity:0.65;margin-top:2px;">${t(
-        `fun.${def.id}.subtitle`,
-      )} · ×${shownFactor.toFixed(2)}${factorNote}</div>`;
-    opt.onmouseenter = () => {
-      funHelp.textContent = t(`fun.${def.id}.description`);
-    };
-    opt.onclick = () => {
-      settings.funModes[def.id] = !settings.funModes[def.id];
-      updateCurrentSettings(settings);
-      refreshSettingsPanel();
-    };
-    funChipRow.appendChild(opt);
-  });
-
-  funOptions.appendChild(funChipRow);
-  funOptions.appendChild(funHelp);
-  funGroup.appendChild(funOptions);
-  settingsPanel.appendChild(funGroup);
-
-  // 难度摘要（只读，含娱乐最终倍率 + 明细 tooltip）
-  const diffSummary = document.createElement("div");
-  diffSummary.className = "setting-group";
-  const breakdown = getScoreMultiplierBreakdown(settings);
-  const mult = breakdown.final;
-  const label = breakdown.difficultyLabel;
-  const diffLevel = getDifficultyLevel(settings);
-  const entOn = isEntertainmentMode(settings);
-
-  const linesHtml = breakdown.lines
-    .map(
-      (line) =>
-        `<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-          <span style="color:rgba(255,255,255,0.75);">${line.label}</span>
-          <span style="${domFontStyle(
-            "numeric",
-          )}color:#aaccff;white-space:nowrap;">×${line.factor.toFixed(2)}</span>
-        </div>`,
-    )
-    .join("");
-
-  const card = document.createElement("div");
-  card.style.cssText = `
-    position:relative;padding:12px 14px;border-radius:8px;
-    background:rgba(100,200,255,0.12);border:1px solid rgba(100,200,255,0.25);
-    color:#fff;font-size:15px;line-height:1.65;cursor:help;
-  `;
-  card.innerHTML = `
-    <div><span style="${diffColorStyle(diffLevel)}">${label}</span>${
-    entOn
-      ? ` <span style="color:#ffcc66;">${t(
-          "settings.difficulty.entertainment",
-        )}</span>`
-      : ""
-  }</div>
-    <div style="color:#aaccff;">
-      <span style="${domFontStyle("numeric")}">×${mult.toFixed(2)}</span>
-      <span style="font-size:13px;opacity:0.55;margin-left:6px;${domFontStyle(
-        "body",
-      )}">${t("settings.difficulty.info")}</span>
-    </div>
-  `;
-
-  const tip = document.createElement("div");
-  tip.style.cssText = `
-    display:none;position:absolute;left:0;right:0;bottom:calc(100% + 8px);z-index:20;
-    padding:12px 14px;border-radius:10px;
-    background:rgba(12,16,32,0.97);border:1px solid rgba(100,200,255,0.35);
-    box-shadow:0 8px 28px rgba(0,0,0,0.45);font-size:14px;line-height:1.5;
-  `;
-  tip.innerHTML = `
-    <div style="font-size:13px;color:rgba(180,220,255,0.8);letter-spacing:1px;margin-bottom:8px;">${t(
-      "settings.difficulty.breakdownTitle",
-    )}</div>
-    ${linesHtml}
-    <div style="display:flex;justify-content:space-between;gap:12px;padding-top:8px;margin-top:4px;border-top:1px solid rgba(100,200,255,0.25);font-weight:600;">
-      <span>${t("settings.difficulty.total")}</span>
-      <span style="${domFontStyle("numeric")}color:#fff;">×${mult.toFixed(
-    2,
-  )}</span>
-    </div>
-  `;
-  card.appendChild(tip);
-  card.onmouseenter = () => {
-    tip.style.display = "block";
-  };
-  card.onmouseleave = () => {
-    tip.style.display = "none";
-  };
-  // mobile: tap to toggle
-  card.onclick = (e) => {
-    e.stopPropagation();
-    tip.style.display = tip.style.display === "block" ? "none" : "block";
-  };
-
-  diffSummary.innerHTML = `<div class="setting-label">${t(
-    "settings.difficulty.label",
-  )}</div>`;
-  diffSummary.appendChild(card);
-  settingsPanel.appendChild(diffSummary);
-
-  settingsContainer.appendChild(settingsPanel);
-  document.body.appendChild(settingsContainer);
-};
-
-// 刷新设置面板
-const refreshSettingsPanel = () => {
-  if (settingsContainer) {
-    settingsContainer.remove();
-    settingsContainer = null;
-    showSettingsPanel();
-  }
-};
-
-// 关闭设置面板
-const closeSettingsPanel = () => {
-  if (settingsContainer) {
-    const settingsPanel = settingsContainer.querySelector(
-      "div:nth-child(2)",
-    ) as HTMLElement;
-    if (settingsPanel) {
-      settingsPanel.style.animation = "slideOut 0.3s ease forwards";
-    }
-    setTimeout(() => {
-      settingsContainer?.remove();
-      settingsContainer = null;
-      refreshHighScoreRow();
-    }, 300);
-  }
-};
-
-// 刷新主菜单最高分（TA 时长 / 娱乐纪录变化时）
-const refreshHighScoreRow = () => {
-  const row = document.getElementById("high-score-row");
-  if (!row) return;
-  row.innerHTML = highScoreRowHtml();
-};
-
-// 开始游戏
 const startGame = (mode: "endless" | "timeAttack") => {
   setCurrentGameMode(mode);
 
@@ -846,208 +288,4 @@ const startGame = (mode: "endless" | "timeAttack") => {
   }
 
   setState(start);
-};
-
-// 操作说明覆盖层
-const showControlsOverlay = () => {
-  const overlay = document.createElement("div");
-  overlay.id = "controls-overlay";
-  overlay.style.cssText = `
-    position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);
-    animation:fadeIn 0.3s ease;
-  `;
-
-  const card = document.createElement("div");
-  card.style.cssText = `
-    background:rgba(20,25,50,0.95);border:1px solid rgba(100,200,255,0.3);
-    border-radius:16px;padding:28px 32px;max-width:480px;width:90%;
-    box-shadow:0 20px 60px rgba(0,0,0,0.5);
-  `;
-  card.innerHTML = `
-    <div style="font-size:22px;color:#fff;text-align:center;margin-bottom:20px;letter-spacing:2px;${domFontStyle(
-      "heading",
-    )}">
-      ${t("controls.title")}
-    </div>
-    <table style="width:100%;border-collapse:collapse;font-size:16px;color:rgba(255,255,255,0.8);${domFontStyle(
-      "body",
-    )}">
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;color:#667eea;width:80px;">${t(
-          "controls.keyboard",
-        )}</td>
-        <td style="padding:10px 0;">${t("controls.moveLeftRight")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.rotateClockwise")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.rotateCounter")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.softDrop")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.hardDrop")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.15);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.restart")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;color:#f5576c;">${t("controls.mobile")}</td>
-        <td style="padding:10px 0;">${t("controls.swipeMove")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.tapRotate")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.swipeHardDrop")}</td>
-      </tr>
-      <tr>
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.pressSoftDrop")}</td>
-      </tr>
-    </table>
-    <div style="text-align:center;margin-top:20px;">
-      <button type="button" class="overlay-close-btn" style="padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
-        background:rgba(255,255,255,0.1);color:#fff;font-size:15px;cursor:pointer;
-        transition:all 0.2s ease;">
-        ${t("controls.close")}
-      </button>
-    </div>
-  `;
-  overlay.appendChild(card);
-  const closeBtn = card.querySelector(".overlay-close-btn") as HTMLButtonElement;
-  closeBtn.onclick = () => overlay.remove();
-  overlay.onclick = (e) => {
-    if (e.target === overlay) overlay.remove();
-  };
-  document.body.appendChild(overlay);
-};
-
-const showAboutOverlay = () => {
-  // Only one about dialog at a time
-  document.getElementById("about-overlay")?.remove();
-
-  const overlay = document.createElement("div");
-  overlay.id = "about-overlay";
-  overlay.style.cssText = `
-    position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);
-    animation:fadeIn 0.3s ease;
-  `;
-
-  const link = (text: string, href: string) =>
-    `<a class="about-link" href="${href}" target="_blank" rel="noopener">${text}</a>`;
-  const row = (label: string, content: string, last = false) => `
-    <div style="display:flex;gap:12px;align-items:baseline;padding:11px 0;
-      ${last ? "" : "border-bottom:1px solid rgba(100,200,255,0.1);"}">
-      <span style="flex:0 0 72px;font-size:13px;color:rgba(180,220,255,0.7);${domFontStyle(
-        "caption",
-      )}">${label}</span>
-      <span style="flex:1;font-size:15px;color:rgba(255,255,255,0.85);line-height:1.5;${domFontStyle(
-        "body",
-      )}">${content}</span>
-    </div>`;
-
-  const card = document.createElement("div");
-  card.style.cssText = `
-    background:rgba(20,25,50,0.95);border:1px solid rgba(100,200,255,0.3);
-    border-radius:16px;padding:24px 28px;max-width:480px;width:90%;
-    max-height:min(85vh,720px);overflow-y:auto;
-    box-shadow:0 20px 60px rgba(0,0,0,0.5);
-  `;
-  card.innerHTML = `
-    <style>
-      .about-link {
-        color:rgba(170,210,255,0.9);text-decoration:none;
-        transition:color .15s ease;
-      }
-      .about-link:hover { color:#dcefff;text-decoration:underline; }
-      .about-legal p { margin:0 0 10px; }
-      .about-legal p:last-child { margin-bottom:0; }
-    </style>
-    <div style="font-size:22px;color:#fff;text-align:center;margin-bottom:16px;letter-spacing:2px;${domFontStyle(
-      "heading",
-    )}">
-      ${t("about.title")}
-    </div>
-    ${row(
-      t("footer.original"),
-      `${link(
-        "Pazuru-Pico",
-        "https://github.com/hamzaabamboo/pazuru-pico",
-      )} (${link("HamP", "https://ham-san.net/")})`,
-    )}
-    ${row(
-      t("footer.inspiration"),
-      link(
-        "BanG Dream! ☆PICO ～OHMORI～ Ep.9",
-        "https://www.youtube.com/watch?v=q5YETLAebUY",
-      ),
-    )}
-    ${row(
-      t("footer.thisProject"),
-      link("GitHub", "https://github.com/25-ji-code-de/puzzle-sekai"),
-    )}
-    ${row(
-      t("footer.author"),
-      link(
-        "bili_47177171806",
-        "https://space.bilibili.com/3546904856103196",
-      ),
-    )}
-    ${row(
-      t("footer.support"),
-      link(t("about.afdian"), "https://afdian.com/a/1806P"),
-    )}
-    ${row(
-      t("footer.feedback"),
-      link(
-        t("about.reportIssue"),
-        "https://github.com/25-ji-code-de/puzzle-sekai/issues/new",
-      ),
-      true,
-    )}
-    <div class="about-legal" style="margin-top:18px;padding:14px 14px 12px;border-radius:10px;
-      background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.08);
-      font-size:13px;line-height:1.7;color:rgba(255,255,255,0.62);${domFontStyle(
-        "caption",
-      )}">
-      <p style="font-size:14px;color:rgba(255,255,255,0.85);margin-bottom:12px;${domFontStyle(
-        "body",
-      )}"><strong>${t("about.disclaimerTitle")}</strong></p>
-      <p>${t("about.disclaimerP1")}</p>
-      <p>${t("about.disclaimerP2")}</p>
-      <p>${t("about.disclaimerP3")}</p>
-      <p>${t("about.disclaimerP4")}</p>
-      <p style="margin-top:12px;font-size:12px;opacity:0.8;">${t(
-        "about.disclaimerAgree",
-      )}</p>
-    </div>
-    <div style="text-align:center;margin-top:20px;">
-      <button type="button" class="overlay-close-btn" style="padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
-        background:rgba(255,255,255,0.1);color:#fff;font-size:15px;cursor:pointer;
-        transition:all 0.2s ease;">
-        ${t("controls.close")}
-      </button>
-    </div>
-  `;
-  overlay.appendChild(card);
-  const closeBtn = card.querySelector(".overlay-close-btn") as HTMLButtonElement;
-  closeBtn.onclick = () => overlay.remove();
-  overlay.onclick = (e) => {
-    if (e.target === overlay) overlay.remove();
-  };
-  document.body.appendChild(overlay);
 };
