@@ -62,6 +62,19 @@ export const en = {
     lang: {
       label: "Language / 言語",
     },
+    data: {
+      label: "Data / Cache",
+      clearCache: "Clear cache",
+      clearData: "Clear data",
+      clearCacheConfirm:
+        "Clear downloaded offline caches (audio, fonts, etc.)? Settings and high scores stay intact.",
+      clearDataConfirm:
+        "Clear local settings, language, and all high scores? This cannot be undone.",
+      clearCacheDone: "Cache cleared",
+      clearDataDone: "Data cleared — reloading",
+      clearFailed: "Something went wrong. Please try again.",
+      working: "Working…",
+    },
   },
   difficulty: {
     1: "Easy",

@@ -14,6 +14,8 @@ import {
   getDifficultyLevel,
   getScoreMultiplierBreakdown,
   isEntertainmentMode,
+  clearAppData,
+  clearAppCaches,
 } from "./settings";
 import { FUN_MODE_DEFS, FunModeId, scaleItemLinkedFactor } from "./fun-modes";
 import {
@@ -436,6 +438,83 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
   )}</div>`;
   diffSummary.appendChild(card);
   settingsPanel.appendChild(diffSummary);
+
+  // Data / cache
+  const dataGroup = document.createElement("div");
+  dataGroup.className = "setting-group";
+  dataGroup.innerHTML = `<div class="setting-label">${t(
+    "settings.data.label",
+  )}</div>`;
+  const dataOptions = document.createElement("div");
+  dataOptions.className = "setting-options";
+  dataOptions.style.flexDirection = "column";
+  dataOptions.style.alignItems = "stretch";
+
+  const dataStatus = document.createElement("div");
+  dataStatus.style.cssText = `
+    margin-top:8px;min-height:1.4em;font-size:13px;line-height:1.4;
+    color:rgba(180,220,255,0.75);
+  `;
+
+  const makeDangerBtn = (label: string) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "setting-opt";
+    btn.textContent = label;
+    btn.style.cssText = `
+      width:100%;text-align:center;cursor:pointer;${domFontStyle("body")}
+      background:rgba(255,80,100,0.12);border:1px solid rgba(255,100,120,0.35);
+      color:rgba(255,200,210,0.95);
+    `;
+    btn.onmouseenter = () => {
+      btn.style.background = "rgba(255,80,100,0.22)";
+    };
+    btn.onmouseleave = () => {
+      btn.style.background = "rgba(255,80,100,0.12)";
+    };
+    return btn;
+  };
+
+  const clearCacheBtn = makeDangerBtn(t("settings.data.clearCache"));
+  clearCacheBtn.onclick = async () => {
+    if (!window.confirm(t("settings.data.clearCacheConfirm"))) return;
+    clearCacheBtn.disabled = true;
+    clearDataBtn.disabled = true;
+    dataStatus.textContent = t("settings.data.working");
+    try {
+      await clearAppCaches();
+      dataStatus.textContent = t("settings.data.clearCacheDone");
+    } catch {
+      dataStatus.textContent = t("settings.data.clearFailed");
+    } finally {
+      clearCacheBtn.disabled = false;
+      clearDataBtn.disabled = false;
+    }
+  };
+
+  const clearDataBtn = makeDangerBtn(t("settings.data.clearData"));
+  clearDataBtn.onclick = () => {
+    if (!window.confirm(t("settings.data.clearDataConfirm"))) return;
+    clearCacheBtn.disabled = true;
+    clearDataBtn.disabled = true;
+    dataStatus.textContent = t("settings.data.working");
+    try {
+      clearAppData();
+      dataStatus.textContent = t("settings.data.clearDataDone");
+      // Reload so locale / menu / high-score UI all rehydrate from defaults
+      setTimeout(() => window.location.reload(), 450);
+    } catch {
+      dataStatus.textContent = t("settings.data.clearFailed");
+      clearCacheBtn.disabled = false;
+      clearDataBtn.disabled = false;
+    }
+  };
+
+  dataOptions.appendChild(clearCacheBtn);
+  dataOptions.appendChild(clearDataBtn);
+  dataOptions.appendChild(dataStatus);
+  dataGroup.appendChild(dataOptions);
+  settingsPanel.appendChild(dataGroup);
 
   settingsContainer.appendChild(settingsPanel);
   document.body.appendChild(settingsContainer);

@@ -62,6 +62,19 @@ export const ja = {
     lang: {
       label: "言語 / Language",
     },
+    data: {
+      label: "データ / キャッシュ",
+      clearCache: "キャッシュを削除",
+      clearData: "データを削除",
+      clearCacheConfirm:
+        "オフライン用キャッシュ（音声・フォントなど）を削除しますか？設定とハイスコアは残ります。",
+      clearDataConfirm:
+        "ローカル設定・言語・すべてのハイスコアを削除しますか？この操作は取り消せません。",
+      clearCacheDone: "キャッシュを削除しました",
+      clearDataDone: "データを削除しました。再読み込みします",
+      clearFailed: "失敗しました。しばらくしてから再試行してください。",
+      working: "処理中…",
+    },
   },
   difficulty: {
     1: "Easy",

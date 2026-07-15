@@ -14,6 +14,7 @@ import {
   showAboutOverlay,
   disposeMenuOverlays,
 } from "./menu-overlays";
+import { clearAppCaches } from "./settings";
 
 let welcomeSprite: PIXI.Sprite;
 let welcomeInitialized = false;
@@ -256,6 +257,31 @@ const buildMenu = () => {
   );
   toolbar.appendChild(makeToolbarBtn(t("menu.controls"), showControlsOverlay));
   toolbar.appendChild(makeToolbarBtn(t("menu.about"), showAboutOverlay));
+
+  const clearCacheBtn = makeToolbarBtn(
+    t("settings.data.clearCache"),
+    async () => {
+      if (!window.confirm(t("settings.data.clearCacheConfirm"))) return;
+      clearCacheBtn.disabled = true;
+      const prev = clearCacheBtn.textContent;
+      clearCacheBtn.textContent = t("settings.data.working");
+      try {
+        await clearAppCaches();
+        clearCacheBtn.textContent = t("settings.data.clearCacheDone");
+        setTimeout(() => {
+          clearCacheBtn.textContent = prev;
+          clearCacheBtn.disabled = false;
+        }, 1500);
+      } catch {
+        clearCacheBtn.textContent = t("settings.data.clearFailed");
+        setTimeout(() => {
+          clearCacheBtn.textContent = prev;
+          clearCacheBtn.disabled = false;
+        }, 1500);
+      }
+    },
+  );
+  toolbar.appendChild(clearCacheBtn);
   footer.appendChild(toolbar);
 
   menuOverlay.appendChild(footer);
