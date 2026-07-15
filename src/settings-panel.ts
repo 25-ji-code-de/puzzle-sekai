@@ -297,12 +297,10 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
 
   // Fun modes
   if (!settings.funModes) {
-    settings.funModes = {
-      ...FUN_MODE_DEFS.reduce((acc, d) => {
-        acc[d.id] = false;
-        return acc;
-      }, {} as Record<FunModeId, boolean>),
-    };
+    settings.funModes = FUN_MODE_DEFS.reduce((acc, d) => {
+      acc[d.id] = false;
+      return acc;
+    }, {} as Record<FunModeId, boolean>);
   }
 
   const funGroup = document.createElement("div");
