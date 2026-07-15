@@ -165,6 +165,9 @@ const checkBGM = () => {
     gameTicker.remove(checkBGM);
     return;
   }
+  // While paused the current track is intentionally stopped (isPlaying=false).
+  // Don't treat that as "track finished" or we'll start a brand-new song on resume.
+  if (playPaused) return;
   if (bgmPlaying && !bgmPlaying.isPlaying) {
     playNextBGM();
   }
@@ -399,6 +402,7 @@ export const pausePlay = () => {
   gameTicker.stop();
   playPaused = true;
   try {
+    // Sound.pause() freezes the current instance so resume() can continue it.
     if (bgmPlaying) bgmPlaying.pause();
   } catch {
     /* ignore */
@@ -407,14 +411,16 @@ export const pausePlay = () => {
 
 /** Resume gameplay after a pause (caller ensures ticker is restarted). */
 export const resumePlay = () => {
-  playPaused = false;
-  // pausePlay stopped the ticker; start it again so pieces resume falling.
-  if (!gameTicker.started) gameTicker.start();
+  // Resume BGM before clearing playPaused so a same-tick checkBGM can't
+  // mis-detect the still-paused track as finished and start a new song.
   try {
-    if (bgmPlaying && bgmActive) bgmPlaying.play();
+    if (bgmPlaying && bgmActive) bgmPlaying.resume();
   } catch {
     /* ignore */
   }
+  playPaused = false;
+  // pausePlay stopped the ticker; start it again so pieces resume falling.
+  if (!gameTicker.started) gameTicker.start();
 };
 
 /**
