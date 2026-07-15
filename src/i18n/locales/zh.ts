@@ -32,6 +32,11 @@ export const zh = {
     menu: "返回主菜单",
     button: "暂停",
   },
+  gameOver: {
+    title: "游戏结束",
+    restart: "再来一局",
+    menu: "回到主界面",
+  },
   settings: {
     title: "设置",
     speed: {

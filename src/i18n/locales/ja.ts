@@ -32,6 +32,11 @@ export const ja = {
     menu: "メニューに戻る",
     button: "一時停止",
   },
+  gameOver: {
+    title: "ゲームオーバー",
+    restart: "もう一度",
+    menu: "メニューに戻る",
+  },
   settings: {
     title: "設定",
     speed: {

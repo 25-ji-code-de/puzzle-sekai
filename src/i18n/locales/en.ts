@@ -32,6 +32,11 @@ export const en = {
     menu: "Quit to menu",
     button: "Pause",
   },
+  gameOver: {
+    title: "Game Over",
+    restart: "Play again",
+    menu: "Back to menu",
+  },
   settings: {
     title: "Settings",
     speed: {

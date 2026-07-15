@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js-legacy";
 import sound from "pixi-sound";
-import { app, gameTicker, hammerManager, resetGameTicker, setState } from ".";
+import { app, gameTicker, resetGameTicker, setState } from ".";
 import {
   createavatarSan,
   avatarFlyDown,
@@ -42,6 +42,7 @@ import { getCurrentGameMode, getCurrentSettings, getItemDropChance } from "./set
 import { resetFunEffects } from "./fun-effects";
 import { enterMenu } from "./welcome";
 import { disposePauseMenu, showPauseButton, hidePauseButton } from "./pause-menu";
+import { disposeGameOverMenu, showGameOverMenu } from "./game-over-menu";
 
 export { welcome } from "./welcome";
 export { addDropScore } from "./score";
@@ -229,6 +230,7 @@ const start = () => {
   clearStage();
   playPaused = false;
   disposePauseMenu(); // drop any stale pause overlay (e.g. "r" restart from pause)
+  disposeGameOverMenu(); // drop game-over choice if "r" / restart was pressed
   avatarStab = createavatarSan();
   app.stage.addChild(avatarStab);
   resetScore();
@@ -427,6 +429,7 @@ export const returnToMenu = () => {
   playPaused = false;
   setPlayActive(false);
   disposePauseMenu();
+  disposeGameOverMenu();
   hidePauseButton();
   setState(() => {}); // idle state while the menu shows
   enterMenu();
@@ -500,9 +503,6 @@ const endTimeAttack = async () => {
 };
 
 const ended = () => {
-  const restartGame = () => {
-    setState(start);
-    hammerManager.off("tap", restartGame);
-  };
-  hammerManager.on("tap", restartGame);
+  // Present Restart / Back-to-menu choices instead of tap-to-restart.
+  showGameOverMenu();
 };
