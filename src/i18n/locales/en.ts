@@ -16,6 +16,7 @@ export const en = {
     timeAttack: "Time Attack",
     settings: "Settings",
     controls: "Controls",
+    about: "About",
     highScore: {
       endless: "Endless",
       timeAttack: "Time Attack",
@@ -150,5 +151,23 @@ export const en = {
     inspiration: "Inspired by",
     thisProject: "This project",
     author: "Author",
+    support: "Support",
+    feedback: "Feedback",
+  },
+  about: {
+    title: "About",
+    afdian: "Afdian",
+    reportIssue: "Open an issue",
+    disclaimerTitle: "Disclaimer",
+    disclaimerP1:
+      "This project (パズル⭐︎セカ / puzzle-sekai) is an unofficial fan work and is not affiliated with SEGA, Colorful Palette, or Crypton Future Media.",
+    disclaimerP2:
+      "All game assets used in this project (including but not limited to video, audio, images, character designs, and scripts) are copyrighted by <strong>© SEGA</strong>, <strong>© Colorful Palette Inc.</strong>, and <strong>© Crypton Future Media, INC.</strong>",
+    disclaimerP3:
+      "This project is intended for learning, research, and personal enjoyment only. <strong>Any commercial use or monetization is strictly prohibited</strong>. The developer is not liable for any direct or indirect damages arising from the use of this project.",
+    disclaimerP4:
+      "If you are a rights holder and believe this project infringes your rights, please contact the developer and we will take appropriate action promptly.",
+    disclaimerAgree:
+      "By using this site, you acknowledge that you have read and agree to the above terms.",
   },
 };

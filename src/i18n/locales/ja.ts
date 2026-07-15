@@ -16,6 +16,7 @@ export const ja = {
     timeAttack: "タイムアタック",
     settings: "設定",
     controls: "操作説明",
+    about: "について",
     highScore: {
       endless: "エンドレス",
       timeAttack: "タイムアタック",
@@ -150,5 +151,23 @@ export const ja = {
     inspiration: "インスピレーション",
     thisProject: "本作",
     author: "作者",
+    support: "支援",
+    feedback: "フィードバック",
+  },
+  about: {
+    title: "クレジット",
+    afdian: "愛発電 (Afdian)",
+    reportIssue: "Issue を作成",
+    disclaimerTitle: "免責事項",
+    disclaimerP1:
+      "本プロジェクト（パズル⭐︎セカ / puzzle-sekai）は非公式のファン作品であり、SEGA、Colorful Palette、Crypton Future Media とは一切関係ありません。",
+    disclaimerP2:
+      "本プロジェクトで使用しているすべてのゲーム素材（映像、音声、画像、キャラクターデザイン、スクリプト等を含む）の著作権は <strong>© SEGA</strong>、<strong>© Colorful Palette Inc.</strong> および <strong>© Crypton Future Media, INC.</strong> に帰属します。",
+    disclaimerP3:
+      "本プロジェクトは学習・研究・個人鑑賞のみを目的としており、<strong>あらゆる商業利用・営利活動を固く禁じます</strong>。開発者は、本プロジェクトの利用に起因する直接・間接の損害について責任を負いません。",
+    disclaimerP4:
+      "権利者の方で本プロジェクトが権利を侵害していると判断される場合は、開発者までご連絡ください。速やかに対応いたします。",
+    disclaimerAgree:
+      "本サイトを利用することで、上記の条項を読み同意したものとみなします。",
   },
 };

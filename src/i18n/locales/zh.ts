@@ -16,6 +16,7 @@ export const zh = {
     timeAttack: "限时挑战",
     settings: "设置",
     controls: "操作说明",
+    about: "关于",
     highScore: {
       endless: "无尽模式",
       timeAttack: "限时挑战",
@@ -142,5 +143,22 @@ export const zh = {
     inspiration: "灵感",
     thisProject: "本作",
     author: "作者",
+    support: "支持",
+    feedback: "反馈",
+  },
+  about: {
+    title: "关于",
+    afdian: "爱发电",
+    reportIssue: "提交 Issue",
+    disclaimerTitle: "免责声明",
+    disclaimerP1:
+      "本项目（パズル⭐︎セカ / puzzle-sekai）为非官方粉丝作品（Fan Art），与 SEGA、Colorful Palette 或 Crypton Future Media 无任何关联。",
+    disclaimerP2:
+      "本项目中使用的所有游戏素材（包括但不限于视频、音频、图像、角色设计、剧本等）的版权均归 <strong>© SEGA</strong>、<strong>© Colorful Palette Inc.</strong> 及 <strong>© Crypton Future Media, INC.</strong> 所有。",
+    disclaimerP3:
+      "本项目仅供学习、研究及个人欣赏使用，<strong>严禁用于任何形式的商业用途或营利活动</strong>。开发者不对因使用本项目而产生的任何直接或间接损失承担责任。",
+    disclaimerP4:
+      "如权利方认为本项目侵犯了您的权益，请联系开发者，我们将立即采取措施进行处理。",
+    disclaimerAgree: "使用本网站即表示您已阅读并同意上述条款。",
   },
 };

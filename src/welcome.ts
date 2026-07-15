@@ -214,6 +214,9 @@ const showWelcomePage = () => {
       settingsContainer.remove();
       settingsContainer = null;
     }
+    // Drop ephemeral overlays so they don't keep the previous locale's copy
+    document.getElementById("about-overlay")?.remove();
+    document.getElementById("controls-overlay")?.remove();
     // Rebuild menu with new locale
     if (menuOverlay) {
       menuOverlay.remove();
@@ -262,7 +265,7 @@ const buildMenu = () => {
   // 底部菜单区域
   const footer = document.createElement("div");
   footer.style.cssText = `
-    padding:20px 24px 40px;
+    padding:20px 24px 28px;
     background:linear-gradient(transparent, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.85));
     pointer-events:auto;
   `;
@@ -377,65 +380,26 @@ const buildMenu = () => {
   controlsBtn.onclick = () => showControlsOverlay();
   toolbar.appendChild(controlsBtn);
 
-  footer.appendChild(toolbar);
-
-  // 页脚信息条（移动游戏风格：分组标签 + 链接）
-  const credits = document.createElement("div");
-  credits.className = "credits-bar";
-  credits.style.cssText = domFontStyle("caption");
-  const cLabel = "c-label";
-  const cLink = "c-link";
-  const cSep = `<span class="c-sep">·</span>`;
-  const link = (text: string, href: string) =>
-    `<a class="${cLink}" href="${href}" target="_blank" rel="noopener">${text}</a>`;
-  const labeled = (label: string, text: string, href: string) =>
-    `<span class="${cLabel}">${label}</span>${link(text, href)}`;
-  credits.innerHTML = `
-    <style>
-      .credits-bar {
-        margin-top:18px;padding:12px 16px;border-radius:10px;
-        background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.08);
-        text-align:center;font-size:13px;line-height:1.95;
-        color:rgba(255,255,255,0.5);pointer-events:auto;
-      }
-      .credits-bar .c-label { color:rgba(255,255,255,0.4);margin-right:5px; }
-      .credits-bar .c-sep { color:rgba(255,255,255,0.2);margin:0 8px; }
-      .credits-bar .c-link {
-        color:rgba(170,210,255,0.85);text-decoration:none;
-        transition:color .15s ease;
-      }
-      .credits-bar .c-link:hover { color:#dcefff;text-decoration:underline; }
-    </style>
-    <div>
-      ${labeled(
-        t("footer.original"),
-        "Pazuru-Pico",
-        "https://github.com/hamzaabamboo/pazuru-pico",
-      )}
-      (<a class="${cLink}" href="https://ham-san.net/" target="_blank" rel="noopener">HamP</a>)
-    </div>
-    <div>
-      ${labeled(
-        t("footer.inspiration"),
-        "BanG Dream! ☆PICO ～OHMORI～ Ep.9",
-        "https://www.youtube.com/watch?v=q5YETLAebUY",
-      )}
-    </div>
-    <div>
-      ${labeled(
-        t("footer.thisProject"),
-        "GitHub",
-        "https://github.com/25-ji-code-de/puzzle-sekai",
-      )}
-      ${cSep}
-      ${labeled(
-        t("footer.author"),
-        "bili_47177171806",
-        "https://space.bilibili.com/3546904856103196",
-      )}
-    </div>
+  const aboutBtn = document.createElement("button");
+  aboutBtn.style.cssText = `
+    padding:10px 20px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
+    background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:15px;
+    cursor:pointer;${domFontStyle("body")}
+    transition:all 0.2s ease;pointer-events:auto;
   `;
-  footer.appendChild(credits);
+  aboutBtn.textContent = t("menu.about");
+  aboutBtn.onmouseenter = () => {
+    aboutBtn.style.background = "rgba(255,255,255,0.2)";
+    aboutBtn.style.borderColor = "rgba(255,255,255,0.5)";
+  };
+  aboutBtn.onmouseleave = () => {
+    aboutBtn.style.background = "rgba(255,255,255,0.1)";
+    aboutBtn.style.borderColor = "rgba(255,255,255,0.3)";
+  };
+  aboutBtn.onclick = () => showAboutOverlay();
+  toolbar.appendChild(aboutBtn);
+
+  footer.appendChild(toolbar);
 
   menuOverlay.appendChild(footer);
 
@@ -887,6 +851,7 @@ const startGame = (mode: "endless" | "timeAttack") => {
 // 操作说明覆盖层
 const showControlsOverlay = () => {
   const overlay = document.createElement("div");
+  overlay.id = "controls-overlay";
   overlay.style.cssText = `
     position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;
     display:flex;align-items:center;justify-content:center;
@@ -953,14 +918,134 @@ const showControlsOverlay = () => {
       </tr>
     </table>
     <div style="text-align:center;margin-top:20px;">
-      <button style="padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
+      <button type="button" class="overlay-close-btn" style="padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
         background:rgba(255,255,255,0.1);color:#fff;font-size:15px;cursor:pointer;
-        transition:all 0.2s ease;" onclick="this.parentElement.parentElement.parentElement.remove()">
+        transition:all 0.2s ease;">
         ${t("controls.close")}
       </button>
     </div>
   `;
   overlay.appendChild(card);
+  const closeBtn = card.querySelector(".overlay-close-btn") as HTMLButtonElement;
+  closeBtn.onclick = () => overlay.remove();
+  overlay.onclick = (e) => {
+    if (e.target === overlay) overlay.remove();
+  };
+  document.body.appendChild(overlay);
+};
+
+const showAboutOverlay = () => {
+  // Only one about dialog at a time
+  document.getElementById("about-overlay")?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "about-overlay";
+  overlay.style.cssText = `
+    position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);
+    animation:fadeIn 0.3s ease;
+  `;
+
+  const link = (text: string, href: string) =>
+    `<a class="about-link" href="${href}" target="_blank" rel="noopener">${text}</a>`;
+  const row = (label: string, content: string, last = false) => `
+    <div style="display:flex;gap:12px;align-items:baseline;padding:11px 0;
+      ${last ? "" : "border-bottom:1px solid rgba(100,200,255,0.1);"}">
+      <span style="flex:0 0 72px;font-size:13px;color:rgba(180,220,255,0.7);${domFontStyle(
+        "caption",
+      )}">${label}</span>
+      <span style="flex:1;font-size:15px;color:rgba(255,255,255,0.85);line-height:1.5;${domFontStyle(
+        "body",
+      )}">${content}</span>
+    </div>`;
+
+  const card = document.createElement("div");
+  card.style.cssText = `
+    background:rgba(20,25,50,0.95);border:1px solid rgba(100,200,255,0.3);
+    border-radius:16px;padding:24px 28px;max-width:480px;width:90%;
+    max-height:min(85vh,720px);overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  `;
+  card.innerHTML = `
+    <style>
+      .about-link {
+        color:rgba(170,210,255,0.9);text-decoration:none;
+        transition:color .15s ease;
+      }
+      .about-link:hover { color:#dcefff;text-decoration:underline; }
+      .about-legal p { margin:0 0 10px; }
+      .about-legal p:last-child { margin-bottom:0; }
+    </style>
+    <div style="font-size:22px;color:#fff;text-align:center;margin-bottom:16px;letter-spacing:2px;${domFontStyle(
+      "heading",
+    )}">
+      ${t("about.title")}
+    </div>
+    ${row(
+      t("footer.original"),
+      `${link(
+        "Pazuru-Pico",
+        "https://github.com/hamzaabamboo/pazuru-pico",
+      )} (${link("HamP", "https://ham-san.net/")})`,
+    )}
+    ${row(
+      t("footer.inspiration"),
+      link(
+        "BanG Dream! ☆PICO ～OHMORI～ Ep.9",
+        "https://www.youtube.com/watch?v=q5YETLAebUY",
+      ),
+    )}
+    ${row(
+      t("footer.thisProject"),
+      link("GitHub", "https://github.com/25-ji-code-de/puzzle-sekai"),
+    )}
+    ${row(
+      t("footer.author"),
+      link(
+        "bili_47177171806",
+        "https://space.bilibili.com/3546904856103196",
+      ),
+    )}
+    ${row(
+      t("footer.support"),
+      link(t("about.afdian"), "https://afdian.com/a/1806P"),
+    )}
+    ${row(
+      t("footer.feedback"),
+      link(
+        t("about.reportIssue"),
+        "https://github.com/25-ji-code-de/puzzle-sekai/issues/new",
+      ),
+      true,
+    )}
+    <div class="about-legal" style="margin-top:18px;padding:14px 14px 12px;border-radius:10px;
+      background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.08);
+      font-size:13px;line-height:1.7;color:rgba(255,255,255,0.62);${domFontStyle(
+        "caption",
+      )}">
+      <p style="font-size:14px;color:rgba(255,255,255,0.85);margin-bottom:12px;${domFontStyle(
+        "body",
+      )}"><strong>${t("about.disclaimerTitle")}</strong></p>
+      <p>${t("about.disclaimerP1")}</p>
+      <p>${t("about.disclaimerP2")}</p>
+      <p>${t("about.disclaimerP3")}</p>
+      <p>${t("about.disclaimerP4")}</p>
+      <p style="margin-top:12px;font-size:12px;opacity:0.8;">${t(
+        "about.disclaimerAgree",
+      )}</p>
+    </div>
+    <div style="text-align:center;margin-top:20px;">
+      <button type="button" class="overlay-close-btn" style="padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
+        background:rgba(255,255,255,0.1);color:#fff;font-size:15px;cursor:pointer;
+        transition:all 0.2s ease;">
+        ${t("controls.close")}
+      </button>
+    </div>
+  `;
+  overlay.appendChild(card);
+  const closeBtn = card.querySelector(".overlay-close-btn") as HTMLButtonElement;
+  closeBtn.onclick = () => overlay.remove();
   overlay.onclick = (e) => {
     if (e.target === overlay) overlay.remove();
   };
