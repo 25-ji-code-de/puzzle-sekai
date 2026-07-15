@@ -21,6 +21,7 @@ import {
   startPlayOrientationGate,
   type OrientationGate,
 } from "./display";
+import { isPauseMenuOpen } from "./pause-menu";
 
 let welcomeSprite: PIXI.Sprite;
 let welcomeInitialized = false;
@@ -424,7 +425,12 @@ const startGame = (mode: "endless" | "timeAttack") => {
     orientationGate = startPlayOrientationGate({
       message: t("display.rotateLandscape"),
       onPause: pausePlay,
-      onResume: resumePlay,
+      // Don't auto-resume if the player opened the pause menu before rotating.
+      // Orientation-only freezes should resume; manual pauses must stay paused.
+      onResume: () => {
+        if (isPauseMenuOpen()) return;
+        resumePlay();
+      },
     });
     setState(start);
   });
