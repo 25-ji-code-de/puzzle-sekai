@@ -12,7 +12,8 @@ import {
   loadHighScoreRecord,
   saveHighScore,
 } from "./settings";
-import { t } from "./i18n";
+import { t, onLocaleChange } from "./i18n";
+import { resolveFontScheme } from "./fonts";
 
 let _score = 0;
 let _highScore = 0;
@@ -33,12 +34,17 @@ let scoreText: PIXI.Container;
 let highScoreText: PIXI.Container;
 let comboText: PIXI.Container;
 let timerText: PIXI.Container;
-let multText: PIXI.Container | undefined;
+let multBadge: PIXI.Container | undefined;
 
 const SCORE_X = 1700;
 const pad = (n: number, len: number) => String(n).padStart(len, "0");
 
-const makePaddedText = (num: number, len: number, color: number, fontSize: number) => {
+const makePaddedText = (
+  num: number,
+  len: number,
+  color: number,
+  fontSize: number,
+) => {
   const container = new PIXI.Container();
 
   const padded = pad(num, len);
@@ -46,10 +52,11 @@ const makePaddedText = (num: number, len: number, color: number, fontSize: numbe
   const grayPart = firstNonZero === -1 ? padded : padded.slice(0, firstNonZero);
   const colorPart = firstNonZero === -1 ? "" : padded.slice(firstNonZero);
 
+  const numericFont = resolveFontScheme("numericStrong");
   const baseStyle = {
     fontSize,
-    fontWeight: "bold",
-    fontFamily: "DroidSansMono, monospace",
+    fontWeight: numericFont.fontWeight,
+    fontFamily: numericFont.fontFamily,
     letterSpacing: 2,
   } as const;
 
@@ -71,20 +78,6 @@ const makePaddedText = (num: number, len: number, color: number, fontSize: numbe
   return container;
 };
 
-const makeLabelText = (label: string, color: number, fontSize: number) => {
-  const container = new PIXI.Container();
-  const text = new PIXI.Text(label, {
-    fontSize,
-    fontWeight: "bold",
-    fontFamily: "DroidSansMono, monospace",
-    fill: color,
-    align: "center",
-  });
-  text.anchor.set(0.5, 0.5);
-  container.addChild(text);
-  return container;
-};
-
 // Format time as MM:SS
 const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
@@ -92,16 +85,19 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${pad(secs, 2)}`;
 };
 
+const TIMER_FONT_SIZE = 48;
+
 // Create time display text
 const makeTimeText = (seconds: number, fontSize: number) => {
   const timeStr = formatTime(seconds);
   const color = seconds <= 10 ? 0xff4444 : seconds <= 30 ? 0xffaa44 : 0xffffff;
 
   const container = new PIXI.Container();
+  const numericFont = resolveFontScheme("numericStrong");
   const text = new PIXI.Text(timeStr, {
     fontSize,
-    fontWeight: "bold",
-    fontFamily: "DroidSansMono, monospace",
+    fontWeight: numericFont.fontWeight,
+    fontFamily: numericFont.fontFamily,
     fill: color,
   });
   text.anchor.set(0, 0.5);
@@ -125,26 +121,59 @@ const replaceDisplay = (
   return next;
 };
 
-const formatMultBadge = (mult: number, hsDiff: number, hsEnt: boolean) => {
-  // Line 1: current run — multiplier + entertainment compact tag
-  const currentParts = [`×${mult.toFixed(2)}`];
+/** Current-run multiplier line, e.g. "×1.20  FUN". */
+const formatCurrentMultiplier = (mult: number) => {
+  const parts = [`×${mult.toFixed(2)}`];
   if (isEntertainmentMode(getCurrentSettings())) {
-    currentParts.push(t("hsTags.entCompact"));
+    parts.push(t("hsTags.entCompact"));
   }
+  return parts.join("  ");
+};
 
-  // Line 2: high-score record — "纪录 Hard · 娱乐"
-  const recordParts: string[] = [];
+/** High-score metadata line, e.g. "纪录 Hard · 娱乐". */
+const formatRecordDescription = (hsDiff: number, hsEnt: boolean) => {
+  const parts: string[] = [];
   if (hsDiff >= 1 && hsDiff <= 7) {
-    recordParts.push(getDifficultyLabel(hsDiff as DifficultyLevel));
+    parts.push(getDifficultyLabel(hsDiff as DifficultyLevel));
   }
   if (hsEnt) {
-    recordParts.push(t("hsTags.entertainment"));
+    parts.push(t("hsTags.entertainment"));
+  }
+  return parts.length > 0 ? `${t("hsTags.record")} ${parts.join(" · ")}` : "";
+};
+
+const makeMultiplierBadge = (mult: number, hsDiff: number, hsEnt: boolean) => {
+  const container = new PIXI.Container();
+  const color = getBadgeColor(hsDiff);
+  const numericFont = resolveFontScheme("numericStrong");
+  const currentText = new PIXI.Text(formatCurrentMultiplier(mult), {
+    fontSize: 18,
+    fontFamily: numericFont.fontFamily,
+    fontWeight: numericFont.fontWeight,
+    fill: color,
+    align: "center",
+  });
+  currentText.anchor.set(0.5, 0.5);
+  currentText.y = 0;
+  container.addChild(currentText);
+
+  const record = formatRecordDescription(hsDiff, hsEnt);
+  if (record) {
+    const bodyFont = resolveFontScheme("body");
+    const recordText = new PIXI.Text(record, {
+      fontSize: 14,
+      fontFamily: bodyFont.fontFamily,
+      fontWeight: bodyFont.fontWeight,
+      fill: color,
+      align: "center",
+    });
+    recordText.anchor.set(0.5, 0.5);
+    recordText.alpha = 0.82;
+    recordText.y = 21;
+    container.addChild(recordText);
   }
 
-  if (recordParts.length === 0) {
-    return currentParts.join("  ");
-  }
-  return `${currentParts.join("  ")}\n${t("hsTags.record")} ${recordParts.join(" · ")}`;
+  return container;
 };
 
 /** Badge color: difficulty color if high-score has a known level, else default blue */
@@ -158,11 +187,27 @@ const getBadgeColor = (hsDiff: number): number => {
 
 export const initScoreDisplay = () => {
   // Clean up old displays
-  if (scoreText) { app.stage.removeChild(scoreText); scoreText.destroy(); }
-  if (highScoreText) { app.stage.removeChild(highScoreText); highScoreText.destroy(); }
-  if (comboText) { app.stage.removeChild(comboText); comboText.destroy(); }
-  if (timerText) { app.stage.removeChild(timerText); timerText.destroy(); }
-  if (multText) { app.stage.removeChild(multText); multText.destroy(); multText = undefined; }
+  if (scoreText) {
+    app.stage.removeChild(scoreText);
+    scoreText.destroy();
+  }
+  if (highScoreText) {
+    app.stage.removeChild(highScoreText);
+    highScoreText.destroy();
+  }
+  if (comboText) {
+    app.stage.removeChild(comboText);
+    comboText.destroy();
+  }
+  if (timerText) {
+    app.stage.removeChild(timerText);
+    timerText.destroy();
+  }
+  if (multBadge) {
+    app.stage.removeChild(multBadge);
+    multBadge.destroy({ children: true });
+    multBadge = undefined;
+  }
 
   const mode = getCurrentGameMode();
   const settings = getCurrentSettings();
@@ -186,17 +231,15 @@ export const initScoreDisplay = () => {
   highScoreText.pivot.x = highScoreText.width / 2;
   app.stage.addChild(highScoreText);
 
-  // Current multiplier + high-score star badge (colored by difficulty)
-  multText = makeLabelText(
-    formatMultBadge(mult, _highScoreDifficulty, _highScoreEntertainment),
-    getBadgeColor(_highScoreDifficulty),
-    18,
+  // Current multiplier + high-score metadata, split by typography role.
+  multBadge = makeMultiplierBadge(
+    mult,
+    _highScoreDifficulty,
+    _highScoreEntertainment,
   );
-  multText.x = SCORE_X;
-  // Slightly lower than the old single-line slot so a 2-line record badge
-  // doesn't collide with the high-score number above.
-  multText.y = 805;
-  app.stage.addChild(multText);
+  multBadge.x = SCORE_X;
+  multBadge.y = 798;
+  app.stage.addChild(multBadge);
 
   comboText = makePaddedText(_combo, 4, 0xffffff, 42);
   comboText.x = SCORE_X;
@@ -207,7 +250,7 @@ export const initScoreDisplay = () => {
   // Show timer for time attack mode
   if (mode === "timeAttack") {
     _timeRemaining = settings.timeAttackDuration;
-    timerText = makeTimeText(_timeRemaining, 60);
+    timerText = makeTimeText(_timeRemaining, TIMER_FONT_SIZE);
     timerText.x = SCORE_X + 50;
     timerText.y = 135;
     timerText.pivot.x = timerText.width / 2;
@@ -231,22 +274,32 @@ export const updateScoreDisplay = () => {
     newCombo.pivot.x = newCombo.width / 2;
     comboText = replaceDisplay(comboText, newCombo);
   }
-  if (multText) {
+  if (multBadge) {
     const settings = getCurrentSettings();
-    const mult = getScoreMultiplier(settings);
-    const next = makeLabelText(
-      formatMultBadge(mult, _highScoreDifficulty, _highScoreEntertainment),
-      getBadgeColor(_highScoreDifficulty),
-      18,
+    const next = makeMultiplierBadge(
+      getScoreMultiplier(settings),
+      _highScoreDifficulty,
+      _highScoreEntertainment,
     );
-    multText = replaceDisplay(multText, next);
+    multBadge = replaceDisplay(multBadge, next);
   }
 };
+
+onLocaleChange(() => {
+  if (!multBadge) return;
+  const settings = getCurrentSettings();
+  const next = makeMultiplierBadge(
+    getScoreMultiplier(settings),
+    _highScoreDifficulty,
+    _highScoreEntertainment,
+  );
+  multBadge = replaceDisplay(multBadge, next);
+});
 
 // Update timer display (for time attack mode)
 export const updateTimerDisplay = () => {
   if (timerText) {
-    const newTimer = makeTimeText(_timeRemaining, 48);
+    const newTimer = makeTimeText(_timeRemaining, TIMER_FONT_SIZE);
     newTimer.pivot.x = newTimer.width / 2;
     timerText = replaceDisplay(timerText, newTimer);
   }

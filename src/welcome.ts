@@ -24,11 +24,15 @@ import {
   DifficultyLevel,
 } from "./settings";
 import { FUN_MODE_DEFS, FunModeId, scaleItemLinkedFactor } from "./fun-modes";
-import { t, setLocale, onLocaleChange, SUPPORTED_LOCALES, getLocale, Locale } from "./i18n";
-
-import maokenFontUrl from "./assets/fonts/MaokenAssortedSans-Lite.woff2";
-import nishikiFontUrl from "./assets/fonts/nishiki-teki.woff2";
-import droidSansMonoFontUrl from "./assets/fonts/DroidSansMono.woff2";
+import {
+  t,
+  setLocale,
+  onLocaleChange,
+  SUPPORTED_LOCALES,
+  getLocale,
+  Locale,
+} from "./i18n";
+import { domFontStyle } from "./fonts";
 
 /** CSS inline style for colored difficulty text (supports gradient for Append) */
 const diffColorStyle = (level: number): string => {
@@ -39,26 +43,57 @@ const diffColorStyle = (level: number): string => {
   return c ? `color:${c};` : "";
 };
 
+const highScoreRowHtml = (): string => {
+  const settings = getCurrentSettings();
+  const formatRecord = (score: number, diff: number, ent: boolean) => {
+    const scoreStr = score.toString().padStart(6, "0");
+    const star =
+      diff >= 1 && diff <= 7
+        ? getDifficultyLabel(diff as DifficultyLevel)
+        : "—";
+    const entTag = ent ? ` · ${t("hsTags.entertainment")}` : "";
+    return { scoreStr, star, entTag, diff };
+  };
+  const endless = loadHighScoreRecord("endless");
+  const timeAttack = loadHighScoreRecord("timeAttack", settings);
+  const endlessHs = formatRecord(
+    endless.score,
+    endless.difficultyLevel,
+    endless.entertainment,
+  );
+  const timeAttackHs = formatRecord(
+    timeAttack.score,
+    timeAttack.difficultyLevel,
+    timeAttack.entertainment,
+  );
+
+  const column = (
+    label: string,
+    scoreColor: string,
+    record: ReturnType<typeof formatRecord>,
+  ) => `
+    <div style="text-align:center;">
+      <div style="font-size:12px;opacity:0.6;margin-bottom:2px;${domFontStyle(
+        "caption",
+      )}">${label}</div>
+      <div style="font-size:18px;color:${scoreColor};${domFontStyle(
+    "numericStrong",
+  )}">${record.scoreStr}</div>
+      <div style="font-size:13px;margin-top:2px;${domFontStyle(
+        "caption",
+      )}${diffColorStyle(record.diff)}">${record.star}${record.entTag}</div>
+    </div>`;
+
+  return `${column(t("menu.highScore.endless"), "#ff6b8a", endlessHs)}${column(
+    t("menu.highScore.timeAttack"),
+    "#44ff88",
+    timeAttackHs,
+  )}`;
+};
+
 let welcomeSprite: PIXI.Sprite;
 let welcomeInitialized = false;
 let modalEl: HTMLDivElement | null = null;
-
-// 加载字体
-const loadFonts = async () => {
-  try {
-    const [maoken, nishiki, droidMono] = await Promise.all([
-      new FontFace('MaokenAssortedSans', `url(${maokenFontUrl})`).load(),
-      new FontFace('NishikiTeki', `url(${nishikiFontUrl})`).load(),
-      new FontFace('DroidSansMono', `url(${droidSansMonoFontUrl})`).load(),
-    ]);
-    document.fonts.add(maoken);
-    document.fonts.add(nishiki);
-    document.fonts.add(droidMono);
-  } catch (e) {
-    console.warn('Failed to load fonts:', e);
-  }
-};
-loadFonts();
 
 // ============== 第一个页面：游戏概述（解决音频限制） ==============
 
@@ -66,7 +101,9 @@ export const welcome = () => {
   if (welcomeInitialized) return;
   welcomeInitialized = true;
 
-  const welcomeUrl = (app.loader.resources["welcome"]?.texture as any)?.baseTexture?.resource?.url || "";
+  const welcomeUrl =
+    (app.loader.resources["welcome"]?.texture as any)?.baseTexture?.resource
+      ?.url || "";
 
   modalEl = document.createElement("div");
   modalEl.style.cssText = `
@@ -95,17 +132,23 @@ export const welcome = () => {
   content.innerHTML = `
     <div style="font-size:42px;color:#fff;letter-spacing:3px;
       text-shadow:0 2px 12px rgba(100,200,255,0.4);
-      font-family:'NishikiTeki','MaokenAssortedSans','Hiragino Sans','Yu Gothic',sans-serif;margin-bottom:24px;">
+      ${domFontStyle("brand")}margin-bottom:24px;">
       ${t("welcome.title")}
     </div>
-    <div style="font-size:16px;color:rgba(180,220,255,0.7);letter-spacing:4px;margin-bottom:24px;">
+    <div style="font-size:17px;color:rgba(180,220,255,0.7);letter-spacing:4px;margin-bottom:24px;${domFontStyle(
+      "brand",
+    )}">
       ${t("welcome.subtitle")}
     </div>
-    <div style="font-size:15px;color:rgba(255,255,255,0.6);line-height:1.8;margin-bottom:24px;">
+    <div style="font-size:16px;color:rgba(255,255,255,0.6);line-height:1.85;margin-bottom:24px;${domFontStyle(
+      "body",
+    )}">
       ${t("welcome.desc")}
     </div>
-    <div style="font-size:18px;color:rgba(255,255,255,0.85);
-      letter-spacing:6px;margin-top:24px;animation:promptPulse 1.8s ease-in-out infinite;">
+    <div style="font-size:20px;color:rgba(255,255,255,0.85);
+      letter-spacing:0.14em;margin-top:24px;animation:promptPulse 1.8s ease-in-out infinite;${domFontStyle(
+        "action",
+      )}">
       ${t("welcome.click")}
     </div>
   `;
@@ -121,7 +164,10 @@ export const welcome = () => {
     modalEl!.style.opacity = "0";
     modalEl!.style.transition = "opacity 0.4s ease";
 
-    setTimeout(() => { modalEl?.remove(); modalEl = null; }, 400);
+    setTimeout(() => {
+      modalEl?.remove();
+      modalEl = null;
+    }, 400);
 
     stopBgm();
     const bgm161 = app.loader.resources["bgm161"]?.sound;
@@ -198,10 +244,10 @@ const buildMenu = () => {
   header.innerHTML = `
     <div style="font-size:36px;color:#fff;letter-spacing:2px;
       text-shadow:0 2px 20px rgba(0,0,0,0.8),0 0 40px rgba(100,200,255,0.3);
-      font-family:'NishikiTeki','MaokenAssortedSans','Hiragino Sans','Yu Gothic',sans-serif;">
+      ${domFontStyle("brand")}">
       ${t("menu.title")}
     </div>
-    <div style="font-size:12px;color:rgba(255,255,255,0.6);letter-spacing:6px;margin-top:8px;
+    <div style="font-size:14px;color:rgba(255,255,255,0.6);letter-spacing:6px;margin-top:8px;
       text-shadow:0 1px 10px rgba(0,0,0,0.8);">
       ${t("menu.subtitle")}
     </div>
@@ -222,47 +268,13 @@ const buildMenu = () => {
   `;
 
   // 最高分显示（全局榜 + 打出该分时的难度档 + 娱乐标记）
-  const settings = getCurrentSettings();
-  const endlessRecord = loadHighScoreRecord("endless");
-  const timeAttackRecord = loadHighScoreRecord("timeAttack", settings);
-  const formatHs = (score: number, diff: number, ent: boolean) => {
-    const scoreStr = score.toString().padStart(6, "0");
-    const star =
-      diff >= 1 && diff <= 7
-        ? getDifficultyLabel(diff as DifficultyLevel)
-        : "";
-    const entTag = ent ? ` · ${t("hsTags.entertainment")}` : "";
-    return { scoreStr, star, entTag, diff };
-  };
-  const endlessHs = formatHs(
-    endlessRecord.score,
-    endlessRecord.difficultyLevel,
-    endlessRecord.entertainment,
-  );
-  const taHs = formatHs(
-    timeAttackRecord.score,
-    timeAttackRecord.difficultyLevel,
-    timeAttackRecord.entertainment,
-  );
-
   const highScoreRow = document.createElement("div");
   highScoreRow.id = "high-score-row";
   highScoreRow.style.cssText = `
     display:flex;justify-content:center;gap:32px;margin-bottom:20px;
-    font-size:12px;color:rgba(255,255,255,0.5);
+    font-size:14px;color:rgba(255,255,255,0.5);
   `;
-  highScoreRow.innerHTML = `
-    <div style="text-align:center;">
-      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">${t("menu.highScore.endless")}</div>
-      <div style="font-size:18px;color:#ff6b8a;font-family:'DroidSansMono',monospace;">${endlessHs.scoreStr}</div>
-      <div style="font-size:11px;margin-top:2px;${diffColorStyle(endlessHs.diff)}">${endlessHs.star || "—"}${endlessHs.entTag}</div>
-    </div>
-    <div style="text-align:center;">
-      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">${t("menu.highScore.timeAttack")}</div>
-      <div style="font-size:18px;color:#44ff88;font-family:'DroidSansMono',monospace;">${taHs.scoreStr}</div>
-      <div style="font-size:11px;margin-top:2px;${diffColorStyle(taHs.diff)}">${taHs.star || "—"}${taHs.entTag}</div>
-    </div>
-  `;
+  highScoreRow.innerHTML = highScoreRowHtml();
   footer.appendChild(highScoreRow);
 
   // 模式选择按钮
@@ -277,18 +289,20 @@ const buildMenu = () => {
     flex:1;padding:10px 16px;border:none;border-radius:8px;
     background:linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%);
     cursor:pointer;
-    font-family:'NishikiTeki','MaokenAssortedSans','Hiragino Sans','Yu Gothic',sans-serif;
+    ${domFontStyle("action")}
     transition:all 0.3s ease;
     pointer-events:auto;
   `;
   endlessBtn.innerHTML = `
-    <span style="font-size:18px;color:#fff;">${t("menu.endless")}</span>
+    <span style="font-size:20px;color:#fff;">${t("menu.endless")}</span>
   `;
   endlessBtn.onmouseenter = () => {
-    endlessBtn.style.background = "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 50%, rgba(0,0,0,0) 100%)";
+    endlessBtn.style.background =
+      "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 50%, rgba(0,0,0,0) 100%)";
   };
   endlessBtn.onmouseleave = () => {
-    endlessBtn.style.background = "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%)";
+    endlessBtn.style.background =
+      "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%)";
   };
   endlessBtn.onclick = () => startGame("endless");
   btnContainer.appendChild(endlessBtn);
@@ -299,18 +313,20 @@ const buildMenu = () => {
     flex:1;padding:10px 16px;border:none;border-radius:8px;
     background:linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%);
     cursor:pointer;
-    font-family:'NishikiTeki','MaokenAssortedSans','Hiragino Sans','Yu Gothic',sans-serif;
+    ${domFontStyle("action")}
     transition:all 0.3s ease;
     pointer-events:auto;
   `;
   timeAttackBtn.innerHTML = `
-    <span style="font-size:18px;color:#fff;">${t("menu.timeAttack")}</span>
+    <span style="font-size:20px;color:#fff;">${t("menu.timeAttack")}</span>
   `;
   timeAttackBtn.onmouseenter = () => {
-    timeAttackBtn.style.background = "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 50%, rgba(0,0,0,0) 100%)";
+    timeAttackBtn.style.background =
+      "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 50%, rgba(0,0,0,0) 100%)";
   };
   timeAttackBtn.onmouseleave = () => {
-    timeAttackBtn.style.background = "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%)";
+    timeAttackBtn.style.background =
+      "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%)";
   };
   timeAttackBtn.onclick = () => startGame("timeAttack");
   btnContainer.appendChild(timeAttackBtn);
@@ -326,8 +342,8 @@ const buildMenu = () => {
   const settingsBtn = document.createElement("button");
   settingsBtn.style.cssText = `
     padding:10px 20px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
-    background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:13px;
-    cursor:pointer;font-family:'Hiragino Sans','Yu Gothic',sans-serif;
+    background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:15px;
+    cursor:pointer;${domFontStyle("body")}
     transition:all 0.2s ease;pointer-events:auto;
   `;
   settingsBtn.textContent = t("menu.settings");
@@ -345,8 +361,8 @@ const buildMenu = () => {
   const controlsBtn = document.createElement("button");
   controlsBtn.style.cssText = `
     padding:10px 20px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
-    background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:13px;
-    cursor:pointer;font-family:'Hiragino Sans','Yu Gothic',sans-serif;
+    background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:15px;
+    cursor:pointer;${domFontStyle("body")}
     transition:all 0.2s ease;pointer-events:auto;
   `;
   controlsBtn.textContent = t("menu.controls");
@@ -366,6 +382,7 @@ const buildMenu = () => {
   // 页脚信息条（移动游戏风格：分组标签 + 链接）
   const credits = document.createElement("div");
   credits.className = "credits-bar";
+  credits.style.cssText = domFontStyle("caption");
   const cLabel = "c-label";
   const cLink = "c-link";
   const cSep = `<span class="c-sep">·</span>`;
@@ -378,7 +395,7 @@ const buildMenu = () => {
       .credits-bar {
         margin-top:18px;padding:12px 16px;border-radius:10px;
         background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.08);
-        text-align:center;font-size:11px;line-height:1.9;
+        text-align:center;font-size:13px;line-height:1.95;
         color:rgba(255,255,255,0.5);pointer-events:auto;
       }
       .credits-bar .c-label { color:rgba(255,255,255,0.4);margin-right:5px; }
@@ -390,16 +407,32 @@ const buildMenu = () => {
       .credits-bar .c-link:hover { color:#dcefff;text-decoration:underline; }
     </style>
     <div>
-      ${labeled(t("footer.original"), "Pazuru-Pico", "https://github.com/hamzaabamboo/pazuru-pico")}
+      ${labeled(
+        t("footer.original"),
+        "Pazuru-Pico",
+        "https://github.com/hamzaabamboo/pazuru-pico",
+      )}
       (<a class="${cLink}" href="https://ham-san.net/" target="_blank" rel="noopener">HamP</a>)
     </div>
     <div>
-      ${labeled(t("footer.inspiration"), "BanG Dream! ☆PICO ～OHMORI～ Ep.9", "https://www.youtube.com/watch?v=q5YETLAebUY")}
+      ${labeled(
+        t("footer.inspiration"),
+        "BanG Dream! ☆PICO ～OHMORI～ Ep.9",
+        "https://www.youtube.com/watch?v=q5YETLAebUY",
+      )}
     </div>
     <div>
-      ${labeled(t("footer.thisProject"), "GitHub", "https://github.com/25-ji-code-de/puzzle-sekai")}
+      ${labeled(
+        t("footer.thisProject"),
+        "GitHub",
+        "https://github.com/25-ji-code-de/puzzle-sekai",
+      )}
       ${cSep}
-      ${labeled(t("footer.author"), "bili_47177171806", "https://space.bilibili.com/3546904856103196")}
+      ${labeled(
+        t("footer.author"),
+        "bili_47177171806",
+        "https://space.bilibili.com/3546904856103196",
+      )}
     </div>
   `;
   footer.appendChild(credits);
@@ -466,15 +499,15 @@ const showSettingsPanel = () => {
     }
     .setting-group { margin-bottom:24px; }
     .setting-label {
-      font-size:13px;color:rgba(180,220,255,0.8);margin-bottom:10px;
+      font-size:15px;color:rgba(180,220,255,0.8);margin-bottom:10px;
       letter-spacing:1px;
     }
     .setting-options { display:flex;gap:6px;flex-wrap:wrap; }
     .setting-opt {
-      padding:8px 12px;border-radius:6px;font-size:13px;cursor:pointer;
+      padding:9px 13px;border-radius:6px;font-size:15px;cursor:pointer;
       background:rgba(100,200,255,0.1);border:1px solid rgba(100,200,255,0.2);
       color:rgba(255,255,255,0.7);transition:all 0.2s ease;
-      font-family:'NishikiTeki','MaokenAssortedSans','Hiragino Sans','Yu Gothic',sans-serif;
+      ${domFontStyle("body")}
     }
     .setting-opt:hover { background:rgba(100,200,255,0.2); }
     .setting-opt.active {
@@ -498,7 +531,9 @@ const showSettingsPanel = () => {
     border-bottom:1px solid rgba(100,200,255,0.1);
   `;
   header.innerHTML = `
-    <div style="font-size:18px;color:#fff;letter-spacing:1px;">${t("settings.title")}</div>
+    <div style="font-size:20px;color:#fff;letter-spacing:1px;${domFontStyle(
+      "heading",
+    )}">${t("settings.title")}</div>
   `;
 
   const closeBtn = document.createElement("button");
@@ -508,8 +543,10 @@ const showSettingsPanel = () => {
     cursor:pointer;transition:all 0.2s ease;
   `;
   closeBtn.textContent = "✕";
-  closeBtn.onmouseenter = () => closeBtn.style.background = "rgba(255,255,255,0.2)";
-  closeBtn.onmouseleave = () => closeBtn.style.background = "rgba(255,255,255,0.1)";
+  closeBtn.onmouseenter = () =>
+    (closeBtn.style.background = "rgba(255,255,255,0.2)");
+  closeBtn.onmouseleave = () =>
+    (closeBtn.style.background = "rgba(255,255,255,0.1)");
   closeBtn.onclick = () => closeSettingsPanel();
   header.appendChild(closeBtn);
   settingsPanel.appendChild(header);
@@ -517,7 +554,9 @@ const showSettingsPanel = () => {
   // 语言切换
   const langGroup = document.createElement("div");
   langGroup.className = "setting-group";
-  langGroup.innerHTML = `<div class="setting-label">${t("settings.lang.label")}</div>`;
+  langGroup.innerHTML = `<div class="setting-label">${t(
+    "settings.lang.label",
+  )}</div>`;
   const langOptions = document.createElement("div");
   langOptions.className = "setting-options";
   const currentLocale = getLocale();
@@ -537,14 +576,18 @@ const showSettingsPanel = () => {
   // 速度设置
   const speedGroup = document.createElement("div");
   speedGroup.className = "setting-group";
-  speedGroup.innerHTML = `<div class="setting-label">${t("settings.speed.label")}</div>`;
+  speedGroup.innerHTML = `<div class="setting-label">${t(
+    "settings.speed.label",
+  )}</div>`;
 
   const speedOptions = document.createElement("div");
   speedOptions.className = "setting-options";
   for (let i = 1; i <= 5; i++) {
     const level = i as SpeedLevel;
     const opt = document.createElement("div");
-    opt.className = `setting-opt ${level === settings.speedLevel ? "active" : ""}`;
+    opt.className = `setting-opt ${
+      level === settings.speedLevel ? "active" : ""
+    }`;
     opt.textContent = getSpeedLabel(level);
     opt.onclick = () => {
       settings.speedLevel = level;
@@ -559,13 +602,17 @@ const showSettingsPanel = () => {
   // 限时模式时长
   const timeGroup = document.createElement("div");
   timeGroup.className = "setting-group";
-  timeGroup.innerHTML = `<div class="setting-label">${t("settings.ta.label")}</div>`;
+  timeGroup.innerHTML = `<div class="setting-label">${t(
+    "settings.ta.label",
+  )}</div>`;
 
   const timeOptions = document.createElement("div");
   timeOptions.className = "setting-options";
   ([60, 90, 120, 180] as TimeAttackDuration[]).forEach((duration) => {
     const opt = document.createElement("div");
-    opt.className = `setting-opt ${duration === settings.timeAttackDuration ? "active" : ""}`;
+    opt.className = `setting-opt ${
+      duration === settings.timeAttackDuration ? "active" : ""
+    }`;
     opt.textContent = getTimeLabel(duration);
     opt.onclick = () => {
       settings.timeAttackDuration = duration;
@@ -580,7 +627,9 @@ const showSettingsPanel = () => {
   // 团体选择
   const groupGroup = document.createElement("div");
   groupGroup.className = "setting-group";
-  groupGroup.innerHTML = `<div class="setting-label">${t("settings.groups.label")}</div>`;
+  groupGroup.innerHTML = `<div class="setting-label">${t(
+    "settings.groups.label",
+  )}</div>`;
 
   const groupOptions = document.createElement("div");
   groupOptions.className = "setting-options";
@@ -611,16 +660,22 @@ const showSettingsPanel = () => {
   // 道具掉落概率
   const itemGroup = document.createElement("div");
   itemGroup.className = "setting-group";
-  itemGroup.innerHTML = `<div class="setting-label">${t("settings.item.label")}</div>`;
+  itemGroup.innerHTML = `<div class="setting-label">${t(
+    "settings.item.label",
+  )}</div>`;
   const itemOptions = document.createElement("div");
   itemOptions.className = "setting-options";
   const currentItemRate = (settings.itemDropRate ?? 10) as ItemDropRate;
   ITEM_DROP_RATES.forEach((rate) => {
     const opt = document.createElement("div");
     opt.className = `setting-opt ${rate === currentItemRate ? "active" : ""}`;
-    opt.title = t("settings.item.tooltip", { factor: ITEM_DROP_SCORE_FACTORS[rate].toFixed(2) });
+    opt.title = t("settings.item.tooltip", {
+      factor: ITEM_DROP_SCORE_FACTORS[rate].toFixed(2),
+    });
     opt.innerHTML = `<div>${getItemDropLabel(rate)}</div>
-      <div style="font-size:10px;opacity:0.65;margin-top:2px;">×${ITEM_DROP_SCORE_FACTORS[rate].toFixed(2)}</div>`;
+      <div style="font-size:12px;opacity:0.65;margin-top:2px;">×${ITEM_DROP_SCORE_FACTORS[
+        rate
+      ].toFixed(2)}</div>`;
     opt.onclick = () => {
       settings.itemDropRate = rate;
       updateCurrentSettings(settings);
@@ -633,15 +688,19 @@ const showSettingsPanel = () => {
 
   // 娯楽モード
   if (!settings.funModes) {
-    settings.funModes = { ...FUN_MODE_DEFS.reduce((acc, d) => {
-      acc[d.id] = false;
-      return acc;
-    }, {} as Record<FunModeId, boolean>) };
+    settings.funModes = {
+      ...FUN_MODE_DEFS.reduce((acc, d) => {
+        acc[d.id] = false;
+        return acc;
+      }, {} as Record<FunModeId, boolean>),
+    };
   }
 
   const funGroup = document.createElement("div");
   funGroup.className = "setting-group";
-  funGroup.innerHTML = `<div class="setting-label">${t("settings.fun.label")}</div>`;
+  funGroup.innerHTML = `<div class="setting-label">${t(
+    "settings.fun.label",
+  )}</div>`;
 
   const funOptions = document.createElement("div");
   funOptions.className = "setting-options";
@@ -655,7 +714,7 @@ const showSettingsPanel = () => {
   funHelp.style.cssText = `
     margin-top:10px;padding:10px 12px;border-radius:8px;
     background:rgba(0,0,0,0.25);border:1px solid rgba(100,200,255,0.15);
-    color:rgba(255,255,255,0.7);font-size:12px;line-height:1.55;min-height:3.2em;
+    color:rgba(255,255,255,0.7);font-size:14px;line-height:1.65;min-height:3.4em;
     white-space:pre-wrap;
   `;
   funHelp.textContent = t("settings.fun.help");
@@ -669,8 +728,12 @@ const showSettingsPanel = () => {
       ? scaleItemLinkedFactor(def.scoreFactor, currentItemRate)
       : def.scoreFactor;
     const factorNote = def.itemLinked ? t("settings.fun.itemLinked") : "";
-    opt.innerHTML = `<div style="font-size:13px;">${t(`fun.${def.id}.name`)}</div>
-      <div style="font-size:10px;opacity:0.65;margin-top:2px;">${t(`fun.${def.id}.subtitle`)} · ×${shownFactor.toFixed(2)}${factorNote}</div>`;
+    opt.innerHTML = `<div style="font-size:15px;">${t(
+      `fun.${def.id}.name`,
+    )}</div>
+      <div style="font-size:12px;opacity:0.65;margin-top:2px;">${t(
+        `fun.${def.id}.subtitle`,
+      )} · ×${shownFactor.toFixed(2)}${factorNote}</div>`;
     opt.onmouseenter = () => {
       funHelp.textContent = t(`fun.${def.id}.description`);
     };
@@ -701,7 +764,9 @@ const showSettingsPanel = () => {
       (line) =>
         `<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
           <span style="color:rgba(255,255,255,0.75);">${line.label}</span>
-          <span style="font-family:DroidSansMono,monospace;color:#aaccff;white-space:nowrap;">×${line.factor.toFixed(2)}</span>
+          <span style="${domFontStyle(
+            "numeric",
+          )}color:#aaccff;white-space:nowrap;">×${line.factor.toFixed(2)}</span>
         </div>`,
     )
     .join("");
@@ -710,13 +775,21 @@ const showSettingsPanel = () => {
   card.style.cssText = `
     position:relative;padding:12px 14px;border-radius:8px;
     background:rgba(100,200,255,0.12);border:1px solid rgba(100,200,255,0.25);
-    color:#fff;font-size:14px;line-height:1.6;cursor:help;
+    color:#fff;font-size:15px;line-height:1.65;cursor:help;
   `;
   card.innerHTML = `
-    <div><span style="${diffColorStyle(diffLevel)}">${label}</span>${entOn ? ` <span style="color:#ffcc66;">${t("settings.difficulty.entertainment")}</span>` : ""}</div>
-    <div style="font-family:DroidSansMono,monospace;color:#aaccff;">
-      ×${mult.toFixed(2)}
-      <span style="font-size:11px;opacity:0.55;margin-left:6px;">${t("settings.difficulty.info")}</span>
+    <div><span style="${diffColorStyle(diffLevel)}">${label}</span>${
+    entOn
+      ? ` <span style="color:#ffcc66;">${t(
+          "settings.difficulty.entertainment",
+        )}</span>`
+      : ""
+  }</div>
+    <div style="color:#aaccff;">
+      <span style="${domFontStyle("numeric")}">×${mult.toFixed(2)}</span>
+      <span style="font-size:13px;opacity:0.55;margin-left:6px;${domFontStyle(
+        "body",
+      )}">${t("settings.difficulty.info")}</span>
     </div>
   `;
 
@@ -725,14 +798,18 @@ const showSettingsPanel = () => {
     display:none;position:absolute;left:0;right:0;bottom:calc(100% + 8px);z-index:20;
     padding:12px 14px;border-radius:10px;
     background:rgba(12,16,32,0.97);border:1px solid rgba(100,200,255,0.35);
-    box-shadow:0 8px 28px rgba(0,0,0,0.45);font-size:12px;line-height:1.45;
+    box-shadow:0 8px 28px rgba(0,0,0,0.45);font-size:14px;line-height:1.5;
   `;
   tip.innerHTML = `
-    <div style="font-size:11px;color:rgba(180,220,255,0.8);letter-spacing:1px;margin-bottom:8px;">${t("settings.difficulty.breakdownTitle")}</div>
+    <div style="font-size:13px;color:rgba(180,220,255,0.8);letter-spacing:1px;margin-bottom:8px;">${t(
+      "settings.difficulty.breakdownTitle",
+    )}</div>
     ${linesHtml}
     <div style="display:flex;justify-content:space-between;gap:12px;padding-top:8px;margin-top:4px;border-top:1px solid rgba(100,200,255,0.25);font-weight:600;">
       <span>${t("settings.difficulty.total")}</span>
-      <span style="font-family:DroidSansMono,monospace;color:#fff;">×${mult.toFixed(2)}</span>
+      <span style="${domFontStyle("numeric")}color:#fff;">×${mult.toFixed(
+    2,
+  )}</span>
     </div>
   `;
   card.appendChild(tip);
@@ -748,7 +825,9 @@ const showSettingsPanel = () => {
     tip.style.display = tip.style.display === "block" ? "none" : "block";
   };
 
-  diffSummary.innerHTML = `<div class="setting-label">${t("settings.difficulty.label")}</div>`;
+  diffSummary.innerHTML = `<div class="setting-label">${t(
+    "settings.difficulty.label",
+  )}</div>`;
   diffSummary.appendChild(card);
   settingsPanel.appendChild(diffSummary);
 
@@ -768,7 +847,9 @@ const refreshSettingsPanel = () => {
 // 关闭设置面板
 const closeSettingsPanel = () => {
   if (settingsContainer) {
-    const settingsPanel = settingsContainer.querySelector("div:nth-child(2)") as HTMLElement;
+    const settingsPanel = settingsContainer.querySelector(
+      "div:nth-child(2)",
+    ) as HTMLElement;
     if (settingsPanel) {
       settingsPanel.style.animation = "slideOut 0.3s ease forwards";
     }
@@ -784,42 +865,8 @@ const closeSettingsPanel = () => {
 const refreshHighScoreRow = () => {
   const row = document.getElementById("high-score-row");
   if (!row) return;
-  const settings = getCurrentSettings();
-  const endlessRecord = loadHighScoreRecord("endless");
-  const timeAttackRecord = loadHighScoreRecord("timeAttack", settings);
-  const formatHs = (score: number, diff: number, ent: boolean) => {
-    const scoreStr = score.toString().padStart(6, "0");
-    const star =
-      diff >= 1 && diff <= 7
-        ? getDifficultyLabel(diff as DifficultyLevel)
-        : "—";
-    const entTag = ent ? ` · ${t("hsTags.entertainment")}` : "";
-    return { scoreStr, star, entTag, diff };
-  };
-  const endlessHs = formatHs(
-    endlessRecord.score,
-    endlessRecord.difficultyLevel,
-    endlessRecord.entertainment,
-  );
-  const taHs = formatHs(
-    timeAttackRecord.score,
-    timeAttackRecord.difficultyLevel,
-    timeAttackRecord.entertainment,
-  );
-  row.innerHTML = `
-    <div style="text-align:center;">
-      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">${t("menu.highScore.endless")}</div>
-      <div style="font-size:18px;color:#ff6b8a;font-family:'DroidSansMono',monospace;">${endlessHs.scoreStr}</div>
-      <div style="font-size:11px;margin-top:2px;${diffColorStyle(endlessHs.diff)}">${endlessHs.star}${endlessHs.entTag}</div>
-    </div>
-    <div style="text-align:center;">
-      <div style="font-size:10px;opacity:0.6;margin-bottom:2px;">${t("menu.highScore.timeAttack")}</div>
-      <div style="font-size:18px;color:#44ff88;font-family:'DroidSansMono',monospace;">${taHs.scoreStr}</div>
-      <div style="font-size:11px;margin-top:2px;${diffColorStyle(taHs.diff)}">${taHs.star}${taHs.entTag}</div>
-    </div>
-  `;
+  row.innerHTML = highScoreRowHtml();
 };
-
 
 // 开始游戏
 const startGame = (mode: "endless" | "timeAttack") => {
@@ -854,12 +901,18 @@ const showControlsOverlay = () => {
     box-shadow:0 20px 60px rgba(0,0,0,0.5);
   `;
   card.innerHTML = `
-    <div style="font-size:20px;color:#fff;text-align:center;margin-bottom:20px;letter-spacing:2px;">
+    <div style="font-size:22px;color:#fff;text-align:center;margin-bottom:20px;letter-spacing:2px;${domFontStyle(
+      "heading",
+    )}">
       ${t("controls.title")}
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:14px;color:rgba(255,255,255,0.8);">
+    <table style="width:100%;border-collapse:collapse;font-size:16px;color:rgba(255,255,255,0.8);${domFontStyle(
+      "body",
+    )}">
       <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;color:#667eea;width:80px;">${t("controls.keyboard")}</td>
+        <td style="padding:10px 0;color:#667eea;width:80px;">${t(
+          "controls.keyboard",
+        )}</td>
         <td style="padding:10px 0;">${t("controls.moveLeftRight")}</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
@@ -901,7 +954,7 @@ const showControlsOverlay = () => {
     </table>
     <div style="text-align:center;margin-top:20px;">
       <button style="padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
-        background:rgba(255,255,255,0.1);color:#fff;font-size:14px;cursor:pointer;
+        background:rgba(255,255,255,0.1);color:#fff;font-size:15px;cursor:pointer;
         transition:all 0.2s ease;" onclick="this.parentElement.parentElement.parentElement.remove()">
         ${t("controls.close")}
       </button>
