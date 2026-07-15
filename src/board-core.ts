@@ -93,17 +93,66 @@ const findBottom = (sprite: SpriteData) => {
   return coordinates?.filter(([_, y]) => y === maxY[1]) ?? [];
 };
 
-export const fallChunk = async (sprites: SpriteData[]) => {
-  const canFall = sprites
-    .map((e, index) => ({ ...e, index }))
-    .filter(({ sprite, coordinates }) =>
-      findBottom({ sprite, coordinates }).every(([x, y]) => {
-        return y + 1 < pieces.length && pieces[y + 1][x] === null;
-      }),
-    );
-  if (canFall.length === 0) return;
+type FallEntry = SpriteData & { index: number };
 
-  // Phase 1: Simulate original serial algorithm on temporary grid to compute targets
+/** Stack height below (x, y) for a single- or multi-cell piece of given orientation. */
+const stackHeightBelow = (
+  x: number,
+  y: number,
+  offset: number,
+  singleCell: boolean,
+): number => {
+  if (singleCell || offset % 2 === 0) {
+    return pieces
+      .map((row) => row[x])
+      .filter((_, i) => i > y)
+      .reverse()
+      .reduce((acc, row, i) => (row ? i + 1 : acc), 0);
+  }
+  return pieces
+    .map((row) =>
+      offset === 1 ? [row[x], row[x + 1]] : [row[x - 1], row[x]],
+    )
+    .filter((_, i) => i > y)
+    .reverse()
+    .reduce((acc, row, i) => (row[0] || row[1] ? i + 1 : acc), 0);
+};
+
+/** Write a piece onto the pieces grid at (x, targetY) — mirrors updateCoordinates. */
+const placeOnTempGrid = (
+  x: number,
+  targetY: number,
+  character: SpriteData["character"],
+  isItem: boolean | undefined,
+  isShrunk: boolean | undefined,
+  offset: number,
+) => {
+  if (isItem) {
+    pieces[targetY][x] = "Item";
+    return;
+  }
+  if (isShrunk) {
+    pieces[targetY][x] = character!.name;
+    return;
+  }
+  if (character?.name === "NeneRobo" || character?.name === "Mikudayo") {
+    pieces[targetY][x] = character.name;
+    pieces[targetY][x - 1] = character.name;
+    pieces[targetY - 1][x] = character.name;
+    pieces[targetY - 1][x - 1] = character.name;
+    return;
+  }
+  pieces[targetY][x] = character!.name;
+  if (offset === 0) pieces[targetY - 1][x] = character!.name;
+  if (offset === 1) pieces[targetY][x + 1] = character!.name;
+  if (offset === 2) pieces[targetY + 1][x] = character!.name;
+  if (offset === 3) pieces[targetY - 1][x] = character!.name;
+};
+
+/** Phase 1: simulate serial fall on a temp grid; return per-sprite land targets. */
+const computeFallTargets = (
+  canFall: FallEntry[],
+): Map<PIXI.Sprite, { x: number; y: number }> => {
   const backup = pieces.map((row) => [...row]);
   const targets = new Map<PIXI.Sprite, { x: number; y: number }>();
 
@@ -112,62 +161,30 @@ export const fallChunk = async (sprites: SpriteData[]) => {
     const offset = getOffset(sprite);
     const singleCell = !!isItem || !!isShrunk;
 
-    // Clear old cells on temp grid
     coordinates?.forEach(([cx, cy]) => (pieces[cy][cx] = null));
 
-    // Compute target using same logic as original fall()
-    // Items / shrunk pieces are 1x1; character offset===2 means a 2-cell vertical piece
-    const stackHeight =
-      singleCell || offset % 2 === 0
-        ? pieces
-            .map((row) => row[x])
-            .filter((_, i) => i > y)
-            .reverse()
-            .reduce((acc, row, i) => (row ? i + 1 : acc), 0)
-        : pieces
-            .map((row) =>
-              offset === 1 ? [row[x], row[x + 1]] : [row[x - 1], row[x]],
-            )
-            .filter((_, i) => i > y)
-            .reverse()
-            .reduce((acc, row, i) => (row[0] || row[1] ? i + 1 : acc), 0);
-
+    const stackHeight = stackHeightBelow(x, y, offset, singleCell);
     const targetY =
       ROWS - 1 - stackHeight - (!singleCell && offset === 2 ? 1 : 0);
     targets.set(sprite, { x, y: targetY });
-
-    // Place on temp grid (mirrors what updateCoordinates does)
-    if (isItem) {
-      pieces[targetY][x] = "Item";
-    } else if (isShrunk) {
-      pieces[targetY][x] = character!.name;
-    } else if (
-      character?.name === "NeneRobo" ||
-      character?.name === "Mikudayo"
-    ) {
-      pieces[targetY][x] = character.name;
-      pieces[targetY][x - 1] = character.name;
-      pieces[targetY - 1][x] = character.name;
-      pieces[targetY - 1][x - 1] = character.name;
-    } else {
-      pieces[targetY][x] = character!.name;
-      if (offset === 0) pieces[targetY - 1][x] = character!.name;
-      if (offset === 1) pieces[targetY][x + 1] = character!.name;
-      if (offset === 2) pieces[targetY + 1][x] = character!.name;
-      if (offset === 3) pieces[targetY - 1][x] = character!.name;
-    }
+    placeOnTempGrid(x, targetY, character, isItem, isShrunk, offset);
   }
 
-  // Restore original grid
   backup.forEach((row, i) =>
     row.forEach((_, j) => {
       pieces[i][j] = backup[i][j];
     }),
   );
+  return targets;
+};
 
-  // Phase 2: Compute pixel positions and separate static vs animated
-  const staticList: typeof canFall = [];
-  const animList: (typeof canFall)[number][] = [];
+/** Phase 2: snap already-at-target sprites, animate the rest in parallel. */
+const applyFallTargets = async (
+  canFall: FallEntry[],
+  targets: Map<PIXI.Sprite, { x: number; y: number }>,
+) => {
+  const staticList: FallEntry[] = [];
+  const animList: FallEntry[] = [];
 
   for (const entry of canFall) {
     const target = targets.get(entry.sprite)!;
@@ -179,51 +196,61 @@ export const fallChunk = async (sprites: SpriteData[]) => {
     }
   }
 
-  // Place static sprites immediately
   for (const { sprite, index, character, isItem } of staticList) {
     const target = targets.get(sprite)!;
     moveToCoordinate(sprite, target.x, target.y);
     updateCoordinates(sprite, index, character, isItem);
   }
 
-  // Animate moving sprites simultaneously
-  if (animList.length > 0) {
-    // Clear old grid cells for animated sprites
-    for (const { coordinates } of animList) {
-      coordinates?.forEach(([x, y]) => (pieces[y][x] = null));
-    }
+  if (animList.length === 0) return;
 
-    const animTargets = animList.map((e) => ({
-      entry: e,
-      targetPixelY: BOX_SIZE * targets.get(e.sprite)!.y + BOX_SIZE / 2,
-    }));
-
-    await new Promise<void>((resolve) => {
-      const tick = (delta: number) => {
-        let allDone = true;
-        for (const item of animTargets) {
-          if (item.entry.sprite.y < item.targetPixelY) {
-            item.entry.sprite.y += FALL_SPEED * delta;
-            if (item.entry.sprite.y > item.targetPixelY)
-              item.entry.sprite.y = item.targetPixelY;
-            allDone = false;
-          }
-        }
-        if (allDone) {
-          gameTicker.remove(tick);
-          for (const { sprite, index, character, isItem } of canFall) {
-            const target = targets.get(sprite)!;
-            sprite.x = BOX_SIZE * target.x + LEFT_BORDER + BOX_SIZE / 2;
-            sprite.y = BOX_SIZE * target.y + BOX_SIZE / 2;
-            updateCoordinates(sprite, index, character, isItem);
-          }
-          resolve();
-        }
-      };
-      gameTicker.add(tick);
-    });
+  for (const { coordinates } of animList) {
+    coordinates?.forEach(([x, y]) => (pieces[y][x] = null));
   }
 
+  const animTargets = animList.map((e) => ({
+    entry: e,
+    targetPixelY: BOX_SIZE * targets.get(e.sprite)!.y + BOX_SIZE / 2,
+  }));
+
+  await new Promise<void>((resolve) => {
+    const tick = (delta: number) => {
+      let allDone = true;
+      for (const item of animTargets) {
+        if (item.entry.sprite.y < item.targetPixelY) {
+          item.entry.sprite.y += FALL_SPEED * delta;
+          if (item.entry.sprite.y > item.targetPixelY)
+            item.entry.sprite.y = item.targetPixelY;
+          allDone = false;
+        }
+      }
+      if (allDone) {
+        gameTicker.remove(tick);
+        for (const { sprite, index, character, isItem } of canFall) {
+          const target = targets.get(sprite)!;
+          sprite.x = BOX_SIZE * target.x + LEFT_BORDER + BOX_SIZE / 2;
+          sprite.y = BOX_SIZE * target.y + BOX_SIZE / 2;
+          updateCoordinates(sprite, index, character, isItem);
+        }
+        resolve();
+      }
+    };
+    gameTicker.add(tick);
+  });
+};
+
+export const fallChunk = async (sprites: SpriteData[]) => {
+  const canFall = sprites
+    .map((e, index) => ({ ...e, index }))
+    .filter(({ sprite, coordinates }) =>
+      findBottom({ sprite, coordinates }).every(([x, y]) => {
+        return y + 1 < pieces.length && pieces[y + 1][x] === null;
+      }),
+    );
+  if (canFall.length === 0) return;
+
+  const targets = computeFallTargets(canFall);
+  await applyFallTargets(canFall, targets);
   await fallChunk(sprites);
 };
 

@@ -32,6 +32,20 @@ import {
 } from "./fun-effects";
 import { getMizukiLockColumns, getCarrotHazardColumns } from "./board";
 
+/** Index of the value in `list` nearest to `target`. Assumes list is non-empty. */
+const nearestIndex = (list: number[], target: number): number => {
+  let idx = 0;
+  let best = Math.abs(list[0] - target);
+  for (let i = 1; i < list.length; i++) {
+    const d = Math.abs(list[i] - target);
+    if (d < best) {
+      best = d;
+      idx = i;
+    }
+  }
+  return idx;
+};
+
 // Get filtered character list based on selected groups
 const getFilteredCharacterData = (): CharacterData[] => {
   const settings = getCurrentSettings();
@@ -220,64 +234,58 @@ export const createPiece = async (
   const currentCol = () =>
     Math.round((kasumi.x - LEFT_BORDER - BOX_SIZE / 2) / BOX_SIZE);
 
-  const moveToAllowedCol = (direction: -1 | 1) => {
-    const col = currentCol();
+  const pieceY = () => {
     const rawY = (kasumi.y - BOX_SIZE / 2) / BOX_SIZE;
-    const y = Math.max(0, Math.ceil(rawY));
+    return Math.max(0, Math.ceil(rawY));
+  };
 
-    // ---- Mizuki locked to fries columns: jump among allowed only ----
+  const tryShiftToCol = (fromCol: number, targetCol: number, y: number) => {
+    if (targetCol < 0 || targetCol >= COLUMNS || targetCol === fromCol) return;
+    if (willCollide(targetCol, y, kasumi.rotation)) return;
+    kasumi.x += (targetCol - fromCol) * BOX_SIZE;
+    onMoved();
+  };
+
+  /** Jump among locked columns only (Mizuki + fries). Snap if off-list. */
+  const moveAlongLockedCols = (direction: -1 | 1) => {
+    const col = currentCol();
+    const y = pieceY();
+    const sorted = mizukiLockCols;
+    let idx = sorted.indexOf(col);
+    if (idx < 0) {
+      idx = nearestIndex(sorted, col);
+      tryShiftToCol(col, sorted[idx], y);
+      return;
+    }
+    const nextIdx = idx + direction;
+    if (nextIdx < 0 || nextIdx >= sorted.length) return;
+    tryShiftToCol(col, sorted[nextIdx], y);
+  };
+
+  /** Skip forbidden columns (Ena/Akito + carrot). */
+  const moveAvoidingHazards = (direction: -1 | 1) => {
+    const col = currentCol();
+    let next = col + direction;
+    while (next >= 0 && next < COLUMNS && carrotHazards.includes(next)) {
+      next += direction;
+    }
+    tryShiftToCol(col, next, pieceY());
+  };
+
+  const moveFree = (direction: -1 | 1) => {
+    tryShiftToCol(currentCol(), currentCol() + direction, pieceY());
+  };
+
+  const moveToAllowedCol = (direction: -1 | 1) => {
     if (mizukiLocked) {
-      const sorted = mizukiLockCols;
-      let idx = sorted.indexOf(col);
-      if (idx < 0) {
-        idx = 0;
-        let best = Math.abs(sorted[0] - col);
-        for (let i = 1; i < sorted.length; i++) {
-          const d = Math.abs(sorted[i] - col);
-          if (d < best) {
-            best = d;
-            idx = i;
-          }
-        }
-        const snapCol = sorted[idx];
-        if (snapCol !== col && !willCollide(snapCol, y, kasumi.rotation)) {
-          kasumi.x += (snapCol - col) * BOX_SIZE;
-          onMoved();
-        }
-        return;
-      }
-      const nextIdx = idx + direction;
-      if (nextIdx < 0 || nextIdx >= sorted.length) return;
-      const targetCol = sorted[nextIdx];
-      if (targetCol < 0 || targetCol >= COLUMNS) return;
-      if (!willCollide(targetCol, y, kasumi.rotation)) {
-        kasumi.x += (targetCol - col) * BOX_SIZE;
-        onMoved();
-      }
+      moveAlongLockedCols(direction);
       return;
     }
-
-    // ---- Ena/Akito: skip carrot hazard columns entirely ----
     if (avoidCarrotCols) {
-      let next = col + direction;
-      while (next >= 0 && next < COLUMNS && carrotHazards.includes(next)) {
-        next += direction;
-      }
-      if (next < 0 || next >= COLUMNS) return;
-      if (!willCollide(next, y, kasumi.rotation)) {
-        kasumi.x += (next - col) * BOX_SIZE;
-        onMoved();
-      }
+      moveAvoidingHazards(direction);
       return;
     }
-
-    // ---- Normal free move ----
-    const next = col + direction;
-    if (next < 0 || next >= COLUMNS) return;
-    if (!willCollide(next, y, kasumi.rotation)) {
-      kasumi.x += direction * BOX_SIZE;
-      onMoved();
-    }
+    moveFree(direction);
   };
 
   const onMoved = () => {

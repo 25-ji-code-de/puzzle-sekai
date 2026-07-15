@@ -285,6 +285,99 @@ export const applyMizukiShift = async (
   await fallChunk(sprites);
 };
 
+// ---------- えむちぢみ (emu shrink) ----------
+
+const collectMafuyuCells = (): [number, number][] => {
+  const cells: [number, number][] = [];
+  for (const sp of sprites) {
+    if (sp.character?.name !== "Mafuyu" || !sp.coordinates?.length) continue;
+    for (const c of sp.coordinates) cells.push(c);
+  }
+  return cells;
+};
+
+const centroid = (cells: [number, number][]): [number, number] => {
+  const cx = cells.reduce((s, [x]) => s + x, 0) / cells.length;
+  const cy = cells.reduce((s, [, y]) => s + y, 0) / cells.length;
+  return [cx, cy];
+};
+
+/** Prefer cell farther from Mafuyu; on tie, farther on separation axis. */
+const pickKeepCell = (
+  emuCells: [number, number][],
+  mafuyuCells: [number, number][],
+): [number, number] => {
+  const [mafuyuCx, mafuyuCy] = centroid(mafuyuCells);
+  const [emuCx, emuCy] = centroid(emuCells);
+  const axis: 0 | 1 =
+    Math.abs(emuCx - mafuyuCx) >= Math.abs(emuCy - mafuyuCy) ? 0 : 1;
+
+  const minDistToMafuyu = (cell: [number, number]) =>
+    Math.min(
+      ...mafuyuCells.map(
+        ([mx, my]) => Math.abs(cell[0] - mx) + Math.abs(cell[1] - my),
+      ),
+    );
+
+  return emuCells.slice().sort((a, b) => {
+    const da = minDistToMafuyu(a);
+    const db = minDistToMafuyu(b);
+    if (db !== da) return db - da;
+
+    const axisRef = axis === 0 ? mafuyuCx : mafuyuCy;
+    const axisDistA = Math.abs(a[axis] - axisRef);
+    const axisDistB = Math.abs(b[axis] - axisRef);
+    if (axisDistB !== axisDistA) return axisDistB - axisDistA;
+
+    // Stable final tie-break: lower on board, then righter
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return b[0] - a[0];
+  })[0];
+};
+
+const isAdjacentToAny = (
+  cells: [number, number][],
+  others: [number, number][],
+): boolean =>
+  cells.some(([ex, ey]) =>
+    others.some(([mx, my]) => Math.abs(ex - mx) + Math.abs(ey - my) === 1),
+  );
+
+/** Shrink one full-size Emu to a single cell. Returns true if shrunk. */
+const shrinkEmuSprite = (
+  sp: SpriteData,
+  mafuyuCells: [number, number][],
+): boolean => {
+  if (sp.character?.name !== "Emu") return false;
+  if (sp.isShrunk || !sp.coordinates || sp.coordinates.length < 2) return false;
+  if (!isAdjacentToAny(sp.coordinates, mafuyuCells)) return false;
+
+  const keep = pickKeepCell(sp.coordinates, mafuyuCells);
+
+  for (const [x, y] of sp.coordinates) {
+    if (x !== keep[0] || y !== keep[1]) {
+      pieces[y][x] = null;
+    }
+  }
+
+  sp.isShrunk = true;
+  sp.coordinates = [keep];
+
+  // Visual: 1-cell size, keep original rotation/orientation
+  const sprite = sp.sprite;
+  sprite.anchor.set(0.5, 0.5);
+  sprite.width = BOX_SIZE;
+  sprite.height = BOX_SIZE;
+  sprite.x = BOX_SIZE * keep[0] + LEFT_BORDER + BOX_SIZE / 2;
+  sprite.y = BOX_SIZE * keep[1] + BOX_SIZE / 2;
+
+  pieces[keep[1]][keep[0]] = "Emu";
+
+  const sfx = app.loader.resources["emuShrink"]?.sound;
+  if (sfx) sfx.play({ volume: 0.5 });
+  return true;
+};
+
 /**
  * emuShrink (えむちぢみ): if Mafuyu is orthogonally adjacent to a full-size Emu,
  * shrink Emu to 1 cell, choosing the cell farthest from the nearest Mafuyu
@@ -298,96 +391,15 @@ export const tryEmuShrink = async (): Promise<boolean> => {
 
   // Loop: shrink may free cells → fall → new adjacencies
   while (true) {
-    const mafuyuCells: [number, number][] = [];
-    for (const sp of sprites) {
-      if (sp.character?.name !== "Mafuyu" || !sp.coordinates?.length) continue;
-      for (const c of sp.coordinates) mafuyuCells.push(c);
-    }
+    const mafuyuCells = collectMafuyuCells();
     if (mafuyuCells.length === 0) break;
 
-    const mafuyuCx =
-      mafuyuCells.reduce((s, [x]) => s + x, 0) / mafuyuCells.length;
-    const mafuyuCy =
-      mafuyuCells.reduce((s, [, y]) => s + y, 0) / mafuyuCells.length;
-
-    const minDistToMafuyu = (cell: [number, number]) =>
-      Math.min(
-        ...mafuyuCells.map(
-          ([mx, my]) => Math.abs(cell[0] - mx) + Math.abs(cell[1] - my),
-        ),
-      );
-
-    /** Prefer cell farther from Mafuyu; on tie, farther on separation axis. */
-    const pickKeepCell = (emuCells: [number, number][]): [number, number] => {
-      const emuCx = emuCells.reduce((s, [x]) => s + x, 0) / emuCells.length;
-      const emuCy = emuCells.reduce((s, [, y]) => s + y, 0) / emuCells.length;
-      const axis: 0 | 1 =
-        Math.abs(emuCx - mafuyuCx) >= Math.abs(emuCy - mafuyuCy) ? 0 : 1;
-
-      return emuCells.slice().sort((a, b) => {
-        const da = minDistToMafuyu(a);
-        const db = minDistToMafuyu(b);
-        if (db !== da) return db - da;
-
-        const axisDistA = Math.abs(
-          a[axis] - (axis === 0 ? mafuyuCx : mafuyuCy),
-        );
-        const axisDistB = Math.abs(
-          b[axis] - (axis === 0 ? mafuyuCx : mafuyuCy),
-        );
-        if (axisDistB !== axisDistA) return axisDistB - axisDistA;
-
-        // Stable final tie-break: lower on board, then righter
-        if (b[1] !== a[1]) return b[1] - a[1];
-        return b[0] - a[0];
-      })[0];
-    };
-
     let shrunkThisPass = false;
-
-    for (let i = 0; i < sprites.length; i++) {
-      const sp = sprites[i];
-      if (sp.character?.name !== "Emu") continue;
-      if (sp.isShrunk || !sp.coordinates || sp.coordinates.length < 2) continue;
-
-      const adjacent = sp.coordinates.some(([ex, ey]) =>
-        mafuyuCells.some(
-          ([mx, my]) => Math.abs(ex - mx) + Math.abs(ey - my) === 1,
-        ),
-      );
-      if (!adjacent) continue;
-
-      const keep = pickKeepCell(sp.coordinates);
-
-      // Null discarded Emu cells
-      for (const [x, y] of sp.coordinates) {
-        if (x !== keep[0] || y !== keep[1]) {
-          pieces[y][x] = null;
-        }
+    for (const sp of sprites) {
+      if (shrinkEmuSprite(sp, mafuyuCells)) {
+        shrunkThisPass = true;
+        anyShrunk = true;
       }
-
-      sp.isShrunk = true;
-      sp.coordinates = [keep];
-
-      // Visual: 1-cell size, keep original rotation/orientation
-      const sprite = sp.sprite;
-      sprite.anchor.set(0.5, 0.5);
-      sprite.width = BOX_SIZE;
-      sprite.height = BOX_SIZE;
-      // Center on the kept cell; do not reset rotation
-      sprite.x = BOX_SIZE * keep[0] + LEFT_BORDER + BOX_SIZE / 2;
-      sprite.y = BOX_SIZE * keep[1] + BOX_SIZE / 2;
-
-      pieces[keep[1]][keep[0]] = "Emu";
-
-      // えむちぢみ SFX (once per shrink)
-      const sfx = app.loader.resources["emuShrink"]?.sound;
-      if (sfx) {
-        sfx.play({ volume: 0.5 });
-      }
-
-      shrunkThisPass = true;
-      anyShrunk = true;
     }
 
     if (!shrunkThisPass) break;
@@ -399,12 +411,8 @@ export const tryEmuShrink = async (): Promise<boolean> => {
   return anyShrunk;
 };
 
-/**
- * When Rui and NeneRobo are both in a cleared set AND share an edge (orthogonal
- * adjacency of any of their cells), randomly blast extra pieces.
- * blastCount = 2 + 2 * (Rui/NeneRobo sprites in the clear), capped at 12 / half board.
- * Multi-cell sprites (NeneRobo, Mikudayo, 2-cell chars) are removed whole.
- */
+// ---------- Wonder Blast ----------
+
 const cellsOrthogonallyAdjacent = (
   a: [number, number][],
   b: [number, number][],
@@ -417,67 +425,88 @@ const cellsOrthogonallyAdjacent = (
   return false;
 };
 
-export const applyWonderBlast = (cleared: SpriteData[]) => {
-  const ruiSprites = cleared.filter((sp) => sp.character?.name === "Rui");
-  const neneRoboSprites = cleared.filter(
-    (sp) => sp.character?.name === "NeneRobo",
-  );
-  if (ruiSprites.length === 0 || neneRoboSprites.length === 0) return;
-
-  // Require at least one Rui cell orthogonally adjacent to one NeneRobo cell
-  let adjacent = false;
-  for (const rui of ruiSprites) {
-    if (!rui.coordinates?.length) continue;
-    for (const nene of neneRoboSprites) {
-      if (!nene.coordinates?.length) continue;
-      if (cellsOrthogonallyAdjacent(rui.coordinates, nene.coordinates)) {
-        adjacent = true;
-        break;
-      }
+const anyPairAdjacent = (
+  groupA: SpriteData[],
+  groupB: SpriteData[],
+): boolean => {
+  for (const a of groupA) {
+    if (!a.coordinates?.length) continue;
+    for (const b of groupB) {
+      if (!b.coordinates?.length) continue;
+      if (cellsOrthogonallyAdjacent(a.coordinates, b.coordinates)) return true;
     }
-    if (adjacent) break;
   }
-  if (!adjacent) return;
+  return false;
+};
 
-  const ruiNeneCount = ruiSprites.length + neneRoboSprites.length;
-  const halfBoard = Math.floor((ROWS * COLUMNS) / 2);
-  const blastTarget = Math.min(12, halfBoard, 2 + 2 * ruiNeneCount);
-  if (blastTarget <= 0) return;
-
-  // Shuffle remaining board sprites
-  const candidates = sprites
-    .filter((sp) => sp.coordinates && sp.coordinates.length > 0)
-    .slice();
-  for (let i = candidates.length - 1; i > 0; i--) {
+const shuffleInPlace = <T>(list: T[]): T[] => {
+  for (let i = list.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    const tmp = candidates[i];
-    candidates[i] = candidates[j];
-    candidates[j] = tmp;
+    const tmp = list[i];
+    list[i] = list[j];
+    list[j] = tmp;
   }
+  return list;
+};
 
-  const blastRemove: SpriteData[] = [];
+/** Pick sprites until `blastTarget` cells are covered. */
+const pickBlastTargets = (
+  candidates: SpriteData[],
+  blastTarget: number,
+): { remove: SpriteData[]; cellsCleared: number } => {
+  const remove: SpriteData[] = [];
   let cellsCleared = 0;
   for (const sp of candidates) {
     if (cellsCleared >= blastTarget) break;
-    blastRemove.push(sp);
+    remove.push(sp);
     cellsCleared += sp.coordinates?.length ?? 1;
   }
-  if (blastRemove.length === 0) return;
+  return { remove, cellsCleared };
+};
 
-  if (blastRemove.some((sp) => sp.character?.name === "Kanade")) {
-    onKanadeCleared();
-  }
-
-  // One combo step for the blast wave; score by cells removed
-  addScore(cellsCleared);
-  createParticles(blastRemove);
-  blastRemove.forEach((sp) => {
+const removeSpritesFromBoard = (toRemove: SpriteData[]) => {
+  toRemove.forEach((sp) => {
     sp.coordinates?.forEach(([x, y]) => {
       pieces[y][x] = null;
     });
     app.stage.removeChild(sp.sprite);
   });
   setSprites(
-    sprites.filter((s) => !blastRemove.find((sp) => s.sprite === sp.sprite)),
+    sprites.filter((s) => !toRemove.find((sp) => s.sprite === sp.sprite)),
   );
+};
+
+/**
+ * When Rui and NeneRobo are both in a cleared set AND share an edge (orthogonal
+ * adjacency of any of their cells), randomly blast extra pieces.
+ * blastCount = 2 + 2 * (Rui/NeneRobo sprites in the clear), capped at 12 / half board.
+ * Multi-cell sprites (NeneRobo, Mikudayo, 2-cell chars) are removed whole.
+ */
+export const applyWonderBlast = (cleared: SpriteData[]) => {
+  const ruiSprites = cleared.filter((sp) => sp.character?.name === "Rui");
+  const neneRoboSprites = cleared.filter(
+    (sp) => sp.character?.name === "NeneRobo",
+  );
+  if (ruiSprites.length === 0 || neneRoboSprites.length === 0) return;
+  if (!anyPairAdjacent(ruiSprites, neneRoboSprites)) return;
+
+  const ruiNeneCount = ruiSprites.length + neneRoboSprites.length;
+  const halfBoard = Math.floor((ROWS * COLUMNS) / 2);
+  const blastTarget = Math.min(12, halfBoard, 2 + 2 * ruiNeneCount);
+  if (blastTarget <= 0) return;
+
+  const candidates = shuffleInPlace(
+    sprites.filter((sp) => sp.coordinates && sp.coordinates.length > 0).slice(),
+  );
+  const { remove, cellsCleared } = pickBlastTargets(candidates, blastTarget);
+  if (remove.length === 0) return;
+
+  if (remove.some((sp) => sp.character?.name === "Kanade")) {
+    onKanadeCleared();
+  }
+
+  // One combo step for the blast wave; score by cells removed
+  addScore(cellsCleared);
+  createParticles(remove);
+  removeSpritesFromBoard(remove);
 };
