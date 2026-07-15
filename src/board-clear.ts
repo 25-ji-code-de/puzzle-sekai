@@ -11,7 +11,12 @@ import {
   cancelShizukuSwapIfShihoPresent,
 } from "./fun-effects";
 import { fallChunk, createParticles } from "./board-core";
-import { recheckCarrotAllergy, tryEmuShrink, applyWonderBlast } from "./board-fun";
+import {
+  recheckCarrotAllergy,
+  tryMizukiEatFries,
+  tryEmuShrink,
+  applyWonderBlast,
+} from "./board-fun";
 
 export const clearChunk = async (
   chunk: [number, number][],
@@ -116,6 +121,9 @@ export const clearChunk = async (
 
   // After gravity: carrot allergy may connect newly
   await recheckCarrotAllergy();
+
+  // ポテトと瑞希: after gravity, Mizuki may newly touch fries
+  await tryMizukiEatFries();
 
   // えむちぢみ: after gravity settles, shrink Emus adjacent to Mafuyu
   await tryEmuShrink();

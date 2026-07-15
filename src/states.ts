@@ -34,6 +34,7 @@ import {
   applyCarrotAllergy,
   applyCarrotAllergyOnCharacter,
   applyMizukiShift,
+  tryMizukiEatFries,
   tryEmuShrink,
 } from "./board";
 import { welcome as _welcome } from "./welcome";
@@ -256,10 +257,12 @@ const create = async () => {
         if (isFriesItem(itemFile)) {
           await applyMizukiShift(x, y);
         }
+        // ポテトと瑞希: Mizuki touching fries → eat fries for bonus score
+        const friesEaten = await tryMizukiEatFries();
         // えむちぢみ: Mafuyu adjacent to Emu → shrink Emu to 1 cell
         await tryEmuShrink();
         let chunk = findClearPieces(pieces);
-        let cleared = allergyCleared;
+        let cleared = allergyCleared || friesEaten;
         while (chunk !== undefined) {
           cleared = true;
           await clearChunk(chunk);
@@ -316,10 +319,15 @@ const create = async () => {
         if (character.name === "Ena" || character.name === "Akito") {
           allergyCleared = await applyCarrotAllergyOnCharacter(index);
         }
+        // ポテトと瑞希: Mizuki landing next to fries → eat fries for bonus score
+        let friesEaten = false;
+        if (character.name === "Mizuki") {
+          friesEaten = await tryMizukiEatFries();
+        }
         // えむちぢみ: Mafuyu adjacent to Emu → shrink Emu to 1 cell
         await tryEmuShrink();
         let chunk = findClearPieces(pieces);
-        let cleared = allergyCleared;
+        let cleared = allergyCleared || friesEaten;
         while (chunk !== undefined) {
           cleared = true;
           await clearChunk(chunk);

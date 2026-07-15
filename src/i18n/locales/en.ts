@@ -120,7 +120,7 @@ export const en = {
       name: "French Fries Gravity Field",
       subtitle: "Follow the scent—capture complete ♪",
       description:
-        "While French fries are on the board, every column that would land adjacent to fries is locked as a trigger column. Mizuki can only jump between those columns. If no contact columns exist, movement returns to normal.\nAlso, when fries land, the nearest Mizuki is forcibly pulled and shifted directly above them.\n\n\"If you follow the smell of fries, you'll definitely catch that figure quietly sidling over ♪\"",
+        "While French fries are on the board, every column that would land adjacent to fries is locked as a trigger column. Mizuki can only jump between those columns. If no contact columns exist, movement returns to normal.\nAlso, when fries land, the nearest Mizuki is forcibly pulled and shifted directly above them.\nIf Mizuki ends up adjacent to fries, the fries are instantly eaten (and vanish) for bonus score.\n\n\"If you follow the smell of fries, you'll definitely catch that figure quietly sidling over ♪\"",
     },
     emuShrink: {
       name: "Otori Survival Rule",

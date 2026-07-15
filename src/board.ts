@@ -20,6 +20,7 @@ export {
   applyCarrotAllergyOnCharacter,
   recheckCarrotAllergy,
   applyMizukiShift,
+  tryMizukiEatFries,
   tryEmuShrink,
 } from "./board-fun";
 

@@ -4,7 +4,7 @@ import { addScore } from "./score";
 import { ROWS, COLUMNS, BOX_SIZE, LEFT_BORDER } from "./config";
 import { SpriteData, sprites, pieces, setSprites } from "./states";
 import { isFunModeOn, onKanadeCleared } from "./fun-effects";
-import { isCarrotItem } from "./items";
+import { isCarrotItem, isFriesItem } from "./items";
 import { updateCoordinates, fallChunk, createParticles } from "./board-core";
 import { clearChunk } from "./board-clear";
 
@@ -283,6 +283,55 @@ export const applyMizukiShift = async (
   }
 
   await fallChunk(sprites);
+};
+
+/**
+ * ポテトと瑞希: any fries orthogonally adjacent to a Mizuki is eaten —
+ * fries vanish, score is awarded, then gravity re-runs.
+ * Re-checks after fall in case new adjacencies form.
+ * Returns true if at least one fries was eaten.
+ */
+export const tryMizukiEatFries = async (): Promise<boolean> => {
+  if (!isFunModeOn("mizukiShift")) return false;
+
+  const dirs: [number, number][] = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ];
+
+  let anyEaten = false;
+
+  while (true) {
+    const mizukiCells: [number, number][] = [];
+    for (const sp of sprites) {
+      if (sp.character?.name !== "Mizuki" || !sp.coordinates?.length) continue;
+      for (const c of sp.coordinates) mizukiCells.push(c);
+    }
+    if (mizukiCells.length === 0) break;
+
+    const toEat: SpriteData[] = [];
+    for (const sp of sprites) {
+      if (!sp.isItem || !sp.itemFile || !sp.coordinates?.length) continue;
+      if (!isFriesItem(sp.itemFile)) continue;
+      const [fx, fy] = sp.coordinates[0];
+      const touches = mizukiCells.some(([mx, my]) =>
+        dirs.some(([dx, dy]) => mx + dx === fx && my + dy === fy),
+      );
+      if (touches) toEat.push(sp);
+    }
+    if (toEat.length === 0) break;
+
+    // Extra score for snacks nabbed (combo step, same unit as a 1-cell clear)
+    addScore(toEat.length);
+    createParticles(toEat);
+    removeSpritesFromBoard(toEat);
+    anyEaten = true;
+    await fallChunk(sprites);
+  }
+
+  return anyEaten;
 };
 
 // ---------- えむちぢみ (emu shrink) ----------
