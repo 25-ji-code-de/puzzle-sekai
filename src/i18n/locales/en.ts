@@ -22,6 +22,16 @@ export const en = {
       timeAttack: "Time Attack",
     },
   },
+  display: {
+    rotateLandscape: "Rotate your device to landscape to play",
+  },
+  pause: {
+    title: "Paused",
+    resume: "Continue",
+    restart: "Restart",
+    menu: "Quit to menu",
+    button: "Pause",
+  },
   settings: {
     title: "Settings",
     speed: {

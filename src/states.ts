@@ -40,6 +40,8 @@ import {
 import { welcome as _welcome } from "./welcome";
 import { getCurrentGameMode, getCurrentSettings, getItemDropChance } from "./settings";
 import { resetFunEffects } from "./fun-effects";
+import { enterMenu } from "./welcome";
+import { disposePauseMenu, showPauseButton, hidePauseButton } from "./pause-menu";
 
 export { welcome } from "./welcome";
 export { addDropScore } from "./score";
@@ -74,6 +76,9 @@ let gameOverIntroOnEnd: (() => void) | null = null;
 
 // Time attack timer
 let timeAttackInterval: number | undefined;
+/** True while gameplay is frozen for a portrait pause; the timer skips
+ * decrementing so portrait time never counts against the player. */
+let playPaused = false;
 
 export const stopBgm = () => {
   bgmActive = false;
@@ -178,7 +183,9 @@ const startTimeAttackTimer = () => {
   const settings = getCurrentSettings();
   setTimeRemaining(settings.timeAttackDuration);
 
+  // Don't decrement while paused (portrait): just re-arm for the next tick.
   timeAttackInterval = window.setInterval(() => {
+    if (playPaused) return;
     const isTimeUp = decrementTime();
     if (isTimeUp) {
       stopTimeAttackTimer();
@@ -187,10 +194,18 @@ const startTimeAttackTimer = () => {
   }, 1000);
 };
 
-const start = () => {
-  sprites.forEach((sp) => {
-    app.stage.removeChild(sp.sprite);
-  });
+// True while a match is running (between `start` and game-over / menu return).
+// The pause menu and pause button only respond while this is true.
+let playActive = false;
+export const isPlayActive = () => playActive;
+const setPlayActive = (v: boolean) => {
+  playActive = v;
+};
+
+/** Remove every gameplay-owned sprite + stop timers. Shared by `start`
+ * (before re-seeding) and `returnToMenu` (leaving the match). */
+const clearStage = () => {
+  sprites.forEach((sp) => app.stage.removeChild(sp.sprite));
   sprites = [];
   resetGameTicker();
   endAnimation = undefined;
@@ -199,8 +214,6 @@ const start = () => {
   if (avatarStab) {
     app.stage.removeChild(avatarStab);
   }
-  avatarStab = createavatarSan();
-  app.stage.addChild(avatarStab);
   app.stage.removeChild(avatarFlyDown);
   app.stage.removeChild(barrel);
   app.stage.removeChild(curtain);
@@ -210,6 +223,14 @@ const start = () => {
   if (nextPiece) {
     app.stage.removeChild(nextPiece);
   }
+};
+
+const start = () => {
+  clearStage();
+  playPaused = false;
+  disposePauseMenu(); // drop any stale pause overlay (e.g. "r" restart from pause)
+  avatarStab = createavatarSan();
+  app.stage.addChild(avatarStab);
   resetScore();
   initScoreDisplay();
   initRNG();
@@ -232,6 +253,8 @@ const start = () => {
   if (mode === "timeAttack") {
     startTimeAttackTimer();
   }
+  setPlayActive(true);
+  showPauseButton();
 };
 export { start };
 
@@ -369,10 +392,53 @@ const create = async () => {
 
 const falling = () => {};
 
+/** Pause gameplay: freeze the falling ticker and stop ticking the timer. */
+export const pausePlay = () => {
+  gameTicker.stop();
+  playPaused = true;
+  try {
+    if (bgmPlaying) bgmPlaying.pause();
+  } catch {
+    /* ignore */
+  }
+};
+
+/** Resume gameplay after a pause (caller ensures ticker is restarted). */
+export const resumePlay = () => {
+  playPaused = false;
+  // pausePlay stopped the ticker; start it again so pieces resume falling.
+  if (!gameTicker.started) gameTicker.start();
+  try {
+    if (bgmPlaying && bgmActive) bgmPlaying.play();
+  } catch {
+    /* ignore */
+  }
+};
+
+/**
+ * Abandon the current match and return to the welcome menu. Tears down the
+ * board, stops timers/BGM, drops the pause overlay, and shows the menu. The
+ * match state is fully cleared — calling `start` again later re-seeds it.
+ */
+export const returnToMenu = () => {
+  clearStage();
+  resetScore();
+  resetFunEffects();
+  playPaused = false;
+  setPlayActive(false);
+  disposePauseMenu();
+  hidePauseButton();
+  setState(() => {}); // idle state while the menu shows
+  enterMenu();
+};
+
 const end = async () => {
   if (!endAnimation) {
     // Stop time attack timer if running
     stopTimeAttackTimer();
+    setPlayActive(false);
+    hidePauseButton();
+    disposePauseMenu();
 
     // Play game over BGM: 182.1 once, then loop 182.2
     playGameOverBgm();
@@ -415,6 +481,9 @@ const end = async () => {
 const endTimeAttack = async () => {
   if (!endAnimation) {
     stopTimeAttackTimer();
+    setPlayActive(false);
+    hidePauseButton();
+    disposePauseMenu();
 
     // Play game over BGM
     playGameOverBgm();

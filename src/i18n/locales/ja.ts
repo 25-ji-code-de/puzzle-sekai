@@ -22,6 +22,16 @@ export const ja = {
       timeAttack: "タイムアタック",
     },
   },
+  display: {
+    rotateLandscape: "端末を横向きにしてプレイしてください",
+  },
+  pause: {
+    title: "一時停止",
+    resume: "続ける",
+    restart: "やり直す",
+    menu: "メニューに戻る",
+    button: "一時停止",
+  },
   settings: {
     title: "設定",
     speed: {

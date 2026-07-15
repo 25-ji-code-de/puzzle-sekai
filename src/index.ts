@@ -23,6 +23,7 @@ import { start, welcome } from "./states";
 import { items } from "./items";
 import { t, onLocaleChange } from "./i18n";
 import { initializeFontSystem, resolveFontScheme } from "./fonts";
+import { togglePauseMenu } from "./pause-menu";
 
 // The application will create a renderer using WebGL, if possible,
 // with a fallback to a canvas render. It will also setup the ticker
@@ -145,9 +146,14 @@ app.loader
     bgSprite = bg;
 
     window.addEventListener("keydown", (event) => {
-      if (event.key.toLowerCase() === "r") {
+      const key = event.key.toLowerCase();
+      if (key === "r") {
         // Always allow restart, including during game-over BGM / curtain
         setState(start);
+      } else if (key === "escape" || key === "p") {
+        // Toggle manual pause menu during play (no-op when portrait-gated).
+        event.preventDefault();
+        togglePauseMenu();
       }
     });
 

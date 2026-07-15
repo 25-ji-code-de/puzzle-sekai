@@ -10,6 +10,16 @@ body {
 
   height: min(100vh, 100%);
   width: 100vw;
+  overflow: hidden;
+  background: #000;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Keep letterbox black while the browser is in fullscreen. */
+:fullscreen body,
+:-webkit-full-screen body {
+  background: #000;
 }
 button,
 input,

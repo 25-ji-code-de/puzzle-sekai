@@ -22,6 +22,16 @@ export const zh = {
       timeAttack: "限时挑战",
     },
   },
+  display: {
+    rotateLandscape: "请将设备横过来再开始游戏",
+  },
+  pause: {
+    title: "暂停",
+    resume: "继续",
+    restart: "重来",
+    menu: "返回主菜单",
+    button: "暂停",
+  },
   settings: {
     title: "设置",
     speed: {
