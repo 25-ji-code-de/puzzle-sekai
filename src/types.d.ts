@@ -3,12 +3,12 @@ declare module "*.png" {
   export default url;
 }
 
-declare module "*.mp3" {
+declare module "*.webp" {
   const url: string;
   export default url;
 }
 
-declare module "*.wav" {
+declare module "*.mp3" {
   const url: string;
   export default url;
 }
