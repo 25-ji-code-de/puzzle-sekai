@@ -1,0 +1,76 @@
+// Design tokens for DOM chrome (menus, dialogs, settings).
+// PIXI text styles stay in TS.
+
+:root {
+  --ui-bg-deep: rgba(15, 20, 40, 0.95);
+  --ui-bg-card: rgba(20, 25, 50, 0.95);
+  --ui-bg-dim: rgba(0, 0, 0, 0.7);
+  --ui-bg-dim-strong: rgba(0, 0, 0, 0.8);
+  --ui-bg-glass: rgba(255, 255, 255, 0.1);
+  --ui-border-cyan: rgba(100, 200, 255, 0.3);
+  --ui-border-cyan-soft: rgba(100, 200, 255, 0.2);
+  --ui-border-cyan-strong: rgba(100, 200, 255, 0.45);
+  --ui-border-white: rgba(255, 255, 255, 0.3);
+  --ui-text: #fff;
+  --ui-text-muted: rgba(255, 255, 255, 0.7);
+  --ui-text-soft: rgba(255, 255, 255, 0.85);
+  --ui-accent-fill: rgba(100, 200, 255, 0.18);
+  --ui-accent-fill-hover: rgba(100, 200, 255, 0.28);
+  --ui-accent-active: rgba(100, 200, 255, 0.3);
+  --ui-accent-group: rgba(100, 200, 255, 0.4);
+  --ui-accent-solid: #4488ff;
+  --ui-accent-text: rgba(220, 240, 255, 0.95);
+  --ui-label: rgba(180, 220, 255, 0.8);
+  --ui-danger-fill: rgba(255, 80, 100, 0.14);
+  --ui-danger-fill-hover: rgba(255, 80, 100, 0.22);
+  --ui-danger-border: rgba(255, 100, 120, 0.4);
+  --ui-danger-text: rgba(255, 200, 210, 0.95);
+  --ui-mobile: #f5576c;
+  --ui-key: #667eea;
+  --ui-note: rgba(255, 220, 140, 0.9);
+  --ui-radius: 8px;
+  --ui-radius-lg: 16px;
+  --ui-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --ui-z-pause-fab: 9000;
+  --ui-z-menu: 9999;
+  --ui-z-overlay: 10000;
+  --ui-z-modal: 10001;
+  --ui-z-settings: 10000;
+  --ui-z-rotate: 20000;
+
+  // Font stacks filled by fonts.ts (locale-aware)
+  --font-brand: sans-serif;
+  --font-display: sans-serif;
+  --font-body: sans-serif;
+  --font-mono: monospace;
+}
+
+.font-brand {
+  font-family: var(--font-brand);
+}
+.font-heading {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+.font-action {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+.font-body {
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+.font-caption {
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+.font-numeric {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.font-numeric-strong {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

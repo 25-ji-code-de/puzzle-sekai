@@ -33,48 +33,16 @@ export const showPauseButton = (): void => {
   pauseBtn = document.createElement("button");
   pauseBtn.type = "button";
   pauseBtn.id = PAUSE_BTN_ID;
+  pauseBtn.className = "pause-fab";
   pauseBtn.setAttribute("aria-label", t("pause.button"));
   pauseBtn.title = t("pause.button");
-  pauseBtn.style.cssText = `
-    position:fixed;top:max(14px, env(safe-area-inset-top, 0px));left:14px;
-    z-index:9000;width:42px;height:42px;border-radius:50%;
-    border:1px solid rgba(100,200,255,0.35);
-    background:linear-gradient(160deg, rgba(30,40,70,0.72), rgba(10,14,30,0.78));
-    color:rgba(220,240,255,0.95);
-    display:flex;align-items:center;justify-content:center;cursor:pointer;
-    pointer-events:auto;
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    box-shadow:0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
-    transition:transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-    padding:0;outline:none;
-  `;
   pauseBtn.innerHTML = `
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"
-      style="display:block;pointer-events:none;">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
       <rect x="3" y="2" width="3.5" height="12" rx="1.2" fill="currentColor"/>
       <rect x="9.5" y="2" width="3.5" height="12" rx="1.2" fill="currentColor"/>
     </svg>
   `;
-  pauseBtn.onmouseenter = () => {
-    pauseBtn!.style.transform = "scale(1.08)";
-    pauseBtn!.style.borderColor = "rgba(100,200,255,0.65)";
-    pauseBtn!.style.boxShadow =
-      "0 6px 20px rgba(0,0,0,0.4), 0 0 14px rgba(100,200,255,0.25), inset 0 1px 0 rgba(255,255,255,0.18)";
-  };
-  pauseBtn.onmouseleave = () => {
-    pauseBtn!.style.transform = "scale(1)";
-    pauseBtn!.style.borderColor = "rgba(100,200,255,0.35)";
-    pauseBtn!.style.boxShadow =
-      "0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)";
-  };
-  pauseBtn.onmousedown = () => {
-    pauseBtn!.style.transform = "scale(0.94)";
-  };
-  pauseBtn.onmouseup = () => {
-    pauseBtn!.style.transform = "scale(1.08)";
-  };
   pauseBtn.onclick = () => togglePauseMenu();
-
   document.body.appendChild(pauseBtn);
 };
 

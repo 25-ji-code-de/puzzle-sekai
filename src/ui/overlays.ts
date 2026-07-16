@@ -1,5 +1,5 @@
 import { t } from "../i18n";
-import { domFontStyle } from "./fonts";
+import { buildDialogButton, buildDialogShell } from "./dialog-button";
 
 const CONTROLS_OVERLAY_ID = "controls-overlay";
 const ABOUT_OVERLAY_ID = "about-overlay";
@@ -10,215 +10,205 @@ export const disposeMenuOverlays = () => {
   document.getElementById(CONTROLS_OVERLAY_ID)?.remove();
 };
 
-export const showControlsOverlay = () => {
-  const overlay = document.createElement("div");
-  overlay.id = CONTROLS_OVERLAY_ID;
-  overlay.style.cssText = `
-    position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);
-    animation:fadeIn 0.3s ease;
-  `;
-
-  const card = document.createElement("div");
-  card.style.cssText = `
-    background:rgba(20,25,50,0.95);border:1px solid rgba(100,200,255,0.3);
-    border-radius:16px;padding:28px 32px;max-width:480px;width:90%;
-    box-shadow:0 20px 60px rgba(0,0,0,0.5);
-  `;
-  card.innerHTML = `
-    <div style="font-size:22px;color:#fff;text-align:center;margin-bottom:20px;letter-spacing:2px;${domFontStyle(
-      "heading",
-    )}">
-      ${t("controls.title")}
-    </div>
-    <table style="width:100%;border-collapse:collapse;font-size:16px;color:rgba(255,255,255,0.8);${domFontStyle(
-      "body",
-    )}">
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;color:#667eea;width:80px;">${t(
-          "controls.keyboard",
-        )}</td>
-        <td style="padding:10px 0;">${t("controls.moveLeftRight")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.rotateClockwise")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.rotateCounter")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.softDrop")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.hardDrop")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.restart")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.15);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.pause")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;color:#f5576c;">${t("controls.mobile")}</td>
-        <td style="padding:10px 0;">${t("controls.swipeMove")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.tapRotate")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.swipeHardDrop")}</td>
-      </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;">${t("controls.pressSoftDrop")}</td>
-      </tr>
-      <tr>
-        <td style="padding:10px 0;"></td>
-        <td style="padding:10px 0;color:rgba(255,220,140,0.9);font-size:14px;">${t(
-          "controls.easterEgg",
-        )}</td>
-      </tr>
-    </table>
-    <div style="text-align:center;margin-top:20px;">
-      <button type="button" class="overlay-close-btn" style="padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
-        background:rgba(255,255,255,0.1);color:#fff;font-size:15px;cursor:pointer;
-        transition:all 0.2s ease;">
-        ${t("controls.close")}
-      </button>
-    </div>
-  `;
-  overlay.appendChild(card);
-  const closeBtn = card.querySelector(".overlay-close-btn") as HTMLButtonElement;
-  closeBtn.onclick = () => overlay.remove();
+const attachDismiss = (overlay: HTMLDivElement) => {
+  const closeBtn = overlay.querySelector(
+    ".overlay-close-btn",
+  ) as HTMLButtonElement | null;
+  if (closeBtn) closeBtn.onclick = () => overlay.remove();
   overlay.onclick = (e) => {
     if (e.target === overlay) overlay.remove();
   };
+};
+
+export const showControlsOverlay = () => {
+  document.getElementById(CONTROLS_OVERLAY_ID)?.remove();
+
+  const { overlay, card, title } = buildDialogShell({
+    id: CONTROLS_OVERLAY_ID,
+    title: t("controls.title"),
+    backdropAlpha: 0.8,
+    wide: true,
+  });
+  title.classList.add("ui-dialog__title--spaced");
+  overlay.classList.add("ui-overlay--dim");
+
+  const table = document.createElement("table");
+  table.className = "overlay-table";
+  const rows: [string, string, string?][] = [
+    [t("controls.keyboard"), t("controls.moveLeftRight"), "label"],
+    ["", t("controls.rotateClockwise")],
+    ["", t("controls.rotateCounter")],
+    ["", t("controls.softDrop")],
+    ["", t("controls.hardDrop")],
+    ["", t("controls.restart")],
+    ["", t("controls.pause")],
+    [t("controls.mobile"), t("controls.swipeMove"), "mobile"],
+    ["", t("controls.tapRotate")],
+    ["", t("controls.swipeHardDrop")],
+    ["", t("controls.pressSoftDrop")],
+    ["", t("controls.easterEgg"), "note"],
+  ];
+  for (const [label, value, kind] of rows) {
+    const tr = document.createElement("tr");
+    const tdL = document.createElement("td");
+    const tdV = document.createElement("td");
+    if (kind === "label") tdL.className = "overlay-table__label";
+    if (kind === "mobile") tdL.className = "overlay-table__label--mobile";
+    tdL.textContent = label;
+    if (kind === "note") {
+      tdV.className = "overlay-table__note";
+    }
+    tdV.textContent = value;
+    tr.appendChild(tdL);
+    tr.appendChild(tdV);
+    table.appendChild(tr);
+  }
+  card.appendChild(table);
+
+  const footer = document.createElement("div");
+  footer.className = "ui-dialog__footer";
+  const close = buildDialogButton(t("controls.close"), "neutral", () =>
+    overlay.remove(),
+  );
+  close.classList.add("ui-btn--compact", "overlay-close-btn");
+  footer.appendChild(close);
+  card.appendChild(footer);
+
+  attachDismiss(overlay);
   document.body.appendChild(overlay);
 };
 
 export const showAboutOverlay = () => {
-  // Only one about dialog at a time
   document.getElementById(ABOUT_OVERLAY_ID)?.remove();
 
-  const overlay = document.createElement("div");
-  overlay.id = ABOUT_OVERLAY_ID;
-  overlay.style.cssText = `
-    position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);
-    animation:fadeIn 0.3s ease;
-  `;
+  const link = (text: string, href: string) => {
+    const a = document.createElement("a");
+    a.className = "about-link";
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = text;
+    return a;
+  };
 
-  const link = (text: string, href: string) =>
-    `<a class="about-link" href="${href}" target="_blank" rel="noopener">${text}</a>`;
-  const row = (label: string, content: string, last = false) => `
-    <div style="display:flex;gap:12px;align-items:baseline;padding:11px 0;
-      ${last ? "" : "border-bottom:1px solid rgba(100,200,255,0.1);"}">
-      <span style="flex:0 0 72px;font-size:13px;color:rgba(180,220,255,0.7);${domFontStyle(
-        "caption",
-      )}">${label}</span>
-      <span style="flex:1;font-size:15px;color:rgba(255,255,255,0.85);line-height:1.5;${domFontStyle(
-        "body",
-      )}">${content}</span>
-    </div>`;
+  const row = (label: string, content: HTMLElement | string) => {
+    const wrap = document.createElement("div");
+    wrap.className = "about-row";
+    const lab = document.createElement("span");
+    lab.className = "about-row__label font-caption";
+    lab.textContent = label;
+    const val = document.createElement("span");
+    val.className = "about-row__value font-body";
+    if (typeof content === "string") val.textContent = content;
+    else val.appendChild(content);
+    wrap.appendChild(lab);
+    wrap.appendChild(val);
+    return wrap;
+  };
 
-  const card = document.createElement("div");
-  card.style.cssText = `
-    background:rgba(20,25,50,0.95);border:1px solid rgba(100,200,255,0.3);
-    border-radius:16px;padding:24px 28px;max-width:480px;width:90%;
-    max-height:min(85vh,720px);overflow-y:auto;
-    box-shadow:0 20px 60px rgba(0,0,0,0.5);
-  `;
-  card.innerHTML = `
-    <style>
-      .about-link {
-        color:rgba(170,210,255,0.9);text-decoration:none;
-        transition:color .15s ease;
-      }
-      .about-link:hover { color:#dcefff;text-decoration:underline; }
-      .about-legal p { margin:0 0 10px; }
-      .about-legal p:last-child { margin-bottom:0; }
-    </style>
-    <div style="font-size:22px;color:#fff;text-align:center;margin-bottom:16px;letter-spacing:2px;${domFontStyle(
-      "heading",
-    )}">
-      ${t("about.title")}
-    </div>
-    ${row(
+  const { overlay, card, title } = buildDialogShell({
+    id: ABOUT_OVERLAY_ID,
+    title: t("about.title"),
+    backdropAlpha: 0.8,
+    wide: true,
+  });
+  title.classList.add("ui-dialog__title--spaced");
+  overlay.classList.add("ui-overlay--dim");
+  card.style.maxHeight = "min(85vh, 720px)";
+  card.style.overflowY = "auto";
+
+  const join = (...nodes: (Node | string)[]) => {
+    const span = document.createElement("span");
+    for (const n of nodes) {
+      if (typeof n === "string") span.appendChild(document.createTextNode(n));
+      else span.appendChild(n);
+    }
+    return span;
+  };
+
+  card.appendChild(
+    row(
       t("footer.original"),
-      `${link(
-        "Pazuru-Pico",
-        "https://github.com/hamzaabamboo/pazuru-pico",
-      )} (${link("HamP", "https://ham-san.net/")})`,
-    )}
-    ${row(
+      join(
+        link("Pazuru-Pico", "https://github.com/hamzaabamboo/pazuru-pico"),
+        " (",
+        link("HamP", "https://ham-san.net/"),
+        ")",
+      ),
+    ),
+  );
+  card.appendChild(
+    row(
       t("footer.inspiration"),
       link(
         "BanG Dream! ☆PICO ～OHMORI～ Ep.9",
         "https://www.youtube.com/watch?v=q5YETLAebUY",
       ),
-    )}
-    ${row(
+    ),
+  );
+  card.appendChild(
+    row(
       t("footer.thisProject"),
       link("GitHub", "https://github.com/25-ji-code-de/puzzle-sekai"),
-    )}
-    ${row(
+    ),
+  );
+  card.appendChild(
+    row(
       t("footer.author"),
       link(
         "bili_47177171806",
         "https://space.bilibili.com/3546904856103196",
       ),
-    )}
-    ${row(
+    ),
+  );
+  card.appendChild(
+    row(
       t("footer.support"),
       link(t("about.afdian"), "https://afdian.com/a/1806P"),
-    )}
-    ${row(
+    ),
+  );
+  card.appendChild(
+    row(
       t("footer.feedback"),
       link(
         t("about.reportIssue"),
         "https://github.com/25-ji-code-de/puzzle-sekai/issues/new",
       ),
-      true,
-    )}
-    <div class="about-legal" style="margin-top:18px;padding:14px 14px 12px;border-radius:10px;
-      background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.08);
-      font-size:13px;line-height:1.7;color:rgba(255,255,255,0.62);${domFontStyle(
-        "caption",
-      )}">
-      <p style="font-size:14px;color:rgba(255,255,255,0.85);margin-bottom:12px;${domFontStyle(
-        "body",
-      )}"><strong>${t("about.disclaimerTitle")}</strong></p>
-      <p>${t("about.disclaimerP1")}</p>
-      <p>${t("about.disclaimerP2")}</p>
-      <p>${t("about.disclaimerP3")}</p>
-      <p>${t("about.disclaimerP4")}</p>
-      <p style="margin-top:12px;font-size:12px;opacity:0.8;">${t(
-        "about.disclaimerAgree",
-      )}</p>
-    </div>
-    <div style="text-align:center;margin-top:20px;">
-      <button type="button" class="overlay-close-btn" style="padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;
-        background:rgba(255,255,255,0.1);color:#fff;font-size:15px;cursor:pointer;
-        transition:all 0.2s ease;">
-        ${t("controls.close")}
-      </button>
-    </div>
-  `;
-  overlay.appendChild(card);
-  const closeBtn = card.querySelector(".overlay-close-btn") as HTMLButtonElement;
-  closeBtn.onclick = () => overlay.remove();
-  overlay.onclick = (e) => {
-    if (e.target === overlay) overlay.remove();
-  };
+    ),
+  );
+
+  const legal = document.createElement("div");
+  legal.className = "about-legal font-caption";
+  const strong = document.createElement("p");
+  strong.innerHTML = `<strong>${t("about.disclaimerTitle")}</strong>`;
+  legal.appendChild(strong);
+  for (const key of [
+    "about.disclaimerP1",
+    "about.disclaimerP2",
+    "about.disclaimerP3",
+    "about.disclaimerP4",
+  ] as const) {
+    const p = document.createElement("p");
+    p.textContent = t(key);
+    legal.appendChild(p);
+  }
+  const agree = document.createElement("p");
+  agree.style.marginTop = "12px";
+  agree.style.fontSize = "12px";
+  agree.style.opacity = "0.8";
+  agree.textContent = t("about.disclaimerAgree");
+  legal.appendChild(agree);
+  card.appendChild(legal);
+
+  const footer = document.createElement("div");
+  footer.className = "ui-dialog__footer";
+  const close = buildDialogButton(t("controls.close"), "neutral", () =>
+    overlay.remove(),
+  );
+  close.classList.add("ui-btn--compact", "overlay-close-btn");
+  footer.appendChild(close);
+  card.appendChild(footer);
+
+  attachDismiss(overlay);
   document.body.appendChild(overlay);
 };

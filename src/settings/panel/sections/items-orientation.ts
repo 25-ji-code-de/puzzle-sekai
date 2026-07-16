@@ -36,9 +36,9 @@ export const appendItemDropSection = (
             factor: ITEM_DROP_SCORE_FACTORS[rate].toFixed(2),
           }),
           html: `<div>${getItemDropLabel(rate)}</div>
-      <div style="font-size:12px;opacity:0.65;margin-top:2px;">×${ITEM_DROP_SCORE_FACTORS[
-        rate
-      ].toFixed(2)}</div>`,
+      <div class="setting-opt-sub">×${ITEM_DROP_SCORE_FACTORS[rate].toFixed(
+        2,
+      )}</div>`,
         },
       ),
     );
@@ -67,7 +67,7 @@ export const appendOrientationSection = (
         {
           title: t(`settings.orientation.${orient}Help`),
           html: `<div>${t(`settings.orientation.${orient}`)}</div>
-      <div style="font-size:12px;opacity:0.65;margin-top:2px;">×${SPAWN_ORIENTATION_SCORE_FACTORS[
+      <div class="setting-opt-sub">×${SPAWN_ORIENTATION_SCORE_FACTORS[
         orient
       ].toFixed(2)}</div>`,
         },
@@ -76,9 +76,7 @@ export const appendOrientationSection = (
   });
   group.appendChild(options);
   const help = document.createElement("div");
-  help.style.cssText = `
-    margin-top:8px;font-size:13px;line-height:1.5;color:rgba(255,255,255,0.55);
-  `;
+  help.className = "setting-help setting-help--muted";
   help.textContent = t(`settings.orientation.${currentOrient}Help`);
   group.appendChild(help);
   panel.appendChild(group);

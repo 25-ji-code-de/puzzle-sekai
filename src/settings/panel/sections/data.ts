@@ -13,10 +13,7 @@ export const appendDataSection = (panel: HTMLElement): void => {
   options.style.alignItems = "stretch";
 
   const status = document.createElement("div");
-  status.style.cssText = `
-    margin-top:8px;min-height:1.4em;font-size:13px;line-height:1.4;
-    color:rgba(180,220,255,0.75);
-  `;
+  status.className = "setting-status";
 
   const clearCacheBtn = makeDangerButton(t("settings.data.clearCache"));
   const clearDataBtn = makeDangerButton(t("settings.data.clearData"));

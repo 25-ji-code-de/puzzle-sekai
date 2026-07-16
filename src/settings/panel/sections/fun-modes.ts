@@ -35,12 +35,7 @@ export const appendFunModesSection = (
 
   const chipRow = makeOptionsRow();
   const help = document.createElement("div");
-  help.style.cssText = `
-    margin-top:10px;padding:10px 12px;border-radius:8px;
-    background:rgba(0,0,0,0.25);border:1px solid rgba(100,200,255,0.15);
-    color:rgba(255,255,255,0.7);font-size:14px;line-height:1.65;min-height:3.4em;
-    white-space:pre-wrap;
-  `;
+  help.className = "setting-help";
   help.textContent = t("settings.fun.help");
 
   const currentItemRate = (settings.itemDropRate ?? 10) as ItemDropRate;
@@ -54,10 +49,8 @@ export const appendFunModesSection = (
       ? scaleItemLinkedFactor(def.scoreFactor, currentItemRate)
       : def.scoreFactor;
     const factorNote = def.itemLinked ? t("settings.fun.itemLinked") : "";
-    opt.innerHTML = `<div style="font-size:15px;">${t(
-      `fun.${def.id}.name`,
-    )}</div>
-      <div style="font-size:12px;opacity:0.65;margin-top:2px;">${t(
+    opt.innerHTML = `<div>${t(`fun.${def.id}.name`)}</div>
+      <div class="setting-opt-sub">${t(
         `fun.${def.id}.subtitle`,
       )} · ×${shownFactor.toFixed(2)}${factorNote}</div>`;
     opt.onmouseenter = () => {

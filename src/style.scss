@@ -1,3 +1,14 @@
+// DOM chrome styles live in SCSS under tokens; TS assigns className.
+// See src/styles/*.scss — do not re-introduce large cssText dumps.
+
+@import "./styles/tokens";
+@import "./styles/keyframes";
+@import "./styles/dialog";
+@import "./styles/overlays";
+@import "./styles/menu";
+@import "./styles/settings-panel";
+@import "./styles/display";
+
 * {
   box-sizing: border-box;
 }
@@ -65,7 +76,6 @@ textarea {
       width: auto;
       height: 100%;
 
-      /* 轻微投影与圆角让画布与右侧卡片分层更明显 */
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
       border-radius: 8px;
 

@@ -1,9 +1,9 @@
 /**
  * Small DOM helpers shared by settings panel sections.
+ * Visual styles: styles/_settings-panel.scss
  */
 import type { GameSettings } from "../types";
 import { updateCurrentSettings } from "../store";
-import { domFontStyle } from "../../ui/fonts";
 
 export type SettingsSectionCtx = {
   settings: GameSettings;
@@ -13,7 +13,10 @@ export type SettingsSectionCtx = {
 export const makeSettingGroup = (label: string): HTMLDivElement => {
   const group = document.createElement("div");
   group.className = "setting-group";
-  group.innerHTML = `<div class="setting-label">${label}</div>`;
+  const lab = document.createElement("div");
+  lab.className = "setting-label";
+  lab.textContent = label;
+  group.appendChild(lab);
   return group;
 };
 
@@ -27,15 +30,26 @@ export const makeChip = (
   label: string,
   active: boolean,
   onClick: () => void,
-  opts?: { className?: string; title?: string; html?: string },
+  opts?: { className?: string; title?: string; html?: string; subtitle?: string },
 ): HTMLDivElement => {
   const opt = document.createElement("div");
   opt.className = `setting-opt ${opts?.className ?? ""} ${
     active ? "active" : ""
   }`.trim();
   if (opts?.title) opt.title = opts.title;
-  if (opts?.html) opt.innerHTML = opts.html;
-  else opt.textContent = label;
+  if (opts?.html) {
+    opt.innerHTML = opts.html;
+  } else if (opts?.subtitle) {
+    const main = document.createElement("div");
+    main.textContent = label;
+    const sub = document.createElement("div");
+    sub.className = "setting-opt-sub";
+    sub.textContent = opts.subtitle;
+    opt.appendChild(main);
+    opt.appendChild(sub);
+  } else {
+    opt.textContent = label;
+  }
   opt.onclick = onClick;
   return opt;
 };
@@ -53,18 +67,7 @@ export const commitAndRefresh = (
 export const makeDangerButton = (label: string): HTMLButtonElement => {
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "setting-opt";
+  btn.className = "setting-opt setting-danger";
   btn.textContent = label;
-  btn.style.cssText = `
-    width:100%;text-align:center;cursor:pointer;${domFontStyle("body")}
-    background:rgba(255,80,100,0.12);border:1px solid rgba(255,100,120,0.35);
-    color:rgba(255,200,210,0.95);
-  `;
-  btn.onmouseenter = () => {
-    btn.style.background = "rgba(255,80,100,0.22)";
-  };
-  btn.onmouseleave = () => {
-    btn.style.background = "rgba(255,80,100,0.12)";
-  };
   return btn;
 };

@@ -6,7 +6,6 @@ import {
   DifficultyLevel,
 } from "../settings";
 import { t } from "../i18n";
-import { domFontStyle } from "./fonts";
 
 /** CSS inline style for colored difficulty text (supports gradient for Append) */
 export const diffColorStyle = (level: number): string => {
@@ -47,16 +46,10 @@ export const highScoreRowHtml = (): string => {
     scoreColor: string,
     record: ReturnType<typeof formatRecord>,
   ) => `
-    <div style="text-align:center;">
-      <div style="font-size:12px;opacity:0.6;margin-bottom:2px;${domFontStyle(
-        "caption",
-      )}">${label}</div>
-      <div style="font-size:18px;color:${scoreColor};${domFontStyle(
-    "numericStrong",
-  )}">${record.scoreStr}</div>
-      <div style="font-size:13px;margin-top:2px;${domFontStyle(
-        "caption",
-      )}${diffColorStyle(record.diff)}">${record.star}${record.entTag}</div>
+    <div class="hs-col">
+      <div class="hs-label font-caption">${label}</div>
+      <div class="hs-value font-numeric-strong" style="color:${scoreColor}">${record.scoreStr}</div>
+      <div class="hs-meta font-caption" style="${diffColorStyle(record.diff)}">${record.star}${record.entTag}</div>
     </div>`;
 
   return `${column(t("menu.highScore.endless"), "#ff6b8a", endlessHs)}${column(

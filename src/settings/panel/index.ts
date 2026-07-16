@@ -1,10 +1,9 @@
 /**
  * Settings side panel — shell + section composition.
+ * Styles: styles/_settings-panel.scss
  */
 import { getCurrentSettings } from "../store";
 import { t } from "../../i18n";
-import { domFontStyle } from "../../ui/fonts";
-import { SETTINGS_PANEL_CSS } from "./styles";
 import type { SettingsSectionCtx } from "./widgets";
 import { appendLanguageSection } from "./sections/language";
 import { appendAudioSection } from "./sections/audio";
@@ -40,10 +39,10 @@ export const closeSettingsPanel = () => {
   if (!settingsContainer) return;
 
   const settingsPanel = settingsContainer.querySelector(
-    "div:nth-child(2)",
+    ".settings-panel",
   ) as HTMLElement | null;
   if (settingsPanel) {
-    settingsPanel.style.animation = "slideOut 0.3s ease forwards";
+    settingsPanel.classList.add("is-closing");
   }
   setTimeout(() => {
     settingsContainer?.remove();
@@ -72,55 +71,27 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
   const settings = getCurrentSettings();
 
   settingsContainer = document.createElement("div");
-  settingsContainer.style.cssText = `
-    position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;
-    display:flex;justify-content:flex-end;
-  `;
+  settingsContainer.className = "settings-root";
 
   const backdrop = document.createElement("div");
-  backdrop.style.cssText = `
-    position:absolute;top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.5);
-  `;
+  backdrop.className = "settings-backdrop";
   backdrop.onclick = () => closeSettingsPanel();
   settingsContainer.appendChild(backdrop);
 
   const settingsPanel = document.createElement("div");
-  settingsPanel.style.cssText = `
-    position:relative;width:320px;height:100%;
-    background:rgba(15,20,40,0.95);border-left:1px solid rgba(100,200,255,0.2);
-    box-shadow:-10px 0 40px rgba(0,0,0,0.5);
-    padding:24px;overflow-y:auto;
-    animation:slideIn 0.3s ease;
-  `;
-
-  const style = document.createElement("style");
-  style.textContent = SETTINGS_PANEL_CSS;
-  settingsPanel.appendChild(style);
+  settingsPanel.className = "settings-panel";
 
   const header = document.createElement("div");
-  header.style.cssText = `
-    display:flex;justify-content:space-between;align-items:center;
-    margin-bottom:24px;padding-bottom:16px;
-    border-bottom:1px solid rgba(100,200,255,0.1);
-  `;
-  header.innerHTML = `
-    <div style="font-size:20px;color:#fff;letter-spacing:1px;${domFontStyle(
-      "heading",
-    )}">${t("settings.title")}</div>
-  `;
+  header.className = "settings-header";
+  const title = document.createElement("div");
+  title.className = "settings-title";
+  title.textContent = t("settings.title");
+  header.appendChild(title);
 
   const closeBtn = document.createElement("button");
-  closeBtn.style.cssText = `
-    width:32px;height:32px;border:none;border-radius:6px;
-    background:rgba(255,255,255,0.1);color:#fff;font-size:18px;
-    cursor:pointer;transition:all 0.2s ease;
-  `;
+  closeBtn.type = "button";
+  closeBtn.className = "settings-close";
   closeBtn.textContent = "✕";
-  closeBtn.onmouseenter = () =>
-    (closeBtn.style.background = "rgba(255,255,255,0.2)");
-  closeBtn.onmouseleave = () =>
-    (closeBtn.style.background = "rgba(255,255,255,0.1)");
   closeBtn.onclick = () => closeSettingsPanel();
   header.appendChild(closeBtn);
   settingsPanel.appendChild(header);

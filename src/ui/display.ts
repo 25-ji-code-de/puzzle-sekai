@@ -60,47 +60,16 @@ const ensureOverlay = (message: string): HTMLDivElement => {
   overlay.id = ROTATE_OVERLAY_ID;
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-live", "polite");
-  overlay.style.cssText = `
-    position:fixed;top:0;right:0;bottom:0;left:0;z-index:20000;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:20px;padding:32px 24px;text-align:center;
-    background:rgba(8,10,18,0.94);backdrop-filter:blur(6px);
-    color:#fff;pointer-events:auto;
-  `;
 
   const icon = document.createElement("div");
+  icon.className = "rotate-gate__icon";
   icon.setAttribute("aria-hidden", "true");
-  icon.style.cssText = `
-    width:56px;height:96px;border:3px solid rgba(180,220,255,0.85);
-    border-radius:10px;position:relative;
-    animation:rotateHint 1.6s ease-in-out infinite;
-    box-shadow:0 0 24px rgba(100,200,255,0.2);
-  `;
-  const notch = document.createElement("div");
-  notch.style.cssText = `
-    position:absolute;top:6px;left:50%;transform:translateX(-50%);
-    width:18px;height:4px;border-radius:2px;background:rgba(180,220,255,0.7);
-  `;
-  icon.appendChild(notch);
 
   const text = document.createElement("div");
+  text.className = "rotate-gate__msg";
   text.setAttribute("data-rotate-msg", "");
-  text.style.cssText = `
-    font-size:18px;line-height:1.6;letter-spacing:0.04em;
-    color:rgba(220,235,255,0.92);max-width:280px;
-  `;
   text.textContent = message;
 
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes rotateHint {
-      0%, 100% { transform: rotate(0deg); }
-      35% { transform: rotate(90deg); }
-      65% { transform: rotate(90deg); }
-    }
-  `;
-
-  overlay.appendChild(style);
   overlay.appendChild(icon);
   overlay.appendChild(text);
   document.body.appendChild(overlay);
