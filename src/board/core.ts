@@ -48,7 +48,10 @@ const kindOf = (entry: {
 /**
  * Land a sprite into the board grid from its current pixel pose.
  * Builds footprint via geometry atoms, then writes grid + coordinates.
- * Snaps sprite pixels to settled placement (removes active OFFSET_BOTTOM gap).
+ * Does NOT re-snap pixel Y here — active fall already stopped at
+ * activeLandPixelY (includes OFFSET_BOTTOM). Snapping to top-down
+ * cell centers caused a visible one-frame sink of ~OFFSET_BOTTOM px.
+ * Gravity/tip paths still use placeSpriteAtAnchor when cells move.
  * big2x2 uses bottom-right primaryFromSprite; cell2 uses cell-center coords.
  */
 export const updateCoordinates = (
@@ -123,10 +126,6 @@ export const updateCoordinates = (
       registerEntitySprite(ent.id, sprite);
     }
   }
-
-  // Snap to settled pixel pose so active land Y (OFFSET_BOTTOM) matches gravity/tip placement.
-  const anchor = anchorFromFootprint(cells, kind, orient);
-  placeSpriteAtAnchor(sprite, kind, anchor.x, anchor.y);
 };
 
 type FallEntry = SpriteData & { index: number };
