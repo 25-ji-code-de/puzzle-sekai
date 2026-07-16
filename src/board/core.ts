@@ -1,6 +1,10 @@
 import type * as PIXI from "pixi.js-legacy";
 import { gameTicker } from "../index";
-import { getCoordinates, moveToCoordinate } from "../utils/coords";
+import {
+  getCoordinates,
+  getOffset,
+  moveToCoordinate,
+} from "../utils/coords";
 import { CharacterData } from "../characters/data";
 import { ROWS, BOX_SIZE, LEFT_BORDER, FALL_SPEED } from "../config";
 import { SpriteData, sprites, pieces } from "../game/board-state";
@@ -95,12 +99,20 @@ type FallEntry = SpriteData & { index: number };
 const isBig2x2 = (character: SpriteData["character"] | undefined) =>
   character?.name === "NeneRobo" || character?.name === "Mikudayo";
 
-/** Grid cell used as the visual / primary anchor of a footprint. */
+/**
+ * Grid cell whose center is the sprite position (matches updateCoordinates /
+ * getCoordinates primary cell, and physics pickAnchorCell).
+ *
+ * 2-cell footprints MUST use orientation — always picking lower/left sinks
+ * upright (orient 2) and left-facing (orient 3) pieces by one full cell
+ * while leaving grid occupancy correct (ghost gap under the next drop).
+ */
 const anchorFromCoords = (
   coords: [number, number][],
   character: SpriteData["character"] | undefined,
   isItem?: boolean,
   isShrunk?: boolean,
+  orientation: number = 0,
 ): { x: number; y: number } => {
   if (!coords.length) return { x: 0, y: 0 };
   if (isBig2x2(character) || isItem || isShrunk || coords.length === 1) {
@@ -109,15 +121,33 @@ const anchorFromCoords = (
       y: Math.max(...coords.map(([, y]) => y)),
     };
   }
-  // 2-cell: prefer lower, then left — matches commitTipLanding / orient 0 & 1
-  if (coords[0][0] === coords[1][0]) {
-    // vertical → lower cell
-    const c = coords.reduce((a, b) => (a[1] >= b[1] ? a : b));
-    return { x: c[0], y: c[1] };
+  // Same rules as board/physics pickAnchorCell
+  switch (orientation) {
+    case 0: {
+      // vertical head-down — primary = lower cell
+      const c = coords.reduce((a, b) => (a[1] >= b[1] ? a : b));
+      return { x: c[0], y: c[1] };
+    }
+    case 1: {
+      // horizontal — primary = left cell
+      const c = coords.reduce((a, b) => (a[0] <= b[0] ? a : b));
+      return { x: c[0], y: c[1] };
+    }
+    case 2: {
+      // vertical head-up — primary = upper cell
+      const c = coords.reduce((a, b) => (a[1] <= b[1] ? a : b));
+      return { x: c[0], y: c[1] };
+    }
+    case 3: {
+      // horizontal — primary = right cell
+      const c = coords.reduce((a, b) => (a[0] >= b[0] ? a : b));
+      return { x: c[0], y: c[1] };
+    }
+    default: {
+      const c = coords.reduce((a, b) => (a[1] >= b[1] ? a : b));
+      return { x: c[0], y: c[1] };
+    }
   }
-  // horizontal → left cell
-  const c = coords.reduce((a, b) => (a[0] <= b[0] ? a : b));
-  return { x: c[0], y: c[1] };
 };
 
 /** Pixel position for a sprite whose anchor cell is (ax, ay). */
@@ -218,17 +248,20 @@ const planFalls = (canFall: FallEntry[]): FallPlan[] => {
     const dest = coords.map(([x, y]) => [x, y + dy] as [number, number]);
     writeFootprint(dest, cellName(entry));
 
+    const orientation = getOffset(entry.sprite);
     const startAnchor = anchorFromCoords(
       coords,
       entry.character,
       entry.isItem,
       entry.isShrunk,
+      orientation,
     );
     const endAnchor = anchorFromCoords(
       dest,
       entry.character,
       entry.isItem,
       entry.isShrunk,
+      orientation,
     );
 
     // Use the live sprite Y as start (may already be mid-pixel after a tip)
@@ -278,11 +311,13 @@ const applyFalls = async (plans: FallPlan[]) => {
 
   const commit = (plan: FallPlan) => {
     const { entry, dest } = plan;
+    const orientation = getOffset(entry.sprite);
     const anchor = anchorFromCoords(
       dest,
       entry.character,
       entry.isItem,
       entry.isShrunk,
+      orientation,
     );
     placeSpriteFromAnchor(entry.sprite, entry.character, anchor.x, anchor.y);
     // Write coordinates / grid directly — do NOT call updateCoordinates
