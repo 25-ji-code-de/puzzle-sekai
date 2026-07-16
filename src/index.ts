@@ -8,22 +8,22 @@ import emuShrinkSfx from "./assets/sounds/effects/47_004_007.mp3";
 import carrotAkitoSfx from "./assets/sounds/effects/2509_004_002.mp3";
 import carrotEnaSfx from "./assets/sounds/effects/2509_004_003.mp3";
 import bg from "./assets/bg.png";
-import { characterData, groupSounds } from "./character-data";
-import { avatarTextures } from "./avatar";
+import { characterData, groupSounds } from "./characters/data";
+import { avatarTextures } from "./characters/avatar";
 import gameOver from "./assets/gameOver.png";
 import avatar from "./assets/chara/avatar.png";
 import welcomeImg from "./assets/welcome.png";
 import barrelTexture from "./assets/objects/barrel.png";
-import { start, welcome } from "./states";
+import { start, welcome } from "./game/states";
 import { items } from "./items";
-import { initializeFontSystem } from "./fonts";
-import { togglePauseMenu } from "./pause-menu";
+import { initializeFontSystem } from "./ui/fonts";
+import { togglePauseMenu } from "./ui/pause-menu";
 import {
   showBootWelcome,
   setWelcomeLoadProgress,
   markWelcomeReady,
-} from "./welcome";
-import { prefetchMenuBgm } from "./bgm";
+} from "./ui/welcome";
+import { prefetchMenuBgm } from "./audio/bgm";
 
 // The application will create a renderer using WebGL, if possible,
 // with a fallback to a canvas render. It will also setup the ticker
