@@ -24,4 +24,6 @@ export {
   tryEmuShrink,
 } from "./board-fun";
 
-export { clearChunk } from "./board-clear";
+export { tryCantileverPhysics } from "./board-physics";
+
+export { clearChunk, settleBoard } from "./board-clear";

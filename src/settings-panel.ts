@@ -17,7 +17,12 @@ import {
   clearAppData,
   clearAppCaches,
 } from "./settings";
-import { FUN_MODE_DEFS, FunModeId, scaleItemLinkedFactor } from "./fun-modes";
+import {
+  FUN_MODE_DEFS,
+  FunModeId,
+  PHYSICS_FUN_MODE_IDS,
+  scaleItemLinkedFactor,
+} from "./fun-modes";
 import {
   t,
   setLocale,
@@ -347,7 +352,17 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
       funHelp.textContent = t(`fun.${def.id}.description`);
     };
     opt.onclick = () => {
-      settings.funModes[def.id] = !settings.funModes[def.id];
+      const next = !settings.funModes[def.id];
+      settings.funModes[def.id] = next;
+      // Physics engines are mutually exclusive
+      if (
+        next &&
+        (PHYSICS_FUN_MODE_IDS as readonly string[]).includes(def.id)
+      ) {
+        for (const other of PHYSICS_FUN_MODE_IDS) {
+          if (other !== def.id) settings.funModes[other] = false;
+        }
+      }
       updateCurrentSettings(settings);
       refreshSettingsPanel();
     };

@@ -19,7 +19,6 @@ import {
 } from "./piece";
 import { getOffset, getCoordinates, getMaxStackHeight } from "./utils";
 import { CharacterData } from "./character-data";
-import { findClearPieces } from "./clear";
 import { createItem, getRandomItem, isCarrotItem, isFriesItem } from "./items";
 import {
   resetScore,
@@ -30,12 +29,10 @@ import {
 } from "./score";
 import {
   updateCoordinates,
-  clearChunk,
+  settleBoard,
   applyCarrotAllergy,
   applyCarrotAllergyOnCharacter,
   applyMizukiShift,
-  tryMizukiEatFries,
-  tryEmuShrink,
 } from "./board";
 import { welcome as _welcome } from "./welcome";
 import { getCurrentGameMode, getCurrentSettings, getItemDropChance } from "./settings";
@@ -315,18 +312,10 @@ const create = async () => {
         if (isFriesItem(itemFile)) {
           await applyMizukiShift(x, y);
         }
-        // ポテトと瑞希: Mizuki touching fries → eat fries for bonus score
-        const friesEaten = await tryMizukiEatFries();
-        // えむちぢみ: Mafuyu adjacent to Emu → shrink Emu to 1 cell
-        await tryEmuShrink();
-        let chunk = findClearPieces(pieces);
-        let cleared = allergyCleared || friesEaten;
-        while (chunk !== undefined) {
-          cleared = true;
-          await clearChunk(chunk);
-          chunk = findClearPieces(pieces);
-        }
-        if (!cleared) resetCombo();
+        // Gravity + tips + fun contacts + clears until the board is quiet.
+        // Must run AFTER tips so emuShrink / allergy / fries see new adjacencies.
+        const { cleared: settledCleared } = await settleBoard();
+        if (!allergyCleared && !settledCleared) resetCombo();
         dropped[id] = true;
         if (dropped.every((e) => e)) {
           setState(create);
@@ -377,21 +366,10 @@ const create = async () => {
         if (character.name === "Ena" || character.name === "Akito") {
           allergyCleared = await applyCarrotAllergyOnCharacter(index);
         }
-        // ポテトと瑞希: Mizuki landing next to fries → eat fries for bonus score
-        let friesEaten = false;
-        if (character.name === "Mizuki") {
-          friesEaten = await tryMizukiEatFries();
-        }
-        // えむちぢみ: Mafuyu adjacent to Emu → shrink Emu to 1 cell
-        await tryEmuShrink();
-        let chunk = findClearPieces(pieces);
-        let cleared = allergyCleared || friesEaten;
-        while (chunk !== undefined) {
-          cleared = true;
-          await clearChunk(chunk);
-          chunk = findClearPieces(pieces);
-        }
-        if (!cleared) resetCombo();
+        // Gravity + tips + fun contacts + clears until the board is quiet.
+        // Must run AFTER tips so emuShrink / allergy / fries see new adjacencies.
+        const { cleared: settledCleared } = await settleBoard();
+        if (!allergyCleared && !settledCleared) resetCombo();
 
         setState(create);
         created = false;

@@ -9,7 +9,15 @@ export const FUN_MODE_IDS = [
   "itemAllergy",
   "mizukiShift",
   "emuShrink",
+  /** Simplified tip physics: one-sided support → tip toward hang → fall */
+  "cantilever",
+  /** Full rigid-body physics (placeholder — not implemented yet) */
+  "truePhysics",
 ] as const;
+
+/** Physics sub-modes are mutually exclusive. */
+export const PHYSICS_FUN_MODE_IDS = ["cantilever", "truePhysics"] as const;
+export type PhysicsFunModeId = (typeof PHYSICS_FUN_MODE_IDS)[number];
 
 export type FunModeId = (typeof FUN_MODE_IDS)[number];
 
@@ -43,6 +51,8 @@ export const DEFAULT_FUN_MODES: FunModeFlags = {
   itemAllergy: false,
   mizukiShift: false,
   emuShrink: false,
+  cantilever: false,
+  truePhysics: false,
 };
 
 export const FUN_MODE_DEFS: FunModeDef[] = [
@@ -53,6 +63,9 @@ export const FUN_MODE_DEFS: FunModeDef[] = [
   { id: "itemAllergy", scoreFactor: 1.1, itemLinked: true },
   { id: "mizukiShift", scoreFactor: 1.12, itemLinked: true },
   { id: "emuShrink", scoreFactor: 1.08 },
+  // Physics engines — harder (board becomes less predictable)
+  { id: "cantilever", scoreFactor: 1.12 },
+  { id: "truePhysics", scoreFactor: 1.2 },
 ];
 
 export function normalizeFunModes(raw: unknown): FunModeFlags {
@@ -61,6 +74,10 @@ export function normalizeFunModes(raw: unknown): FunModeFlags {
   const obj = raw as Record<string, unknown>;
   for (const id of FUN_MODE_IDS) {
     if (typeof obj[id] === "boolean") result[id] = obj[id];
+  }
+  // Physics engines are mutually exclusive — prefer cantilever if both set
+  if (result.cantilever && result.truePhysics) {
+    result.truePhysics = false;
   }
   return result;
 }

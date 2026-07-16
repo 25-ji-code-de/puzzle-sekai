@@ -145,6 +145,18 @@ export const en = {
       description:
         "When Emu and Mafuyu occupy adjacent cells, Emu panics and collapses into a 1×1 single cell. The collapse shift prioritizes the side farther from Mafuyu. After collapsing, the whole board re-runs gravity and physics.\n\n\"I just feel like... when I'm next to Asahina-senpai, if I don't quietly curl up small, something really terrifying will happen...!\"",
     },
+    cantilever: {
+      name: "Cantilever Tip",
+      subtitle: "Support on one side—over it goes",
+      description:
+        "One of the simplified physics engines. After gravity settles: multi-column pieces (horizontal 2-cell, and 2×2 NeneRobo / Mikudayo) with support on only one bottom side tip 90° as a rigid body toward the hang, then fall again. Vertical 2-cell pieces never tip.\nPieces resting only on that structure are pried up and rotate with it; external support above can pin the tip. After tipping, contact effects (Emu shrink, clears, etc.) re-run immediately.\nMutually exclusive with True Physics.\n\n\"That fulcrum... doesn't look very stable.\"",
+    },
+    truePhysics: {
+      name: "True Physics",
+      subtitle: "Center of mass, torque, then chaos",
+      description:
+        "Full rigid-body physics (in development). Stability is computed from mass, center of mass, and support surfaces, allowing stacks to topple, slide, and cascade-collapse.\nThis version only registers the mode; the simulation will land later. Mutually exclusive with Cantilever Tip.\n\n\"...Sir Isaac, please be gentle with this SEKAI.\"",
+    },
   },
   inGame: {
     combo: "Combo",

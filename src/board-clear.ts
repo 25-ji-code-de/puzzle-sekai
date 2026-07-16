@@ -17,6 +17,68 @@ import {
   tryEmuShrink,
   applyWonderBlast,
 } from "./board-fun";
+import { findClearPieces } from "./clear";
+
+/**
+ * After gravity + cantilever tips settle: re-check fun contacts.
+ * Tips can create new adjacencies (e.g. Emu next to Mafuyu) that the
+ * pre-fall checks never saw — must re-run until quiet.
+ * Returns true if any effect fired (may have cleared / shrunk / eaten).
+ */
+const runPostGravityEffects = async (): Promise<boolean> => {
+  let changed = false;
+  // Allergy / fries count as "cleared" for combo purposes upstream
+  if (await recheckCarrotAllergy()) changed = true;
+  if (await tryMizukiEatFries()) changed = true;
+  if (await tryEmuShrink()) changed = true;
+  cancelShizukuSwapIfShihoPresent(
+    sprites.some((sp) => sp.character?.name === "Shiho"),
+  );
+  return changed;
+};
+
+/**
+ * Full board settle: gravity + tips → fun contacts → clears → repeat
+ * until nothing moves. Call after any land / tip that may rearrange cells.
+ *
+ * `cleared` is true if any scoring clear / allergy / fries eat happened
+ * (used by land handlers for combo reset).
+ */
+export const settleBoard = async (): Promise<{ cleared: boolean }> => {
+  let cleared = false;
+  for (let guard = 0; guard < 32; guard++) {
+    await fallChunk(sprites);
+
+    let changed = false;
+    if (await recheckCarrotAllergy()) {
+      changed = true;
+      cleared = true;
+    }
+    if (await tryMizukiEatFries()) {
+      changed = true;
+      cleared = true;
+    }
+    if (await tryEmuShrink()) {
+      changed = true;
+    }
+    cancelShizukuSwapIfShihoPresent(
+      sprites.some((sp) => sp.character?.name === "Shiho"),
+    );
+
+    let chunk = findClearPieces(pieces);
+    while (chunk !== undefined) {
+      changed = true;
+      cleared = true;
+      // clearChunk already falls + runs post effects once; outer loop
+      // re-settles for tip-created contacts / further clears.
+      await clearChunk(chunk);
+      chunk = findClearPieces(pieces);
+    }
+
+    if (!changed) break;
+  }
+  return { cleared };
+};
 
 export const clearChunk = async (
   chunk: [number, number][],
@@ -116,22 +178,14 @@ export const clearChunk = async (
     applyWonderBlast(toRemove);
   }
 
-  // Phase 4: Fall pieces
-  await fallChunk(sprites);
-
-  // After gravity: carrot allergy may connect newly
-  await recheckCarrotAllergy();
-
-  // ポテトと瑞希: after gravity, Mizuki may newly touch fries
-  await tryMizukiEatFries();
-
-  // えむちぢみ: after gravity settles, shrink Emus adjacent to Mafuyu
-  await tryEmuShrink();
-
-  // After gravity, cancel swap if Shiho is (still / newly) on board
-  cancelShizukuSwapIfShihoPresent(
-    sprites.some((sp) => sp.character?.name === "Shiho"),
-  );
+  // Phase 4: Fall + tips, then re-check fun contacts until quiet.
+  // A tip can create new Emu/Mafuyu (etc.) adjacencies that pre-fall
+  // checks missed — loop so they fire this turn, not on the next land.
+  for (let guard = 0; guard < 16; guard++) {
+    await fallChunk(sprites);
+    const changed = await runPostGravityEffects();
+    if (!changed) break;
+  }
 
   // Wait remaining time so total from voice start = 2200ms
   if (groupVoiceKey) {

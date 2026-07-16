@@ -1,9 +1,10 @@
 import * as PIXI from "pixi.js-legacy";
 import { app, gameTicker } from ".";
-import { getCoordinates, getOffset, moveToCoordinate } from "./utils";
+import { getCoordinates, moveToCoordinate } from "./utils";
 import { CharacterData } from "./character-data";
 import { ROWS, BOX_SIZE, LEFT_BORDER, FALL_SPEED } from "./config";
 import { SpriteData, sprites, pieces } from "./states";
+import { isFunModeOn } from "./fun-effects";
 
 export const updateCoordinates = (
   sprite: PIXI.Sprite,
@@ -84,154 +85,240 @@ export const updateCoordinates = (
 
 const findBottom = (sprite: SpriteData) => {
   const coordinates = sprite.coordinates;
-  const maxY = coordinates?.reduce(
-    (acc, [x, y]) => {
-      return y > acc[1] ? [x, y] : acc;
-    },
-    [0, 0],
-  ) as [number, number];
-  return coordinates?.filter(([_, y]) => y === maxY[1]) ?? [];
+  if (!coordinates?.length) return [] as [number, number][];
+  const maxY = coordinates.reduce((acc, [, y]) => Math.max(acc, y), -Infinity);
+  return coordinates.filter(([, y]) => y === maxY) as [number, number][];
 };
 
 type FallEntry = SpriteData & { index: number };
 
-/** Stack height below (x, y) for a single- or multi-cell piece of given orientation. */
-const stackHeightBelow = (
-  x: number,
-  y: number,
-  offset: number,
-  singleCell: boolean,
-): number => {
-  if (singleCell || offset % 2 === 0) {
-    return pieces
-      .map((row) => row[x])
-      .filter((_, i) => i > y)
-      .reverse()
-      .reduce((acc, row, i) => (row ? i + 1 : acc), 0);
+const isBig2x2 = (character: SpriteData["character"] | undefined) =>
+  character?.name === "NeneRobo" || character?.name === "Mikudayo";
+
+/** Grid cell used as the visual / primary anchor of a footprint. */
+const anchorFromCoords = (
+  coords: [number, number][],
+  character: SpriteData["character"] | undefined,
+  isItem?: boolean,
+  isShrunk?: boolean,
+): { x: number; y: number } => {
+  if (!coords.length) return { x: 0, y: 0 };
+  if (isBig2x2(character) || isItem || isShrunk || coords.length === 1) {
+    return {
+      x: Math.max(...coords.map(([x]) => x)),
+      y: Math.max(...coords.map(([, y]) => y)),
+    };
   }
-  return pieces
-    .map((row) =>
-      offset === 1 ? [row[x], row[x + 1]] : [row[x - 1], row[x]],
-    )
-    .filter((_, i) => i > y)
-    .reverse()
-    .reduce((acc, row, i) => (row[0] || row[1] ? i + 1 : acc), 0);
+  // 2-cell: prefer lower, then left — matches commitTipLanding / orient 0 & 1
+  if (coords[0][0] === coords[1][0]) {
+    // vertical → lower cell
+    const c = coords.reduce((a, b) => (a[1] >= b[1] ? a : b));
+    return { x: c[0], y: c[1] };
+  }
+  // horizontal → left cell
+  const c = coords.reduce((a, b) => (a[0] <= b[0] ? a : b));
+  return { x: c[0], y: c[1] };
 };
 
-/** Write a piece onto the pieces grid at (x, targetY) — mirrors updateCoordinates. */
-const placeOnTempGrid = (
-  x: number,
-  targetY: number,
-  character: SpriteData["character"],
-  isItem: boolean | undefined,
-  isShrunk: boolean | undefined,
-  offset: number,
+/** Pixel position for a sprite whose anchor cell is (ax, ay). */
+const placeSpriteFromAnchor = (
+  sprite: PIXI.Sprite,
+  character: SpriteData["character"] | undefined,
+  ax: number,
+  ay: number,
 ) => {
-  if (isItem) {
-    pieces[targetY][x] = "Item";
+  if (isBig2x2(character)) {
+    // Center of 2×2 = shared corner of the four cells
+    sprite.x = LEFT_BORDER + ax * BOX_SIZE;
+    sprite.y = ay * BOX_SIZE;
     return;
   }
-  if (isShrunk) {
-    pieces[targetY][x] = character!.name;
-    return;
-  }
-  if (character?.name === "NeneRobo" || character?.name === "Mikudayo") {
-    pieces[targetY][x] = character.name;
-    pieces[targetY][x - 1] = character.name;
-    pieces[targetY - 1][x] = character.name;
-    pieces[targetY - 1][x - 1] = character.name;
-    return;
-  }
-  pieces[targetY][x] = character!.name;
-  if (offset === 0) pieces[targetY - 1][x] = character!.name;
-  if (offset === 1) pieces[targetY][x + 1] = character!.name;
-  if (offset === 2) pieces[targetY + 1][x] = character!.name;
-  if (offset === 3) pieces[targetY - 1][x] = character!.name;
+  moveToCoordinate(sprite, ax, ay);
 };
 
-/** Phase 1: simulate serial fall on a temp grid; return per-sprite land targets. */
-const computeFallTargets = (
-  canFall: FallEntry[],
-): Map<PIXI.Sprite, { x: number; y: number }> => {
+const cellName = (entry: FallEntry): string => {
+  if (entry.isItem) return "Item";
+  return entry.character?.name ?? "Piece";
+};
+
+/**
+ * How many rows the footprint can drop before hitting floor / another piece.
+ * Uses live `pieces` (caller must have already cleared this entry's cells).
+ */
+const maxDropDistance = (coords: [number, number][]): number => {
+  if (!coords.length) return 0;
+  let drop = Infinity;
+  for (const [x, y] of coords) {
+    let d = 0;
+    for (let ny = y + 1; ny < ROWS; ny++) {
+      if (pieces[ny]?.[x] != null) break;
+      d++;
+    }
+    drop = Math.min(drop, d);
+  }
+  return drop === Infinity ? 0 : drop;
+};
+
+/** Write a footprint into the grid. */
+const writeFootprint = (coords: [number, number][], name: string) => {
+  for (const [x, y] of coords) {
+    if (y >= 0 && y < ROWS && x >= 0 && x < (pieces[y]?.length ?? 0)) {
+      pieces[y][x] = name;
+    }
+  }
+};
+
+/** Clear a footprint from the grid. */
+const clearFootprint = (coords: [number, number][]) => {
+  for (const [x, y] of coords) {
+    if (y >= 0 && y < ROWS && x >= 0 && x < (pieces[y]?.length ?? 0)) {
+      pieces[y][x] = null;
+    }
+  }
+};
+
+type FallPlan = {
+  entry: FallEntry;
+  /** Drop distance in rows (>0) */
+  dy: number;
+  /** Destination footprint */
+  dest: [number, number][];
+  /** Start / end pixel Y for the sprite center (or 2×2 center) */
+  startPixelY: number;
+  endPixelY: number;
+};
+
+/**
+ * Simulate gravity for all currently unsupported pieces.
+ * Pure coordinate math — never re-derives footprint from sprite rotation.
+ * Process lowest pieces first so upper pieces stack on them correctly.
+ */
+const planFalls = (canFall: FallEntry[]): FallPlan[] => {
+  // Work on a live-mutated pieces grid, restore after planning
   const backup = pieces.map((row) => [...row]);
-  const targets = new Map<PIXI.Sprite, { x: number; y: number }>();
+  const plans: FallPlan[] = [];
 
-  for (const { sprite, coordinates, character, isItem, isShrunk } of canFall) {
-    const { x, y } = getCoordinates(sprite, "floor");
-    const offset = getOffset(sprite);
-    const singleCell = !!isItem || !!isShrunk;
+  // Lowest first so they claim landing spots before pieces above them
+  const ordered = [...canFall].sort((a, b) => {
+    const ay = Math.max(...(a.coordinates ?? [[0, -1]]).map(([, y]) => y));
+    const by = Math.max(...(b.coordinates ?? [[0, -1]]).map(([, y]) => y));
+    return by - ay;
+  });
 
-    coordinates?.forEach(([cx, cy]) => (pieces[cy][cx] = null));
-
-    const stackHeight = stackHeightBelow(x, y, offset, singleCell);
-    const targetY =
-      ROWS - 1 - stackHeight - (!singleCell && offset === 2 ? 1 : 0);
-    targets.set(sprite, { x, y: targetY });
-    placeOnTempGrid(x, targetY, character, isItem, isShrunk, offset);
+  // Clear all falling pieces first so they don't block each other mid-plan
+  for (const entry of ordered) {
+    if (entry.coordinates?.length) clearFootprint(entry.coordinates);
   }
 
+  for (const entry of ordered) {
+    const coords = (entry.coordinates ?? []) as [number, number][];
+    if (!coords.length) continue;
+
+    const dy = maxDropDistance(coords);
+    const dest = coords.map(([x, y]) => [x, y + dy] as [number, number]);
+    writeFootprint(dest, cellName(entry));
+
+    const startAnchor = anchorFromCoords(
+      coords,
+      entry.character,
+      entry.isItem,
+      entry.isShrunk,
+    );
+    const endAnchor = anchorFromCoords(
+      dest,
+      entry.character,
+      entry.isItem,
+      entry.isShrunk,
+    );
+
+    // Use the live sprite Y as start (may already be mid-pixel after a tip)
+    // and compute end from destination anchor.
+    const endPixelY = isBig2x2(entry.character)
+      ? endAnchor.y * BOX_SIZE
+      : BOX_SIZE * endAnchor.y + BOX_SIZE / 2;
+
+    plans.push({
+      entry,
+      dy,
+      dest,
+      startPixelY: entry.sprite.y,
+      endPixelY,
+    });
+
+    // Keep x aligned to the destination column (no horizontal drift)
+    void startAnchor;
+  }
+
+  // Restore real grid — applyFalls will commit for real
   backup.forEach((row, i) =>
     row.forEach((_, j) => {
       pieces[i][j] = backup[i][j];
     }),
   );
-  return targets;
+
+  return plans.filter((p) => p.dy > 0);
 };
 
-/** Phase 2: snap already-at-target sprites, animate the rest in parallel. */
-const applyFallTargets = async (
-  canFall: FallEntry[],
-  targets: Map<PIXI.Sprite, { x: number; y: number }>,
-) => {
-  const staticList: FallEntry[] = [];
-  const animList: FallEntry[] = [];
+/** Animate planned falls, then write footprints + coordinates. */
+const applyFalls = async (plans: FallPlan[]) => {
+  if (!plans.length) return;
 
-  for (const entry of canFall) {
-    const target = targets.get(entry.sprite)!;
-    const targetPixelY = BOX_SIZE * target.y + BOX_SIZE / 2;
-    if (Math.abs(entry.sprite.y - targetPixelY) < 1) {
-      staticList.push(entry);
+  // Clear old cells before animation
+  for (const { entry } of plans) {
+    if (entry.coordinates?.length) clearFootprint(entry.coordinates);
+  }
+
+  // Snap ones already at end (no visible travel)
+  const anim = plans.filter(
+    (p) => Math.abs(p.startPixelY - p.endPixelY) >= 1,
+  );
+  const instant = plans.filter(
+    (p) => Math.abs(p.startPixelY - p.endPixelY) < 1,
+  );
+
+  const commit = (plan: FallPlan) => {
+    const { entry, dest } = plan;
+    const anchor = anchorFromCoords(
+      dest,
+      entry.character,
+      entry.isItem,
+      entry.isShrunk,
+    );
+    placeSpriteFromAnchor(entry.sprite, entry.character, anchor.x, anchor.y);
+    // Write coordinates / grid directly — do NOT call updateCoordinates
+    // (it re-derives footprint from rotation and can desync after a tip).
+    entry.coordinates = dest.map(([x, y]) => [x, y] as [number, number]);
+    // Also update the live sprites[] entry (entry is a shallow copy)
+    const live = sprites[entry.index];
+    if (live && live.sprite === entry.sprite) {
+      live.coordinates = entry.coordinates;
     } else {
-      animList.push(entry);
+      const found = sprites.find((s) => s.sprite === entry.sprite);
+      if (found) found.coordinates = entry.coordinates;
     }
-  }
+    writeFootprint(dest, cellName(entry));
+  };
 
-  for (const { sprite, index, character, isItem } of staticList) {
-    const target = targets.get(sprite)!;
-    moveToCoordinate(sprite, target.x, target.y);
-    updateCoordinates(sprite, index, character, isItem);
-  }
+  for (const p of instant) commit(p);
 
-  if (animList.length === 0) return;
-
-  for (const { coordinates } of animList) {
-    coordinates?.forEach(([x, y]) => (pieces[y][x] = null));
-  }
-
-  const animTargets = animList.map((e) => ({
-    entry: e,
-    targetPixelY: BOX_SIZE * targets.get(e.sprite)!.y + BOX_SIZE / 2,
-  }));
+  if (anim.length === 0) return;
 
   await new Promise<void>((resolve) => {
     const tick = (delta: number) => {
       let allDone = true;
-      for (const item of animTargets) {
-        if (item.entry.sprite.y < item.targetPixelY) {
-          item.entry.sprite.y += FALL_SPEED * delta;
-          if (item.entry.sprite.y > item.targetPixelY)
-            item.entry.sprite.y = item.targetPixelY;
+      for (const p of anim) {
+        if (p.entry.sprite.y < p.endPixelY) {
+          p.entry.sprite.y += FALL_SPEED * delta;
+          if (p.entry.sprite.y > p.endPixelY) p.entry.sprite.y = p.endPixelY;
           allDone = false;
+        } else if (p.entry.sprite.y > p.endPixelY) {
+          // already past (shouldn't happen) — snap
+          p.entry.sprite.y = p.endPixelY;
         }
       }
       if (allDone) {
         gameTicker.remove(tick);
-        for (const { sprite, index, character, isItem } of canFall) {
-          const target = targets.get(sprite)!;
-          sprite.x = BOX_SIZE * target.x + LEFT_BORDER + BOX_SIZE / 2;
-          sprite.y = BOX_SIZE * target.y + BOX_SIZE / 2;
-          updateCoordinates(sprite, index, character, isItem);
-        }
+        for (const p of anim) commit(p);
         resolve();
       }
     };
@@ -239,19 +326,45 @@ const applyFallTargets = async (
   });
 };
 
-export const fallChunk = async (sprites: SpriteData[]) => {
-  const canFall = sprites
-    .map((e, index) => ({ ...e, index }))
-    .filter(({ sprite, coordinates }) =>
-      findBottom({ sprite, coordinates }).every(([x, y]) => {
-        return y + 1 < pieces.length && pieces[y + 1][x] === null;
-      }),
-    );
-  if (canFall.length === 0) return;
+/**
+ * Gravity settle + optional cantilever tips.
+ * Coordinate-driven: drop by footprint, never by rotation/orientation.
+ * Hard-capped loop so empty-coords / desync can't freeze the tab.
+ */
+export const fallChunk = async (spritesList: SpriteData[]) => {
+  const MAX_STEPS = 48;
 
-  const targets = computeFallTargets(canFall);
-  await applyFallTargets(canFall, targets);
-  await fallChunk(sprites);
+  for (let step = 0; step < MAX_STEPS; step++) {
+    const canFall = spritesList
+      .map((e, index) => ({ ...e, index }))
+      .filter(({ coordinates }) => {
+        if (!coordinates?.length) return false;
+        const bottom = findBottom({ coordinates } as SpriteData);
+        if (!bottom.length) return false;
+        return bottom.every(
+          ([x, y]) => y + 1 < ROWS && pieces[y + 1]?.[x] === null,
+        );
+      });
+
+    if (canFall.length > 0) {
+      const plans = planFalls(canFall);
+      if (plans.length === 0) {
+        // Marked unsupported but no drop distance — stop to avoid spin
+        break;
+      }
+      await applyFalls(plans);
+      continue;
+    }
+
+    // Vertical gravity settled → maybe tip overhangs
+    if (isFunModeOn("cantilever")) {
+      const { tryCantileverPhysics } = await import("./board-physics");
+      if (await tryCantileverPhysics(spritesList)) {
+        continue; // tip may free more falls
+      }
+    }
+    break;
+  }
 };
 
 export const createParticles = (sprites: SpriteData[]) => {
