@@ -2,7 +2,7 @@
  * えむちぢみ — Mafuyu adjacent to full-size Emu shrinks Emu to 1 cell.
  */
 import { BOX_SIZE } from "../../config";
-import { SpriteData, sprites, pieces } from "../../game/board-state";
+import { SpriteData, sprites, getBoardModel } from "../../game/board-state";
 import { isFunModeOn } from "../../fun/effects";
 import { fallChunk } from "../core";
 import { SFX_EFFECT_BASE } from "../../settings";
@@ -69,11 +69,11 @@ const shrinkEmuSprite = (
 
   const keep = pickKeepCell(sp.coordinates, mafuyuCells);
 
-  for (const [x, y] of sp.coordinates) {
-    if (x !== keep[0] || y !== keep[1]) {
-      pieces[y][x] = null;
-    }
-  }
+  const model = getBoardModel();
+  const drop = sp.coordinates.filter(
+    ([x, y]) => x !== keep[0] || y !== keep[1],
+  );
+  if (drop.length) model.clear(drop as any);
 
   sp.isShrunk = true;
   sp.coordinates = [keep];
@@ -84,7 +84,7 @@ const shrinkEmuSprite = (
   sprite.height = BOX_SIZE;
   placeSpriteAtAnchor(sprite, "shrunk", keep[0], keep[1]);
 
-  pieces[keep[1]][keep[0]] = CHAR.Emu;
+  model.write([keep as any], CHAR.Emu);
 
   playLoadedSfx("emuShrink", "sfx", SFX_EFFECT_BASE);
   return true;

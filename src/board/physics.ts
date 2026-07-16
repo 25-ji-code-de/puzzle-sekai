@@ -3,13 +3,13 @@
  * - cantilever: rigid-body tip over a one-sided support (seesaw / pry-up feel)
  * - truePhysics: registered only (not implemented yet)
  *
- * 2×2 pieces (NeneRobo / Mikudayo) tip the same way as horizontal 2-cell pieces:
- * only one bottom column supported �?rotate 90° over the support edge.
+ * 2脳2 pieces (NeneRobo / Mikudayo) tip the same way as horizontal 2-cell pieces:
+ * only one bottom column supported 鈫?rotate 90掳 over the support edge.
  */
 
 import { gameTicker } from "../runtime";
 import { BOX_SIZE, COLUMNS, LEFT_BORDER, ROWS } from "../config";
-import { SpriteData, pieces } from "../game/board-state";
+import { SpriteData, getBoardModel } from "../game/board-state";
 import { getOffset } from "../utils/coords";
 import { isFunModeOn } from "../fun/effects";
 import { cellKey } from "./grid";
@@ -22,7 +22,6 @@ import {
   anchorFromFootprint,
   orientFromFootprint,
   placeSpriteAtAnchor,
-  writeFootprint,
 } from "./geometry";
 import { ITEM_TOKEN } from "../domain/types";
 
@@ -81,8 +80,8 @@ const bottomCells = (sp: SpriteData): Cell[] =>
   bottomCellsOf((sp.coordinates ?? []) as Cell[]);
 
 /**
- * Roots must span �? columns so there is a hang side vs support side.
- * Covers horizontal 2-cell pieces AND 2×2 NeneRobo/Mikudayo.
+ * Roots must span 鈮? columns so there is a hang side vs support side.
+ * Covers horizontal 2-cell pieces AND 2脳2 NeneRobo/Mikudayo.
  */
 const canSpanHorizontally = (sp: SpriteData): boolean => {
   if (sp.isItem || sp.isShrunk) return false;
@@ -148,13 +147,13 @@ const fulcrumPixel = (
 };
 
 /**
- * 90° grid remap around the ledge corner (matches fulcrumPixel rotation).
+ * 90掳 grid remap around the ledge corner (matches fulcrumPixel rotation).
  *
- * tip right (dir=+1), pivot P �?CW around bottom-right of P:
- *   support P      �?hang column, same row
- *   hang H         �?one row below hang column
- *   cell above P   �?pryed up & over to the right
- *   2×2 top-right  �?swings down-right with the hang
+ * tip right (dir=+1), pivot P 鈥?CW around bottom-right of P:
+ *   support P      鈫?hang column, same row
+ *   hang H         鈫?one row below hang column
+ *   cell above P   鈫?pryed up & over to the right
+ *   2脳2 top-right  鈫?swings down-right with the hang
  *
  * tip left mirrored.
  */
@@ -166,14 +165,14 @@ const rotateCell = (
 ): [number, number] => {
   const { x: px, y: py } = pivot;
   if (dir === 1) {
-    // CW 90° around corner (px+1, py+1)
+    // CW 90掳 around corner (px+1, py+1)
     return [px + py - y + 1, py + x - px];
   }
-  // CCW 90° around corner (px, py+1)
+  // CCW 90掳 around corner (px, py+1)
   return [px + y - py - 1, py - x + px];
 };
 
-/** Rotate a pixel point around fulcrum by angle θ (y-down, +θ = CW). */
+/** Rotate a pixel point around fulcrum by angle 胃 (y-down, +胃 = CW). */
 const rotatePoint = (
   x: number,
   y: number,
@@ -275,12 +274,12 @@ const planTipForRoot = (
 
 const findTipPlan = (list: SpriteData[]): TipPlan | null => {
   const occupancy = buildOccupancy(list);
-  // Lowest first �?foundations tip before free-floating tops
+  // Lowest first 鈥?foundations tip before free-floating tops
   const order = list
     .map((sp, index) => ({
       index,
       maxY: maxFootprintY((sp.coordinates ?? []) as Cell[]),
-      // Prefer wider / bigger roots first (2×2 before a 2-cell sitting on it)
+      // Prefer wider / bigger roots first (2脳2 before a 2-cell sitting on it)
       area: sp.coordinates?.length ?? 0,
     }))
     .filter((e) => e.maxY >= 0)
@@ -293,7 +292,7 @@ const findTipPlan = (list: SpriteData[]): TipPlan | null => {
   return null;
 };
 
-/** Write footprint directly �?never re-derive cells from sprite math after a tip. */
+/** Write footprint directly 鈥?never re-derive cells from sprite math after a tip. */
 const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
   const name = sp.isItem ? ITEM_TOKEN : sp.character?.name;
   if (!name || !newCells.length) {
@@ -307,8 +306,8 @@ const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
 
   // Snap rotation so later gravity / updateCoordinates stay consistent
   if (kind === "cell2") {
-    // Match piece.ts convention: spawn at π, orient 0 �?π, orient 1 �?π + π/2, �?
-    // getOffset: (rotation/π * 2 + 2) % 4 �?we only need getOffset === orient.
+    // Match piece.ts convention: spawn at 蟺, orient 0 鈫?蟺, orient 1 鈫?蟺 + 蟺/2, 鈥?
+    // getOffset: (rotation/蟺 * 2 + 2) % 4 鈥?we only need getOffset === orient.
     const current = getOffset(sp.sprite);
     const delta = ((orient - current) % 4 + 4) % 4;
     sp.sprite.rotation += (delta * Math.PI) / 2;
@@ -316,13 +315,13 @@ const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
 
   placeSpriteAtAnchor(sp.sprite, kind, anchor.x, anchor.y);
   sp.coordinates = newCells.map(([x, y]) => [x, y] as Cell);
-  writeFootprint(pieces, newCells, name);
+  getBoardModel().write(newCells, name);
 };
 
 /**
  * Rigid-body tip: every member orbits the shared ledge fulcrum.
- * Pieces on the support side arc upward (翘起�?, hang side swings down.
- * 2×2 squares rotate as a rigid body the same way.
+ * Pieces on the support side arc upward (缈樿捣鏉?, hang side swings down.
+ * 2脳2 squares rotate as a rigid body the same way.
  */
 const animateTip = (plan: TipPlan): Promise<void> => {
   const { members, dir, pivot } = plan;
@@ -352,9 +351,9 @@ const animateTip = (plan: TipPlan): Promise<void> => {
 
   // Clear grid occupancy during the arc
   for (const { sp } of members) {
-    sp.coordinates?.forEach(([x, y]) => {
-      if (pieces[y]?.[x] != null) pieces[y][x] = null;
-    });
+    if (sp.coordinates?.length) {
+      getBoardModel().clear(sp.coordinates as Cell[]);
+    }
     sp.coordinates = undefined;
   }
 
@@ -382,7 +381,7 @@ const animateTip = (plan: TipPlan): Promise<void> => {
           const p = poses[i];
           sp.sprite.rotation = p.startRot + angleEnd;
           sp.sprite.zIndex = Math.max(0, (sp.sprite.zIndex || 0) - 100);
-          // Commit cells by tip geometry �?never via getCoordinates
+          // Commit cells by tip geometry 鈥?never via getCoordinates
           commitTipLanding(sp, p.newCells);
         });
         resolve();

@@ -1,6 +1,6 @@
 /**
- * Play-session application API (phase + re-exports of control surface).
- * Full FSM still lives in game/states for now; phase tracks high-level mode.
+ * Play-session control surface for UI.
+ * Re-exports game control API so menus do not import game/states internals.
  */
 export {
   getPlayPhase,
@@ -9,3 +9,12 @@ export {
   isPausedPhase,
   type PlayPhase,
 } from "./phase";
+
+// Control API implemented in game/states — single facade for UI
+export {
+  start,
+  pausePlay,
+  resumePlay,
+  returnToMenu,
+  isPlayActive,
+} from "../../game/states";

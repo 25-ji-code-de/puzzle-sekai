@@ -9,7 +9,7 @@ import {
   start,
   returnToMenu,
   isPlayActive,
-} from "../game/states";
+} from "../application/play-session";
 import { isPortrait } from "./display";
 import { buildDialogButton, buildDialogShell } from "./dialog-button";
 

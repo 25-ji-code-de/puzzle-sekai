@@ -2,7 +2,6 @@
  * Clear cascade orchestration + group clear entry point.
  * Fun contacts after settle go through application/fun-effects registry.
  */
-import sound from "pixi-sound";
 import { groupSounds } from "../characters/data";
 import { addScore } from "../score";
 import { sprites, pieces } from "../game/board-state";
@@ -15,7 +14,7 @@ import { fallChunk } from "./core";
 import { findClearPieces } from "./clear-rules";
 import { playClearAnimation } from "./clear-vfx";
 import { spritesInChunk } from "./mutate";
-import { voiceVol } from "../settings";
+import { playLoadedSfx } from "../audio/sfx";
 import { CHAR } from "../characters/ids";
 import {
   runSettledEffects,
@@ -92,13 +91,16 @@ export const clearChunk = async (
   const clearedGroup = toRemove.find((sp) => sp.character?.group)?.character
     ?.group;
   const groupVoiceKey =
-    !silent && clearedGroup && groupSounds[clearedGroup]
+    !silent &&
+    clearedGroup &&
+    clearedGroup !== "Special" &&
+    groupSounds[clearedGroup]
       ? groupSounds[clearedGroup]
       : null;
 
   const voiceStart = groupVoiceKey ? performance.now() : 0;
   if (groupVoiceKey) {
-    sound.play(groupVoiceKey, { volume: voiceVol(0.5) });
+    playLoadedSfx(groupVoiceKey, "voice", 0.5);
   }
 
   await playClearAnimation(toRemove);

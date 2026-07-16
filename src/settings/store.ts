@@ -16,10 +16,11 @@ import {
   isSpawnOrientation,
 } from "./types";
 import { clampVolumePercent } from "./volume";
+import { getStoragePort } from "./storage";
 
 export function loadSettings(): GameSettings {
   try {
-    const saved = localStorage.getItem(SETTINGS_KEY);
+    const saved = getStoragePort().get(SETTINGS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
 
@@ -77,7 +78,7 @@ export function loadSettings(): GameSettings {
 
 export function saveSettings(settings: GameSettings): void {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    getStoragePort().set(SETTINGS_KEY, JSON.stringify(settings));
   } catch (e) {
     console.warn("Failed to save settings:", e);
   }

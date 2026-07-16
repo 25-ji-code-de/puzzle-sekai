@@ -74,17 +74,16 @@ import idolSound from "../assets/sounds/idol.mp3";
 import streetSound from "../assets/sounds/street.mp3";
 import wonderSound from "../assets/sounds/wonder.mp3";
 import nightSound from "../assets/sounds/night.mp3";
+import type { CharacterName } from "./ids";
+import type { GroupName } from "../settings/types";
 
-export const groupSounds: { [group: string]: string } = {
+export const groupSounds: Partial<Record<GroupName, string>> = {
   "Leo/need": bandSound,
   "MORE MORE JUMP!": idolSound,
   "Vivid BAD SQUAD": streetSound,
   "Wonderlands×Showtime": wonderSound,
   "25時、ナイトコードで。": nightSound,
 };
-
-import type { CharacterName } from "./ids";
-import type { GroupName } from "../settings/types";
 
 export interface CharacterData {
   name: CharacterName;

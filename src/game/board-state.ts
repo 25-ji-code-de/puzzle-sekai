@@ -14,7 +14,7 @@ export { ITEM_TOKEN };
 export interface SpriteData {
   sprite: PIXI.Sprite;
   coordinates?: [number, number][];
-  character?: { name: CharacterName; group: GroupName | string };
+  character?: { name: CharacterName; group: GroupName | "Special" };
   isItem?: boolean;
   itemFile?: string;
   isShrunk?: boolean;

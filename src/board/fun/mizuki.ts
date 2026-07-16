@@ -4,7 +4,7 @@
 import { getOffset, moveToCoordinate } from "../../utils/coords";
 import { addScore } from "../../score";
 import { ROWS, COLUMNS } from "../../config";
-import { SpriteData, sprites, pieces } from "../../game/board-state";
+import { SpriteData, sprites, pieces, getBoardModel } from "../../game/board-state";
 import { isFunModeOn } from "../../fun/effects";
 import { isFriesItem } from "../../items";
 import { updateCoordinates, fallChunk } from "../core";
@@ -15,7 +15,6 @@ import {
   type Cell,
   asOrientation,
   footprintFromPrimary,
-  clearFootprint,
 } from "../geometry";
 import { CHAR } from "../../characters/ids";
 
@@ -66,7 +65,7 @@ export const applyMizukiShift = async (
   );
 
   if (mizuki.coordinates?.length) {
-    clearFootprint(pieces, mizuki.coordinates as Cell[]);
+    getBoardModel().clear(mizuki.coordinates as Cell[]);
   }
 
   const isFree = (cells: Cell[]) =>

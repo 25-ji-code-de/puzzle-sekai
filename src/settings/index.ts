@@ -75,3 +75,5 @@ export {
 } from "./high-score";
 
 export { clearAppData, clearAppCaches } from "./data";
+
+export { getStoragePort, setStoragePort, type StoragePort } from "./storage";

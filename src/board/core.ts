@@ -20,8 +20,6 @@ import {
   anchorFromFootprint,
   anchorPixelY,
   placeSpriteAtAnchor,
-  writeFootprint,
-  clearFootprint,
   isUnsupported,
   primaryFromSprite,
 } from "./geometry";
@@ -72,7 +70,7 @@ export const updateCoordinates = (
       : (character?.name ?? sprites[idx].character?.name);
   if (!name) return;
 
-  writeFootprint(pieces, cells, name);
+  getBoardModel().write(cells, name);
   sprites[idx].coordinates = cells.map(([x, y]) => [x, y] as Cell);
 };
 
@@ -165,7 +163,7 @@ const commitFall = (plan: FallPlan) => {
   // (it re-derives footprint from rotation and can desync after a tip).
   syncLiveCoordinates(entry, dest);
   const token = cellName(entry);
-  if (token) writeFootprint(pieces, dest, token);
+  if (token) getBoardModel().write(dest, token);
 };
 
 /** Animate planned falls, then write footprints + coordinates. */
@@ -174,7 +172,7 @@ const applyFalls = async (plans: FallPlan[]) => {
 
   for (const { entry } of plans) {
     if (entry.coordinates?.length) {
-      clearFootprint(pieces, entry.coordinates as Cell[]);
+      getBoardModel().clear(entry.coordinates as Cell[]);
     }
   }
 

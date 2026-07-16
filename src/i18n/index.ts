@@ -1,3 +1,4 @@
+import { getStoragePort } from "../settings/storage";
 import { zh } from "./locales/zh";
 import { ja } from "./locales/ja";
 import { en } from "./locales/en";
@@ -19,7 +20,7 @@ function detectLocale(): Locale {
 
 /** Load saved locale from localStorage, or detect from browser */
 export function getLocale(): Locale {
-  const saved = localStorage.getItem("puzzleSekaiLocale") as Locale | null;
+  const saved = getStoragePort().get("puzzleSekaiLocale") as Locale | null;
   if (saved && LOCALES[saved]) return saved;
   return detectLocale();
 }
@@ -43,7 +44,7 @@ function applyMetaDescription(locale: Locale = currentLocale): void {
 export function setLocale(locale: Locale): void {
   if (!LOCALES[locale]) return;
   currentLocale = locale;
-  localStorage.setItem("puzzleSekaiLocale", locale);
+  getStoragePort().set("puzzleSekaiLocale", locale);
   document.documentElement.lang = locale === "zh" ? "zh-CN" : locale;
   document.title = LOCALES[locale].page.title;
   applyMetaDescription(locale);

@@ -4,7 +4,7 @@
  * "tap anywhere to restart" behaviour.
  */
 import { t } from "../i18n";
-import { start, returnToMenu } from "../game/states";
+import { start, returnToMenu } from "../application/play-session";
 import { buildDialogButton, buildDialogShell } from "./dialog-button";
 
 const GAME_OVER_OVERLAY_ID = "game-over-overlay";

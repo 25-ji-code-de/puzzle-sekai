@@ -7,6 +7,7 @@ import {
   isEntertainmentMode,
 } from "./difficulty";
 import { getCurrentSettings } from "./store";
+import { getStoragePort } from "./storage";
 
 export function getHighScoreKey(
   mode: GameMode,
@@ -38,10 +39,10 @@ export function loadHighScoreRecord(
     const scoreKey = getHighScoreKey(mode, settings);
     const diffKey = getHighScoreDifficultyKey(mode, settings);
     const entKey = getHighScoreEntertainmentKey(mode, settings);
-    const score = parseInt(localStorage.getItem(scoreKey) || "0", 10) || 0;
+    const score = parseInt(getStoragePort().get(scoreKey) || "0", 10) || 0;
     const difficultyLevel =
-      parseInt(localStorage.getItem(diffKey) || "0", 10) || 0;
-    const entertainment = localStorage.getItem(entKey) === "1";
+      parseInt(getStoragePort().get(diffKey) || "0", 10) || 0;
+    const entertainment = getStoragePort().get(entKey) === "1";
     return { score, difficultyLevel, entertainment };
   } catch {
     return { score: 0, difficultyLevel: 0, entertainment: false };
@@ -64,12 +65,12 @@ export function saveHighScore(
     const current = loadHighScoreRecord(mode, settings);
     if (score > current.score) {
       const s = settings ?? getCurrentSettings();
-      localStorage.setItem(getHighScoreKey(mode, settings), score.toString());
-      localStorage.setItem(
+      getStoragePort().set(getHighScoreKey(mode, settings), score.toString());
+      getStoragePort().set(
         getHighScoreDifficultyKey(mode, settings),
         String(getDifficultyLevel(s)),
       );
-      localStorage.setItem(
+      getStoragePort().set(
         getHighScoreEntertainmentKey(mode, settings),
         isEntertainmentMode(s) ? "1" : "0",
       );

@@ -5,16 +5,18 @@ import { app } from "../runtime";
 import {
   SpriteData,
   sprites,
-  pieces,
   setSprites,
+  getBoardModel,
 } from "../game/board-state";
+import type { Cell } from "./geometry";
 
 /** Wipe footprint cells, remove from stage, and drop from sprites[]. */
 export const removeSpritesFromBoard = (toRemove: SpriteData[]): void => {
+  const model = getBoardModel();
   toRemove.forEach((sp) => {
-    sp.coordinates?.forEach(([x, y]) => {
-      pieces[y][x] = null;
-    });
+    if (sp.coordinates?.length) {
+      model.clear(sp.coordinates as Cell[]);
+    }
     app.stage.removeChild(sp.sprite);
   });
   setSprites(

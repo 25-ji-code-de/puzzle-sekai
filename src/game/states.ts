@@ -2,7 +2,7 @@
  * Play state machine: start / spawn / land / pause / game-over / menu return.
  */
 import * as PIXI from "pixi.js-legacy";
-import sound from "pixi-sound";
+import { playLoadedSfx } from "../audio/sfx";
 import { app, gameTicker, resetGameTicker, setState } from "../runtime";
 import {
   createavatarSan,
@@ -21,7 +21,7 @@ import {
   showNextPiece,
 } from "../piece";
 import { getOffset, getCoordinates, getMaxStackHeight } from "../utils/coords";
-import { createItem, getRandomItem, isCarrotItem, isFriesItem } from "../items";
+import { createItem, getRandomItem } from "../items";
 import {
   resetScore,
   initScoreDisplay,
@@ -32,19 +32,18 @@ import {
 import {
   updateCoordinates,
   settleBoard,
-  applyCarrotAllergy,
-  applyCarrotAllergyOnCharacter,
-  applyMizukiShift,
 } from "../board";
 import {
   getCurrentGameMode,
   getCurrentSettings,
   getItemDropChance,
-  voiceVol,
 } from "../settings";
 import { resetFunEffects } from "../fun/effects";
-import { CHAR } from "../characters/ids";
-import { setPlayPhase } from "../application/play-session";
+import { setPlayPhase } from "../application/play-session/phase";
+import {
+  runItemLandEffects,
+  runCharacterLandEffects,
+} from "../application/fun-effects";
 import { enterMenu } from "../ui/welcome";
 import {
   disposePauseMenu,
@@ -184,19 +183,10 @@ const create = async () => {
         setState(end);
       } else {
         updateCoordinates(sprite, index + id, undefined, true);
-        // にんじん嫌い: carrot touching Ena/Akito clears those chars (not the carrot)
-        let allergyCleared = false;
-        if (isCarrotItem(itemFile)) {
-          allergyCleared = await applyCarrotAllergy(x, y);
-        }
-        // ポテトと瑞希: fries land �?nearest board Mizuki moves above fries
-        if (isFriesItem(itemFile)) {
-          await applyMizukiShift(x, y);
-        }
+        const landFx = await runItemLandEffects({ itemFile, x, y });
         // Gravity + tips + fun contacts + clears until the board is quiet.
-        // Must run AFTER tips so emuShrink / allergy / fries see new adjacencies.
         const { cleared: settledCleared } = await settleBoard();
-        if (!allergyCleared && !settledCleared) resetCombo();
+        if (!landFx.scored && !settledCleared) resetCombo();
         dropped[id] = true;
         if (dropped.every((e) => e)) {
           setState(create);
@@ -242,15 +232,13 @@ const create = async () => {
         setState(end);
       } else {
         updateCoordinates(sprite, index, character);
-        // にんじん嫌い: Ena/Akito landing next to carrot �?clear character
-        let allergyCleared = false;
-        if (character.name === CHAR.Ena || character.name === CHAR.Akito) {
-          allergyCleared = await applyCarrotAllergyOnCharacter(index);
-        }
+        const landFx = await runCharacterLandEffects({
+          spriteIndex: index,
+          name: character.name,
+        });
         // Gravity + tips + fun contacts + clears until the board is quiet.
-        // Must run AFTER tips so emuShrink / allergy / fries see new adjacencies.
         const { cleared: settledCleared } = await settleBoard();
-        if (!allergyCleared && !settledCleared) resetCombo();
+        if (!landFx.scored && !settledCleared) resetCombo();
 
         setState(create);
         created = false;
@@ -277,7 +265,7 @@ const create = async () => {
     if (character.sounds?.fall) {
       const fallSounds = character.sounds.fall;
       const key = fallSounds[Math.floor(Math.random() * fallSounds.length)];
-      sound.play(key, { volume: voiceVol(0.5) });
+      playLoadedSfx(key, "voice", 0.5);
     }
   }
 
