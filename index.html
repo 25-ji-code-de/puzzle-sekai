@@ -33,7 +33,11 @@
       }
       #boot-welcome {
         position: fixed;
-        inset: 0;
+        /* Avoid inset:0 — unsupported before Chrome 87 / Safari 14.1 */
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
         z-index: 9999;
         display: flex;
         align-items: center;
@@ -46,7 +50,10 @@
       }
       #boot-welcome .boot-welcome__dim {
         position: absolute;
-        inset: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
         background: rgba(0, 0, 0, 0.55);
         transition: opacity 0.3s ease;
       }

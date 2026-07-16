@@ -87,7 +87,7 @@ const createBootShellFallback = (): HTMLDivElement => {
   const shell = document.createElement("div");
   shell.id = "boot-welcome";
   shell.style.cssText = `
-    position:fixed;inset:0;z-index:9999;cursor:default;
+    position:fixed;top:0;right:0;bottom:0;left:0;z-index:9999;cursor:default;
     display:flex;align-items:center;justify-content:center;
     background-color:#0a0a12;
     background-image:url(${welcomeImg});
@@ -97,7 +97,7 @@ const createBootShellFallback = (): HTMLDivElement => {
   const overlay = document.createElement("div");
   overlay.className = "boot-welcome__dim";
   overlay.style.cssText = `
-    position:absolute;inset:0;background:rgba(0,0,0,0.55);transition:opacity 0.3s ease;
+    position:absolute;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,0.55);transition:opacity 0.3s ease;
   `;
   shell.appendChild(overlay);
 

@@ -61,7 +61,7 @@ const ensureOverlay = (message: string): HTMLDivElement => {
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-live", "polite");
   overlay.style.cssText = `
-    position:fixed;inset:0;z-index:20000;
+    position:fixed;top:0;right:0;bottom:0;left:0;z-index:20000;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:20px;padding:32px 24px;text-align:center;
     background:rgba(8,10,18,0.94);backdrop-filter:blur(6px);
