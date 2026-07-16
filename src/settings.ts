@@ -42,6 +42,12 @@ export interface GameSettings {
   itemDropRate: ItemDropRate;
   /** Head-down (default) vs head-up spawn while falling */
   spawnOrientation: SpawnOrientation;
+  /** BGM loudness 0–100 (100 keeps legacy base volumes) */
+  bgmVolume: number;
+  /** Move / land / effect SFX loudness 0–100 */
+  sfxVolume: number;
+  /** Character / unit voice loudness 0–100 */
+  voiceVolume: number;
 }
 
 // Speed multipliers for each level
@@ -104,6 +110,59 @@ export function getSpawnRotation(settings?: GameSettings): number {
   return s.spawnOrientation === "upright" ? 0 : Math.PI;
 }
 
+/** Clamp / coerce a stored volume percent (0–100). Invalid → default. */
+export function clampVolumePercent(
+  v: unknown,
+  fallback: number = 100,
+): number {
+  if (typeof v !== "number" || !Number.isFinite(v)) return fallback;
+  return Math.min(100, Math.max(0, Math.round(v)));
+}
+
+/**
+ * User channel gain 0–1 (100% → 1). Use as Sound.volume so it multiplies
+ * the per-play base volume (pixi-sound: instance × sound × context).
+ */
+export function getVolumeScale(
+  channel: "bgm" | "sfx" | "voice",
+  settings?: GameSettings,
+): number {
+  const s = settings ?? getCurrentSettings();
+  const pct =
+    channel === "bgm"
+      ? clampVolumePercent(s.bgmVolume)
+      : channel === "sfx"
+        ? clampVolumePercent(s.sfxVolume)
+        : clampVolumePercent(s.voiceVolume);
+  return pct / 100;
+}
+
+/**
+ * Absolute play volume = legacy base × user channel %.
+ * Prefer this for one-shot SFX/voice via play({ volume }).
+ * For long-lived BGM, set Sound.volume = getVolumeScale("bgm") and play with
+ * the raw base so the slider can retune without double-applying.
+ */
+export function scaleVolume(
+  channel: "bgm" | "sfx" | "voice",
+  base: number,
+  settings?: GameSettings,
+): number {
+  return base * getVolumeScale(channel, settings);
+}
+
+export const bgmVol = (base = 0.3, settings?: GameSettings) =>
+  scaleVolume("bgm", base, settings);
+export const sfxVol = (base: number, settings?: GameSettings) =>
+  scaleVolume("sfx", base, settings);
+export const voiceVol = (base: number, settings?: GameSettings) =>
+  scaleVolume("voice", base, settings);
+
+/** Absolute bases at 100% SFX slider (slightly hotter than the old hardcoded values). */
+export const SFX_MOVE_BASE = 0.12; // was 0.05
+export const SFX_LAND_BASE = 0.65; // was 0.5
+export const SFX_EFFECT_BASE = 0.65; // fun-mode effect one-shots
+
 // Group display names (Japanese)
 export const GROUP_LABELS: Record<GroupName, string> = {
   "Leo/need": "Leo/need",
@@ -121,6 +180,9 @@ const DEFAULT_SETTINGS: GameSettings = {
   funModes: { ...DEFAULT_FUN_MODES },
   itemDropRate: 10,
   spawnOrientation: "inverted",
+  bgmVolume: 100,
+  sfxVolume: 100,
+  voiceVolume: 100,
 };
 
 const isItemDropRate = (v: unknown): v is ItemDropRate =>
@@ -158,6 +220,18 @@ export function loadSettings(): GameSettings {
         spawnOrientation: isSpawnOrientation(parsed.spawnOrientation)
           ? parsed.spawnOrientation
           : DEFAULT_SETTINGS.spawnOrientation,
+        bgmVolume: clampVolumePercent(
+          parsed.bgmVolume,
+          DEFAULT_SETTINGS.bgmVolume,
+        ),
+        sfxVolume: clampVolumePercent(
+          parsed.sfxVolume,
+          DEFAULT_SETTINGS.sfxVolume,
+        ),
+        voiceVolume: clampVolumePercent(
+          parsed.voiceVolume,
+          DEFAULT_SETTINGS.voiceVolume,
+        ),
       };
     }
   } catch (e) {
@@ -444,6 +518,18 @@ export function updateCurrentSettings(settings: GameSettings): void {
     spawnOrientation: isSpawnOrientation(settings.spawnOrientation)
       ? settings.spawnOrientation
       : DEFAULT_SETTINGS.spawnOrientation,
+    bgmVolume: clampVolumePercent(
+      settings.bgmVolume,
+      DEFAULT_SETTINGS.bgmVolume,
+    ),
+    sfxVolume: clampVolumePercent(
+      settings.sfxVolume,
+      DEFAULT_SETTINGS.sfxVolume,
+    ),
+    voiceVolume: clampVolumePercent(
+      settings.voiceVolume,
+      DEFAULT_SETTINGS.voiceVolume,
+    ),
   };
   saveSettings(currentSettings);
 }

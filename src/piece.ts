@@ -26,6 +26,9 @@ import {
   getCurrentSettings,
   getSpeedMultiplier,
   getSpawnRotation,
+  sfxVol,
+  SFX_MOVE_BASE,
+  SFX_LAND_BASE,
 } from "./settings";
 import {
   isControlsSwapped,
@@ -302,7 +305,7 @@ export const createPiece = async (
     if (sound.isPlaying) {
       sound.stop();
     }
-    sound.play({ volume: 0.05 });
+    sound.play({ volume: sfxVol(SFX_MOVE_BASE) });
   };
 
   const moveUp = () => {
@@ -476,7 +479,7 @@ export const createPiece = async (
     } else {
       if (!dropped) {
         dropped = setTimeout(() => {
-          app.loader.resources.land.sound.play({ volume: 0.5 });
+          app.loader.resources.land.sound.play({ volume: sfxVol(SFX_LAND_BASE) });
           kasumi.y =
             app.renderer.height -
             (BOX_SIZE / 2 + OFFSET_BOTTOM) -

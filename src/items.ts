@@ -3,6 +3,7 @@ import "pixi-sound";
 import { app, gameTicker } from ".";
 import { LEFT_BORDER, BOX_SIZE, SPEED, OFFSET_BOTTOM } from "./config";
 import { getStackHeight } from "./utils";
+import { sfxVol, SFX_LAND_BASE } from "./settings";
 
 // Import all item images
 import material008 from "./assets/objects/material008.png";
@@ -72,7 +73,7 @@ export const fallItem = (
     if (item.y < dropHeight) {
       item.y += SPEED * 4 * delta;
     } else {
-      app.loader.resources.land.sound.play({ volume: 0.5 });
+      app.loader.resources.land.sound.play({ volume: sfxVol(SFX_LAND_BASE) });
       item.y =
         app.renderer.height -
         (BOX_SIZE / 2 + OFFSET_BOTTOM) -
@@ -124,7 +125,7 @@ export const createItem = async (
     if (item.y < dropHeight) {
       item.y += SPEED * 4 * delta;
     } else {
-      app.loader.resources.land.sound.play({ volume: 0.5 });
+      app.loader.resources.land.sound.play({ volume: sfxVol(SFX_LAND_BASE) });
       item.y =
         app.renderer.height -
         (BOX_SIZE / 2 + OFFSET_BOTTOM) -

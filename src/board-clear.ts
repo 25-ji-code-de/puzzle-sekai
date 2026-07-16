@@ -18,6 +18,7 @@ import {
   applyWonderBlast,
 } from "./board-fun";
 import { findClearPieces } from "./clear";
+import { voiceVol } from "./settings";
 
 /**
  * After gravity + cantilever tips settle: re-check fun contacts.
@@ -120,7 +121,7 @@ export const clearChunk = async (
   // Start group voice and record start time
   const voiceStart = groupVoiceKey ? performance.now() : 0;
   if (groupVoiceKey) {
-    sound.play(groupVoiceKey, { volume: 0.5 });
+    sound.play(groupVoiceKey, { volume: voiceVol(0.5) });
   }
 
   // Phase 1: Turn white instantly

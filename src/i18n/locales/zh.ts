@@ -87,6 +87,12 @@ export const zh = {
     lang: {
       label: "语言 / Language",
     },
+    audio: {
+      label: "音量",
+      bgm: "BGM",
+      sfx: "音效",
+      voice: "语音",
+    },
     data: {
       label: "数据 / 缓存",
       clearCache: "清除缓存",

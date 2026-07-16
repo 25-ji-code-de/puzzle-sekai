@@ -19,6 +19,7 @@ import {
   isEntertainmentMode,
   clearAppData,
   clearAppCaches,
+  clampVolumePercent,
 } from "./settings";
 import {
   FUN_MODE_DEFS,
@@ -35,6 +36,7 @@ import {
 } from "./i18n";
 import { domFontStyle } from "./fonts";
 import { diffColorStyle } from "./menu-utils";
+import { applyBgmVolume, playSfxPreview, playVoicePreview } from "./bgm";
 
 export interface SettingsPanelOptions {
   /** Called after the panel finishes its close animation and is removed. */
@@ -194,6 +196,109 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
   });
   langGroup.appendChild(langOptions);
   settingsPanel.appendChild(langGroup);
+
+  // Audio volumes (BGM / SFX / voice)
+  const audioGroup = document.createElement("div");
+  audioGroup.className = "setting-group";
+  audioGroup.innerHTML = `<div class="setting-label">${t(
+    "settings.audio.label",
+  )}</div>`;
+
+  const audioStyle = document.createElement("style");
+  audioStyle.textContent = `
+    .vol-row {
+      display:flex;align-items:center;gap:10px;margin-bottom:10px;
+    }
+    .vol-name {
+      width:72px;flex-shrink:0;font-size:14px;color:rgba(255,255,255,0.75);
+    }
+    .vol-slider {
+      flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;
+      background:rgba(100,200,255,0.2);outline:none;cursor:pointer;
+    }
+    .vol-slider::-webkit-slider-thumb {
+      -webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;
+      background:#8ec8ff;border:1px solid rgba(255,255,255,0.5);cursor:pointer;
+    }
+    .vol-slider::-moz-range-thumb {
+      width:16px;height:16px;border-radius:50%;
+      background:#8ec8ff;border:1px solid rgba(255,255,255,0.5);cursor:pointer;
+    }
+    .vol-value {
+      width:40px;text-align:right;font-size:13px;color:rgba(170,204,255,0.9);
+      font-variant-numeric:tabular-nums;
+    }
+  `;
+  audioGroup.appendChild(audioStyle);
+
+  type VolKey = "bgmVolume" | "sfxVolume" | "voiceVolume";
+  const volRows: { key: VolKey; labelKey: string }[] = [
+    { key: "bgmVolume", labelKey: "settings.audio.bgm" },
+    { key: "sfxVolume", labelKey: "settings.audio.sfx" },
+    { key: "voiceVolume", labelKey: "settings.audio.voice" },
+  ];
+
+  // Throttle preview SFX/voice while dragging so we don't spam every pixel.
+  let sfxPreviewAt = 0;
+  let voicePreviewAt = 0;
+  const PREVIEW_GAP_MS = 140;
+
+  volRows.forEach(({ key, labelKey }) => {
+    const row = document.createElement("div");
+    row.className = "vol-row";
+
+    const name = document.createElement("div");
+    name.className = "vol-name";
+    name.textContent = t(labelKey);
+
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = "0";
+    slider.max = "100";
+    slider.step = "1";
+    slider.className = "vol-slider";
+    slider.value = String(clampVolumePercent(settings[key]));
+    slider.setAttribute("aria-label", t(labelKey));
+
+    const value = document.createElement("div");
+    value.className = "vol-value";
+    value.textContent = `${slider.value}%`;
+
+    const playPreview = (force: boolean) => {
+      const now = performance.now();
+      if (key === "sfxVolume") {
+        if (force || now - sfxPreviewAt >= PREVIEW_GAP_MS) {
+          sfxPreviewAt = now;
+          playSfxPreview();
+        }
+      } else if (key === "voiceVolume") {
+        if (force || now - voicePreviewAt >= PREVIEW_GAP_MS) {
+          voicePreviewAt = now;
+          playVoicePreview();
+        }
+      }
+    };
+
+    const commit = (raw: string, opts: { preview?: boolean; force?: boolean } = {}) => {
+      const next = clampVolumePercent(Number(raw));
+      settings[key] = next;
+      slider.value = String(next);
+      value.textContent = `${next}%`;
+      updateCurrentSettings(settings);
+      if (key === "bgmVolume") applyBgmVolume();
+      if (opts.preview) playPreview(!!opts.force);
+    };
+    // Continuous drag: live value + throttled preview
+    slider.oninput = () => commit(slider.value, { preview: true });
+    // Pointer/keyboard release: always play once at the final level
+    slider.onchange = () => commit(slider.value, { preview: true, force: true });
+
+    row.appendChild(name);
+    row.appendChild(slider);
+    row.appendChild(value);
+    audioGroup.appendChild(row);
+  });
+  settingsPanel.appendChild(audioGroup);
 
   // Speed
   const speedGroup = document.createElement("div");

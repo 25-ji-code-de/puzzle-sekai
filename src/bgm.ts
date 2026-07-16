@@ -15,8 +15,27 @@ import bgm168 from "./assets/sounds/168.mp3";
 import bgm161 from "./assets/sounds/161.mp3";
 import bgm182_1 from "./assets/sounds/182.1.mp3";
 import bgm182_2 from "./assets/sounds/182.2.mp3";
+import movePreviewUrl from "./assets/sounds/move.mp3";
+import voicePreviewUrl from "./assets/sounds/chara/emu_3.mp3";
+import {
+  getVolumeScale,
+  sfxVol,
+  voiceVol,
+  SFX_MOVE_BASE,
+} from "./settings";
 
 export type BgmKey = "bgm038" | "bgm168" | "bgm161" | "bgm182_1" | "bgm182_2";
+
+/** Legacy absolute volume passed to play() — classic loudness at 100% slider. */
+export const BGM_BASE_VOLUME = 0.3;
+
+/** Same base as character fall / group clear voices. */
+const VOICE_PREVIEW_BASE = 0.5;
+
+const PREVIEW_ALIASES = {
+  sfx: "settingsPreviewSfx",
+  voice: "settingsPreviewVoice",
+} as const;
 
 const BGM_URLS: Record<BgmKey, string> = {
   bgm038,
@@ -28,6 +47,89 @@ const BGM_URLS: Record<BgmKey, string> = {
 
 const cache = new Map<BgmKey, PIXI.sound.Sound>();
 const inflight = new Map<BgmKey, Promise<PIXI.sound.Sound | null>>();
+
+/** Currently audible BGM instance (menu / play / game-over). */
+let liveBgm: PIXI.sound.Sound | null = null;
+
+/**
+ * Remember the active track and apply the BGM channel gain to Sound.volume.
+ * pixi-sound final loudness = play(volume) × Sound.volume × context.volume,
+ * so we keep play() at BGM_BASE_VOLUME and put the user % only on Sound.volume.
+ */
+export const setLiveBgm = (s: PIXI.sound.Sound | null): void => {
+  liveBgm = s;
+  if (s) {
+    try {
+      s.volume = getVolumeScale("bgm");
+    } catch {
+      /* ignore */
+    }
+  }
+};
+
+/** Push current BGM slider onto the active track (and any cached aliases). */
+export const applyBgmVolume = (): void => {
+  const scale = getVolumeScale("bgm");
+  try {
+    if (liveBgm) liveBgm.volume = scale;
+  } catch {
+    /* ignore */
+  }
+  // Keep idle cached tracks in sync so the next play isn't stuck at an old gain.
+  cache.forEach((s) => {
+    try {
+      s.volume = scale;
+    } catch {
+      /* ignore */
+    }
+  });
+};
+
+const ensurePreviewSound = (
+  alias: string,
+  url: string,
+): PIXI.sound.Sound | null => {
+  try {
+    if (sound.exists(alias)) return sound.find(alias);
+    return sound.add(alias, {
+      url,
+      preload: true,
+      singleInstance: true,
+    });
+  } catch (e) {
+    console.warn(`Failed to init preview sound ${alias}:`, e);
+    return null;
+  }
+};
+
+/** Play move.mp3 at the current SFX slider (throttled by caller). */
+export const playSfxPreview = (): void => {
+  unlockAudio();
+  const s = ensurePreviewSound(PREVIEW_ALIASES.sfx, movePreviewUrl);
+  if (!s) return;
+  try {
+    if (s.isPlaying) s.stop();
+    // Keep Sound.volume at 1; channel % goes only into play({ volume }).
+    s.volume = 1;
+    s.play({ volume: sfxVol(SFX_MOVE_BASE) });
+  } catch {
+    /* ignore */
+  }
+};
+
+/** Play emu_3.mp3 at the current voice slider (throttled by caller). */
+export const playVoicePreview = (): void => {
+  unlockAudio();
+  const s = ensurePreviewSound(PREVIEW_ALIASES.voice, voicePreviewUrl);
+  if (!s) return;
+  try {
+    if (s.isPlaying) s.stop();
+    s.volume = 1;
+    s.play({ volume: voiceVol(VOICE_PREVIEW_BASE) });
+  } catch {
+    /* ignore */
+  }
+};
 
 /**
  * Resume the shared AudioContext from a user-gesture stack. Call this
@@ -143,4 +245,5 @@ export const stopAllBgmAliases = (): void => {
       /* ignore */
     }
   });
+  liveBgm = null;
 };

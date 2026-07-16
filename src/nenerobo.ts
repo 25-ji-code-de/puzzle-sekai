@@ -17,6 +17,9 @@ import {
   getCurrentSettings,
   getSpeedMultiplier,
   getSpawnRotation,
+  sfxVol,
+  SFX_MOVE_BASE,
+  SFX_LAND_BASE,
 } from "./settings";
 import { isControlsSwapped, consumeKanadeSlowForSpawn } from "./fun-effects";
 
@@ -61,7 +64,7 @@ export const createNeneRobo = async (
     if (sound.isPlaying) {
       sound.stop();
     }
-    sound.play({ volume: 0.05 });
+    sound.play({ volume: sfxVol(SFX_MOVE_BASE) });
   };
 
   const moveLeft = () => {
@@ -230,7 +233,7 @@ export const createNeneRobo = async (
     } else {
       if (!dropped) {
         dropped = setTimeout(() => {
-          app.loader.resources.land.sound.play({ volume: 0.5 });
+          app.loader.resources.land.sound.play({ volume: sfxVol(SFX_LAND_BASE) });
           nenerobo.y =
             app.renderer.height -
             OFFSET_BOTTOM -

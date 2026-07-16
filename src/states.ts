@@ -35,16 +35,18 @@ import {
   applyMizukiShift,
 } from "./board";
 import { welcome as _welcome } from "./welcome";
-import { getCurrentGameMode, getCurrentSettings, getItemDropChance } from "./settings";
+import { getCurrentGameMode, getCurrentSettings, getItemDropChance, voiceVol } from "./settings";
 import { resetFunEffects } from "./fun-effects";
 import { enterMenu } from "./welcome";
 import { disposePauseMenu, showPauseButton, hidePauseButton } from "./pause-menu";
 import { disposeGameOverMenu, showGameOverMenu } from "./game-over-menu";
 import {
+  BGM_BASE_VOLUME,
   ensureBgm,
   getBgm,
   peekBgm,
   prefetchPlayBgm,
+  setLiveBgm,
   stopAllBgmAliases,
   unlockAudio,
   type BgmKey,
@@ -112,11 +114,17 @@ export const stopBgm = () => {
 
 export const playBgm = (
   s: PIXI.sound.Sound,
-  options: { loop: boolean; volume: number },
+  options: { loop: boolean; volume?: number } = { loop: true },
 ) => {
   bgmPlaying = s;
-  bgmPlaying.play(options);
+  // Channel % → Sound.volume; play base stays classic (0.3) so 100% = original.
+  setLiveBgm(s);
+  bgmPlaying.play({
+    loop: options.loop,
+    volume: options.volume ?? BGM_BASE_VOLUME,
+  });
 };
+
 
 /**
  * Play menu BGM (bgm161). Loads on demand if the idle prefetch hasn't finished.
@@ -129,7 +137,7 @@ export const playMenuBgm = async () => {
   stopBgm();
   const s = await getBgm("bgm161");
   if (!s) return;
-  playBgm(s, { loop: true, volume: 0.3 });
+  playBgm(s, { loop: true });
   // Warm play + game-over tracks while the player sits on the menu.
   prefetchPlayBgm();
 };
@@ -141,14 +149,15 @@ const playGameOverBgm = async () => {
   if (!intro) return;
 
   bgmPlaying = intro;
+  setLiveBgm(intro);
   const onEnd = () => {
     gameOverIntroInst = null;
     gameOverIntroOnEnd = null;
-    if (loop) playBgm(loop, { loop: true, volume: 0.3 });
+    if (loop) playBgm(loop, { loop: true });
   };
   gameOverIntroOnEnd = onEnd;
 
-  const result = intro.play({ loop: false, volume: 0.3 });
+  const result = intro.play({ loop: false, volume: BGM_BASE_VOLUME });
   const attach = (inst: {
     on: (e: string, fn: () => void) => void;
     stop?: () => void;
@@ -179,7 +188,8 @@ const playNextBGM = async () => {
     const s = ready ?? (await getBgm(pick));
     if (!bgmActive || !s) return;
     bgmPlaying = s;
-    bgmPlaying.play({ loop: false, volume: 0.3 });
+    setLiveBgm(s);
+    bgmPlaying.play({ loop: false, volume: BGM_BASE_VOLUME });
     // Keep the other play track warm for the next rotation.
     prefetchPlayBgm();
   } finally {
@@ -396,7 +406,7 @@ const create = async () => {
     if (character.sounds?.fall) {
       const fallSounds = character.sounds.fall;
       const key = fallSounds[Math.floor(Math.random() * fallSounds.length)];
-      sound.play(key, { volume: 0.5 });
+      sound.play(key, { volume: voiceVol(0.5) });
     }
   }
 

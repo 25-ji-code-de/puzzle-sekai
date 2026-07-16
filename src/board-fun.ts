@@ -7,6 +7,7 @@ import { isFunModeOn, onKanadeCleared } from "./fun-effects";
 import { isCarrotItem, isFriesItem } from "./items";
 import { updateCoordinates, fallChunk, createParticles } from "./board-core";
 import { clearChunk } from "./board-clear";
+import { sfxVol, voiceVol, SFX_EFFECT_BASE } from "./settings";
 
 export const applyCarrotAllergy = async (
   itemX: number,
@@ -97,7 +98,7 @@ const playCarrotAllergySfx = (name?: string) => {
     name === "Akito" ? "carrotAkito" : name === "Ena" ? "carrotEna" : null;
   if (!key) return;
   const sfx = app.loader.resources[key]?.sound;
-  if (sfx) sfx.play({ volume: 0.5 });
+  if (sfx) sfx.play({ volume: voiceVol(0.5) });
 };
 
 const clearAllergyCells = async (
@@ -423,7 +424,7 @@ const shrinkEmuSprite = (
   pieces[keep[1]][keep[0]] = "Emu";
 
   const sfx = app.loader.resources["emuShrink"]?.sound;
-  if (sfx) sfx.play({ volume: 0.5 });
+  if (sfx) sfx.play({ volume: sfxVol(SFX_EFFECT_BASE) });
   return true;
 };
 

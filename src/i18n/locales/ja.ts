@@ -89,6 +89,12 @@ export const ja = {
     lang: {
       label: "言語 / Language",
     },
+    audio: {
+      label: "音量",
+      bgm: "BGM",
+      sfx: "効果音",
+      voice: "ボイス",
+    },
     data: {
       label: "データ / キャッシュ",
       clearCache: "キャッシュを削除",

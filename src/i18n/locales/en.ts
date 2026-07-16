@@ -89,6 +89,12 @@ export const en = {
     lang: {
       label: "Language / 言語",
     },
+    audio: {
+      label: "Volume",
+      bgm: "BGM",
+      sfx: "SFX",
+      voice: "Voice",
+    },
     data: {
       label: "Data / Cache",
       clearCache: "Clear cache",
