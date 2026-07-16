@@ -1,5 +1,7 @@
 import { BOX_SIZE, LEFT_BORDER, COLUMNS, ROWS } from "../config";
 import { pieces } from "../game/board-state";
+import { asOrientation } from "../board/geometry/footprint";
+import { stackHeightForPrimary } from "../board/geometry/stack";
 
 export const getCoordinates = (
   sprite: PIXI.Sprite,
@@ -77,22 +79,15 @@ export const getOffset = (sprite: PIXI.Sprite) => {
   return rotationToOffset(sprite.rotation);
 };
 
+/**
+ * Stack height under an active standard piece / item (floor-primary coords).
+ * Delegates to geometry so land formulas stay consistent with footprint columns.
+ */
 export const getStackHeight = (sprite: PIXI.Sprite) => {
   const { x, y } = getCoordinates(sprite, "floor");
-  const offset = getOffset(sprite);
-  return offset % 2 === 0
-    ? pieces
-        .map((row) => row[x])
-        .filter((_, index) => index > y)
-        .reverse()
-        .reduce((acc, row, index) => (row ? index + 1 : acc), 0)
-    : pieces
-        .map((row) =>
-          offset === 1 ? [row[x], row[x + 1]] : [row[x - 1], row[x]],
-        )
-        .filter((_, index) => index > y)
-        .reverse()
-        .reduce((acc, row, index) => (row[0] || row[1] ? index + 1 : acc), 0);
+  const orient = asOrientation(getOffset(sprite));
+  // Items share cell-center land math; treat as single-column cell2 height.
+  return stackHeightForPrimary(pieces, { x, y }, orient, "cell2");
 };
 
 export const getMaxStackHeight = () => {

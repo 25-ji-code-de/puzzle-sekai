@@ -25,6 +25,11 @@ export {
   maxDropDistance,
   isUnsupported,
   bottomCells,
+  columnsForPiece,
+  stackHeightBelow,
+  stackHeightForPrimary,
+  activeLandPixelY,
+  activeDropPixelY,
 } from "./geometry";
 
 export { updateCoordinates, fallChunk } from "./core";

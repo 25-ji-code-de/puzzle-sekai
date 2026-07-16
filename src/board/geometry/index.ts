@@ -2,12 +2,11 @@
  * Board geometry — pure atoms + medium helpers.
  *
  * Layers:
- *   kinds / cells / footprint  — pure, no PIXI, no global grid
- *   placement / grid-write     — medium (placement touches sprites; grid-write
- *                                takes an explicit BoardGrid)
+ *   kinds / cells / footprint / stack / active-land  — pure (no PIXI)
+ *   placement / grid-write                           — medium
  *
- * Gravity (core) and cantilever (physics) MUST call these — do not re-derive
- * anchor / footprint rules locally.
+ * Gravity, cantilever, active piece fall, and items MUST call these —
+ * do not re-derive anchor / footprint / land-Y rules locally.
  */
 
 export type { PieceKind } from "./kinds";
@@ -32,6 +31,14 @@ export {
   anchorFromFootprint,
   orientFromFootprint,
 } from "./footprint";
+
+export {
+  columnsForPiece,
+  stackHeightBelow,
+  stackHeightForPrimary,
+} from "./stack";
+
+export { activeLandPixelY, activeDropPixelY } from "./active-land";
 
 export {
   anchorPixelX,

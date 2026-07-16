@@ -10,7 +10,6 @@ import {
   BOX_SIZE,
   COLUMNS,
   SPEED,
-  OFFSET_BOTTOM,
   FALL_DELAY,
   FALL_SPEED,
 } from "../config";
@@ -37,6 +36,10 @@ import {
   getMizukiLockColumns,
   getCarrotHazardColumns,
 } from "../board/contact";
+import {
+  asOrientation,
+  activeLandPixelY,
+} from "../board/geometry";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
 import { loadTexture } from "./load-texture";
@@ -64,6 +67,17 @@ const nearestIndex = (list: number[], target: number): number => {
   return idx;
 };
 
+/** Land / drop pixel Y for a live standard piece (geometry active-land). */
+const landYFor = (sprite: PIXI.Sprite): number => {
+  const orient = asOrientation(getOffset(sprite));
+  return activeLandPixelY(
+    "cell2",
+    getStackHeight(sprite),
+    orient,
+    app.renderer.height,
+  );
+};
+
 /** Legacy post-land fall helper for standard pieces. */
 export const fall = (
   sprite: PIXI.Sprite,
@@ -76,51 +90,19 @@ export const fall = (
   };
 
   const checkOffset = (delta: number) => {
-    const offset = getOffset(sprite);
-    const stackHeight = getStackHeight(sprite);
-    const dropHeight =
-      app.renderer.height -
-      (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-      BOX_SIZE * stackHeight -
-      (offset === 2 ? BOX_SIZE : 0);
+    const dropHeight = landYFor(sprite);
     if (sprite.y < dropHeight) {
       sprite.y += FALL_SPEED * delta;
       if (timer) clearTimeout(timer);
     } else if (!timer) {
       timer = window.setTimeout(() => {
-        sprite.y =
-          app.renderer.height -
-          (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-          (offset === 2 ? BOX_SIZE : 0) -
-          BOX_SIZE * stackHeight;
+        sprite.y = landYFor(sprite);
         cleanup();
       }, FALL_DELAY);
     }
   };
 
   gameTicker.add(checkOffset);
-};
-
-const standardDropHeight = (sprite: PIXI.Sprite) => {
-  const offset = getOffset(sprite);
-  const stackHeight = getStackHeight(sprite);
-  return (
-    app.renderer.height -
-    (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-    BOX_SIZE * stackHeight -
-    (offset === 2 ? BOX_SIZE : 0)
-  );
-};
-
-const standardLandY = (sprite: PIXI.Sprite) => {
-  const offset = getOffset(sprite);
-  const stackHeight = getStackHeight(sprite);
-  return (
-    app.renderer.height -
-    (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-    (offset === 2 ? BOX_SIZE : 0) -
-    BOX_SIZE * stackHeight
-  );
 };
 
 export const createPiece = async (
@@ -260,7 +242,7 @@ export const createPiece = async (
   };
 
   const hardDrop = () => {
-    const newY = standardLandY(piece);
+    const newY = landYFor(piece);
     const distance = Math.floor((newY - piece.y) / BOX_SIZE);
     activeFall.addHardDropScore(distance);
     piece.y = newY;
@@ -297,8 +279,8 @@ export const createPiece = async (
   };
 
   activeFall.start(
-    () => standardDropHeight(piece),
-    () => standardLandY(piece),
+    () => landYFor(piece),
+    () => landYFor(piece),
     finish,
   );
 

@@ -10,7 +10,6 @@ import {
   BOX_SIZE,
   SPEED,
   COLUMNS,
-  OFFSET_BOTTOM,
   FALL_DELAY,
   FALL_SPEED,
 } from "../config";
@@ -22,6 +21,10 @@ import {
   getSpawnRotation,
 } from "../settings";
 import { consumeKanadeSlowForSpawn } from "../fun/effects";
+import {
+  stackHeightBelow,
+  activeLandPixelY,
+} from "../board/geometry";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
 import { loadTexture } from "./load-texture";
@@ -38,26 +41,17 @@ export const getNeneRoboCoordinates = (
 
 export const getNeneRoboStackHeight = (sprite: PIXI.Sprite): number => {
   const { x, y } = getNeneRoboCoordinates(sprite);
-  return pieces
-    .map((row) => [row[x + 1], row[x]])
-    .filter((_, index) => index + 1 > y)
-    .reverse()
-    .reduce((acc, row, index) => (row[0] || row[1] ? index + 1 : acc), 0);
+  // Legacy filter: index + 1 > y  ⇔  index > y - 1
+  return stackHeightBelow(pieces, [x, x + 1], y - 1);
 };
 
-const dropHeightFor = (sprite: PIXI.Sprite) => {
-  const stackHeight = getNeneRoboStackHeight(sprite);
-  return (
-    app.renderer.height - (BOX_SIZE + OFFSET_BOTTOM) - BOX_SIZE * stackHeight
+const landYFor = (sprite: PIXI.Sprite): number =>
+  activeLandPixelY(
+    "big2x2",
+    getNeneRoboStackHeight(sprite),
+    0,
+    app.renderer.height,
   );
-};
-
-const landYFor = (sprite: PIXI.Sprite) => {
-  const stackHeight = getNeneRoboStackHeight(sprite);
-  return (
-    app.renderer.height - OFFSET_BOTTOM - BOX_SIZE * stackHeight - BOX_SIZE
-  );
-};
 
 export const createNeneRobo = async (
   file: string,
@@ -155,7 +149,7 @@ export const createNeneRobo = async (
   };
 
   fall.start(
-    () => dropHeightFor(nenerobo),
+    () => landYFor(nenerobo),
     () => landYFor(nenerobo),
     finish,
   );
@@ -174,19 +168,13 @@ export const neneRoboFall = (
     onFell(sprite);
   };
   const checkOffset = (delta: number) => {
-    const stackHeight = getNeneRoboStackHeight(sprite);
-    const dropHeight =
-      app.renderer.height - (BOX_SIZE + OFFSET_BOTTOM) - BOX_SIZE * stackHeight;
+    const dropHeight = landYFor(sprite);
     if (sprite.y < dropHeight) {
       sprite.y += FALL_SPEED * delta;
       if (timer) clearTimeout(timer);
     } else if (!timer) {
       timer = window.setTimeout(() => {
-        sprite.y =
-          app.renderer.height -
-          OFFSET_BOTTOM -
-          BOX_SIZE * stackHeight -
-          BOX_SIZE;
+        sprite.y = landYFor(sprite);
         cleanup();
       }, FALL_DELAY);
     }

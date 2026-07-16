@@ -4,9 +4,13 @@
 import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
 import { app, gameTicker } from "../index";
-import { LEFT_BORDER, BOX_SIZE, SPEED, OFFSET_BOTTOM } from "../config";
+import { LEFT_BORDER, BOX_SIZE, SPEED } from "../config";
 import { getStackHeight } from "../utils/coords";
 import { sfxVol, SFX_LAND_BASE } from "../settings";
+import { activeLandPixelY } from "../board/geometry";
+
+const landYFor = (item: PIXI.Sprite): number =>
+  activeLandPixelY("item", getStackHeight(item), 0, app.renderer.height);
 
 export const fallItem = (
   item: PIXI.Sprite,
@@ -18,19 +22,12 @@ export const fallItem = (
   };
 
   const checkOffset = (delta: number) => {
-    const stackHeight = getStackHeight(item);
-    const dropHeight =
-      app.renderer.height -
-      (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-      BOX_SIZE * stackHeight;
+    const dropHeight = landYFor(item);
     if (item.y < dropHeight) {
       item.y += SPEED * 4 * delta;
     } else {
       app.loader.resources.land.sound.play({ volume: sfxVol(SFX_LAND_BASE) });
-      item.y =
-        app.renderer.height -
-        (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-        BOX_SIZE * stackHeight;
+      item.y = landYFor(item);
       cleanup();
     }
   };
@@ -68,19 +65,12 @@ export const createItem = async (
     onDropped(item);
   };
   const checkOffset = (delta: number) => {
-    const stackHeight = getStackHeight(item);
-    const dropHeight =
-      app.renderer.height -
-      (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-      BOX_SIZE * stackHeight;
+    const dropHeight = landYFor(item);
     if (item.y < dropHeight) {
       item.y += SPEED * 4 * delta;
     } else {
       app.loader.resources.land.sound.play({ volume: sfxVol(SFX_LAND_BASE) });
-      item.y =
-        app.renderer.height -
-        (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-        BOX_SIZE * stackHeight;
+      item.y = landYFor(item);
       cleanup();
     }
   };
