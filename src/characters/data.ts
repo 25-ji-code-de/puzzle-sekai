@@ -68,6 +68,17 @@ import mafuyu_1 from "../assets/sounds/chara/mafuyu_1.mp3";
 import mafuyu_2 from "../assets/sounds/chara/mafuyu_2.mp3";
 import ena_1 from "../assets/sounds/chara/ena_1.mp3";
 import mizuki_1 from "../assets/sounds/chara/mizuki_1.mp3";
+import miku_leo_1 from "../assets/sounds/chara/miku_leo_1.mp3";
+import miku_leo_2 from "../assets/sounds/chara/miku_leo_2.mp3";
+import miku_mmj_1 from "../assets/sounds/chara/miku_mmj_1.mp3";
+import miku_mmj_2 from "../assets/sounds/chara/miku_mmj_2.mp3";
+import miku_vbs_1 from "../assets/sounds/chara/miku_vbs_1.mp3";
+import miku_wxs_1 from "../assets/sounds/chara/miku_wxs_1.mp3";
+import miku_25ji_1 from "../assets/sounds/chara/miku_25ji_1.mp3";
+import nenerobo_1 from "../assets/sounds/chara/nenerobo_1.mp3";
+import nenerobo_2 from "../assets/sounds/chara/nenerobo_2.mp3";
+import nenerobo_3 from "../assets/sounds/chara/nenerobo_3.mp3";
+import mikudayo_1 from "../assets/sounds/chara/mikudayo_1.mp3";
 
 import bandSound from "../assets/sounds/band.mp3";
 import idolSound from "../assets/sounds/idol.mp3";
@@ -131,6 +142,9 @@ export const characterData: CharacterData[] = [
     name: "MikuLeo",
     file: mikuLeo,
     group: "Leo/need",
+    sounds: {
+      fall: [miku_leo_1, miku_leo_2],
+    },
   },
   {
     name: "Minori",
@@ -168,6 +182,9 @@ export const characterData: CharacterData[] = [
     name: "MikuMMJ",
     file: mikuMMJ,
     group: "MORE MORE JUMP!",
+    sounds: {
+      fall: [miku_mmj_1, miku_mmj_2],
+    },
   },
   {
     name: "Kohane",
@@ -205,6 +222,9 @@ export const characterData: CharacterData[] = [
     name: "MikuVBS",
     file: mikuVBS,
     group: "Vivid BAD SQUAD",
+    sounds: {
+      fall: [miku_vbs_1],
+    },
   },
   {
     name: "Tsukasa",
@@ -243,11 +263,17 @@ export const characterData: CharacterData[] = [
     file: nenerobo,
     group: "Wonderlands×Showtime",
     preview: neneroboSmall,
+    sounds: {
+      fall: [nenerobo_1, nenerobo_2, nenerobo_3],
+    },
   },
   {
     name: "MikuWxS",
     file: mikuWxS,
     group: "Wonderlands×Showtime",
+    sounds: {
+      fall: [miku_wxs_1],
+    },
   },
   {
     name: "Kanade",
@@ -285,11 +311,17 @@ export const characterData: CharacterData[] = [
     name: "Miku25ji",
     file: miku25ji,
     group: "25時、ナイトコードで。",
+    sounds: {
+      fall: [miku_25ji_1],
+    },
   },
   {
     name: "Mikudayo",
     file: mikudayo,
     group: "Special",
     preview: mikudayoSmall,
+    sounds: {
+      fall: [mikudayo_1],
+    },
   },
 ];
