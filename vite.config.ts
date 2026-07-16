@@ -98,6 +98,12 @@ function subsetDisplayFonts(): Plugin {
 
 export default defineConfig({
   base: "./",
+  // Downlevel ES2020+ syntax (`?.`, `??`, etc.) so older Chrome/Edge/Firefox/
+  // Safari/iOS browsers can parse the production bundle. Vite's default
+  // (`modules`) leaves those operators intact.
+  build: {
+    target: "es2019",
+  },
   plugins: [
     assetsToWebp({ quality: 85 }),
     subsetDisplayFonts(),
