@@ -114,12 +114,14 @@ export const zh = {
     wonderBlast: {
       name: "奇迹爆破",
       subtitle: "It's Showtime！",
-      description: "当「类」与「NeneRobo」相邻并被成功消除时，将引发舞台大爆炸，随机炸飞场上的其他方块。\n爆炸波及的方块数量与本次消除中包含的「类」与「NeneRobo」总数成正比。此效果触发的连击数按「消除块数 ÷ 5（向下取整）」进行结算。\n\n「接下来，就是最精彩的 Showtime 了！NeneRobo，出力最大化——！」",
+      description:
+        "当「类」与「NeneRobo」在同一次消除中且彼此相邻时，将引发舞台大爆炸，随机炸飞场上其他方块（多格方块整块移除）。\n炸飞数量约为「2 + 2 × 本次消除中类与 NeneRobo 的精灵数」，上限 12 且不超过半场。爆炸按炸掉的格子数加分（一次计分）。\n\n「接下来，就是最精彩的 Showtime 了！NeneRobo，出力最大化——！」",
     },
     shizukuSwap: {
       name: "指南针的恶作剧",
       subtitle: "「诶？这里是哪里……？」",
-      description: "消除「雫」后将触发「异变」：玩家的左右移动方向、左右旋转方向将全部反转。\n若当前场上存在「志步」，则无法触发该效果；若在异变期间「志步」落入场地，「异变」将无视剩余持续时间，立即强制解除。\n\n「哎呀……方向原来是反的吗？总觉得，有点绕远路了呢……」",
+      description:
+        "消除「雫」后将触发「异变」：左右移动与左右旋转全部反转，且会一直持续，直到解除。\n若消除时场上仍有「志步」，则不会触发；异变期间若「志步」着地（或场上再次存在志步），异变立即强制解除。\n\n「哎呀……方向原来是反的吗？总觉得，有点绕远路了呢……」",
     },
     itemAllergy: {
       name: "橙色警报！",
@@ -165,12 +167,13 @@ export const zh = {
     close: "关闭",
     moveLeftRight: "← → 左右移动",
     rotateClockwise: "↑ / X 顺时针旋转",
-    rotateCounter: "Z / Ctrl 逆时针旋转",
+    rotateCounter: "Ctrl / Z 逆时针旋转",
     softDrop: "↓ 加速下落",
     hardDrop: "Space 直接落到底部",
     restart: "R 重新开始",
+    pause: "Esc / P 暂停（也可点左上角按钮）",
     swipeMove: "← → 滑动 左右移动",
-    tapRotate: "点击左/右半屏 旋转",
+    tapRotate: "点左半屏逆时针 / 右半屏顺时针旋转",
     swipeHardDrop: "下滑 直接落到底部",
     pressSoftDrop: "长按 加速下落",
     easterEgg: "笑梦 / NeneRobo 下落中 · 键盘 Shift+↑ · 手机上滑 上移一格",

@@ -119,13 +119,13 @@ export const en = {
       name: "Wonder Blast",
       subtitle: "It's Showtime!",
       description:
-        "When Rui and NeneRobo are adjacent and cleared together, a stage-wide explosion erupts, blasting random pieces off the board.\nThe number of pieces hit scales with how many Rui and NeneRobo were in that clear. Combos from this effect resolve as \"pieces cleared ÷ 5 (floored).\"\n\n\"And now—the finest Showtime of all! NeneRobo, maximum output!!\"",
+        "When Rui and NeneRobo are adjacent in the same clear, a stage-wide explosion blasts random other pieces off the board (multi-cell pieces are removed whole).\nBlast count is about \"2 + 2 × (Rui + NeneRobo sprites in that clear)\", capped at 12 and half the board. Score is awarded once for the cells removed by the blast.\n\n\"And now—the finest Showtime of all! NeneRobo, maximum output!!\"",
     },
     shizukuSwap: {
       name: "Compass Mischief",
       subtitle: "「Huh? Where is this...?」",
       description:
-        "Clearing Shizuku triggers an \"anomaly\": left/right movement and left/right rotation are fully inverted.\nIf Shiho is already on the board, the effect cannot activate. If Shiho drops during the anomaly, it is forced to end immediately, regardless of remaining duration.\n\n\"Oh my... so that was the wrong way? I feel like we took a bit of a detour...\"",
+        "Clearing Shizuku triggers an \"anomaly\": left/right movement and left/right rotation are fully inverted, and it stays on until cleared.\nIf Shiho is already on the board when Shizuku is cleared, the effect does not activate. If Shiho lands during the anomaly (or is present again), the anomaly ends immediately.\n\n\"Oh my... so that was the wrong way? I feel like we took a bit of a detour...\"",
     },
     itemAllergy: {
       name: "Orange Alert!",
@@ -174,12 +174,13 @@ export const en = {
     close: "Close",
     moveLeftRight: "← → Move left / right",
     rotateClockwise: "↑ / X Rotate clockwise",
-    rotateCounter: "Z / Ctrl Rotate counter-clockwise",
+    rotateCounter: "Ctrl / Z Rotate counter-clockwise",
     softDrop: "↓ Soft drop",
     hardDrop: "Space Hard drop",
     restart: "R Restart",
+    pause: "Esc / P Pause (or the top-left button)",
     swipeMove: "← → Swipe to move",
-    tapRotate: "Tap left / right half to rotate",
+    tapRotate: "Tap left half CCW / right half CW",
     swipeHardDrop: "Swipe down to hard drop",
     pressSoftDrop: "Hold to soft drop",
     easterEgg:

@@ -57,9 +57,13 @@ export const showControlsOverlay = () => {
         <td style="padding:10px 0;"></td>
         <td style="padding:10px 0;">${t("controls.hardDrop")}</td>
       </tr>
-      <tr style="border-bottom:1px solid rgba(100,200,255,0.15);">
+      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
         <td style="padding:10px 0;"></td>
         <td style="padding:10px 0;">${t("controls.restart")}</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(100,200,255,0.15);">
+        <td style="padding:10px 0;"></td>
+        <td style="padding:10px 0;">${t("controls.pause")}</td>
       </tr>
       <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
         <td style="padding:10px 0;color:#f5576c;">${t("controls.mobile")}</td>
@@ -73,7 +77,7 @@ export const showControlsOverlay = () => {
         <td style="padding:10px 0;"></td>
         <td style="padding:10px 0;">${t("controls.swipeHardDrop")}</td>
       </tr>
-      <tr>
+      <tr style="border-bottom:1px solid rgba(100,200,255,0.1);">
         <td style="padding:10px 0;"></td>
         <td style="padding:10px 0;">${t("controls.pressSoftDrop")}</td>
       </tr>
