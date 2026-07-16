@@ -6,7 +6,7 @@
 import type * as PIXI from "pixi.js-legacy";
 import { BOX_SIZE, LEFT_BORDER } from "../../config";
 import { moveToCoordinate } from "../../utils/coords";
-import type { PieceKind } from "./kinds";
+import type { PieceKind } from "../../domain/piece/kinds";
 
 /** Pixel Y of the sprite when its anchor cell is `ay`. */
 export const anchorPixelY = (kind: PieceKind, ay: number): number =>

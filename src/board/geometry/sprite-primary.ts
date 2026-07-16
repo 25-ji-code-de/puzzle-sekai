@@ -5,7 +5,7 @@
 
 import type * as PIXI from "pixi.js-legacy";
 import { BOX_SIZE, LEFT_BORDER } from "../../config";
-import type { PieceKind } from "./kinds";
+import type { PieceKind } from "../../domain/piece/kinds";
 import { placeSpriteAtAnchor } from "./placement";
 
 export type RoundMethod = "floor" | "ceil" | "round";
