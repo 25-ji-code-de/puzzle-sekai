@@ -90,7 +90,7 @@ app.stage.sortableChildren = true;
 
 const fontsReady = initializeFontSystem();
 
-// Paint the welcome shell immediately; load progress lives in its click prompt.
+// Adopt the static #boot-welcome shell from index.html; progress updates its prompt.
 showBootWelcome();
 app.loader.onProgress.add(() => {
   setWelcomeLoadProgress(app.loader.progress);

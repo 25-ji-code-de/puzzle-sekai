@@ -23,7 +23,7 @@ import {
 } from "./display";
 import { isPauseMenuOpen } from "./pause-menu";
 import { unlockAudio } from "./bgm";
-// Direct asset URL so the boot shell can paint before the PIXI loader finishes.
+// Hashed cover URL — applied to the static HTML shell after the app bundle loads.
 import welcomeImg from "./assets/welcome.png";
 
 let welcomeSprite: PIXI.Sprite;
@@ -34,6 +34,7 @@ let orientationGate: OrientationGate | null = null;
 /** True once all boot assets are ready and the shell accepts a click/key. */
 let welcomeReady = false;
 let bootShellShown = false;
+let bootLocaleListening = false;
 let lastLoadProgress = 0;
 
 const formatLoadingPrompt = (pct: number): string =>
@@ -44,33 +45,64 @@ const refreshBootPromptText = () => {
   clickPromptEl.textContent = formatLoadingPrompt(lastLoadProgress);
 };
 
-// ============== 第一个页面：游戏概述（解决音频限制） ==============
+const refreshBootCopy = () => {
+  if (!modalEl) return;
+  const title = modalEl.querySelector(".welcome-title");
+  const subtitle = modalEl.querySelector(".welcome-subtitle");
+  const desc = modalEl.querySelector(".welcome-desc");
+  if (title) title.innerHTML = t("welcome.title");
+  if (subtitle) subtitle.innerHTML = t("welcome.subtitle");
+  if (desc) desc.innerHTML = t("welcome.desc");
+  if (welcomeReady && clickPromptEl) {
+    clickPromptEl.textContent = t("welcome.click");
+  } else {
+    refreshBootPromptText();
+  }
+};
 
 /**
- * Paint the welcome shell immediately (before asset load finishes).
- * The bottom prompt shows load progress until {@link markWelcomeReady}.
+ * Upgrade the static HTML shell once the app bundle is running:
+ * - set the welcome cover background (hashed URL from Vite)
+ * - switch typography to the locale-aware CSS variable stacks
  */
-export const showBootWelcome = () => {
-  if (bootShellShown) return;
-  bootShellShown = true;
+const enhanceBootShell = (shell: HTMLDivElement) => {
+  shell.style.backgroundImage = `url(${welcomeImg})`;
 
-  modalEl = document.createElement("div");
-  modalEl.style.cssText = `
-    position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;cursor:default;
+  const title = shell.querySelector(".welcome-title") as HTMLElement | null;
+  const subtitle = shell.querySelector(
+    ".welcome-subtitle",
+  ) as HTMLElement | null;
+  const desc = shell.querySelector(".welcome-desc") as HTMLElement | null;
+  if (title) title.style.cssText += domFontStyle("brand");
+  if (subtitle) subtitle.style.cssText += domFontStyle("brand");
+  if (desc) desc.style.cssText += domFontStyle("body");
+  if (clickPromptEl) clickPromptEl.style.cssText += domFontStyle("action");
+};
+
+/**
+ * Fallback only: recreate the shell if index.html's static node is missing
+ * (e.g. unexpected document, tests). Prefer the HTML shell for LCP.
+ */
+const createBootShellFallback = (): HTMLDivElement => {
+  const shell = document.createElement("div");
+  shell.id = "boot-welcome";
+  shell.style.cssText = `
+    position:fixed;inset:0;z-index:9999;cursor:default;
     display:flex;align-items:center;justify-content:center;
-    background: url(${welcomeImg}) center/cover no-repeat;
+    background-color:#0a0a12;
+    background-image:url(${welcomeImg});
+    background-position:center;background-size:cover;background-repeat:no-repeat;
   `;
 
   const overlay = document.createElement("div");
-  dimOverlayEl = overlay;
+  overlay.className = "boot-welcome__dim";
   overlay.style.cssText = `
-    position:absolute;top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.55);
-    transition: opacity 0.3s ease;
+    position:absolute;inset:0;background:rgba(0,0,0,0.55);transition:opacity 0.3s ease;
   `;
-  modalEl.appendChild(overlay);
+  shell.appendChild(overlay);
 
   const content = document.createElement("div");
+  content.className = "welcome-card";
   content.style.cssText = `
     position:relative;z-index:1;text-align:center;
     padding:40px 60px;border-radius:16px;
@@ -78,70 +110,68 @@ export const showBootWelcome = () => {
     backdrop-filter:blur(6px);
     box-shadow:0 8px 40px rgba(0,0,0,0.6),0 0 60px rgba(100,200,255,0.08) inset;
   `;
-
   content.innerHTML = `
     <div class="welcome-title" style="font-size:42px;color:#fff;letter-spacing:3px;
-      text-shadow:0 2px 12px rgba(100,200,255,0.4);
-      ${domFontStyle("brand")}margin-bottom:24px;">
+      text-shadow:0 2px 12px rgba(100,200,255,0.4);margin:0 0 24px;
+      ${domFontStyle("brand")}">
       ${t("welcome.title")}
     </div>
-    <div class="welcome-subtitle" style="font-size:17px;color:rgba(180,220,255,0.7);letter-spacing:4px;margin-bottom:24px;${domFontStyle(
+    <div class="welcome-subtitle" style="font-size:17px;color:rgba(180,220,255,0.7);letter-spacing:4px;margin:0 0 24px;${domFontStyle(
       "brand",
     )}">
       ${t("welcome.subtitle")}
     </div>
-    <div class="welcome-desc" style="font-size:16px;color:rgba(255,255,255,0.6);line-height:1.85;margin-bottom:24px;${domFontStyle(
+    <div class="welcome-desc" style="font-size:16px;color:rgba(255,255,255,0.6);line-height:1.85;margin:0 0 24px;${domFontStyle(
       "body",
     )}">
       ${t("welcome.desc")}
     </div>
+    <div class="welcome-click" style="font-size:20px;color:rgba(255,255,255,0.85);
+      letter-spacing:0.14em;margin-top:24px;${domFontStyle("action")}">
+      ${formatLoadingPrompt(0)}
+    </div>
   `;
+  shell.appendChild(content);
+  document.body.appendChild(shell);
+  return shell;
+};
 
-  const clickPrompt = document.createElement("div");
-  clickPrompt.className = "welcome-click";
-  clickPrompt.style.cssText = `
-    font-size:20px;color:rgba(255,255,255,0.85);
-    letter-spacing:0.14em;margin-top:24px;${domFontStyle("action")}
-  `;
-  clickPrompt.textContent = formatLoadingPrompt(0);
-  clickPromptEl = clickPrompt;
-  content.appendChild(clickPrompt);
+// ============== 第一个页面：游戏概述（解决音频限制） ==============
 
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes promptPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    @media (orientation: portrait) and (max-width: 900px) {
-      .welcome-card {
-        margin: 0 16px !important;
-        padding: 28px 22px !important;
-        max-width: min(420px, 92vw) !important;
-      }
-      .welcome-title { font-size: 30px !important; letter-spacing: 2px !important; margin-bottom: 16px !important; }
-      .welcome-subtitle { font-size: 14px !important; letter-spacing: 2px !important; margin-bottom: 16px !important; }
-      .welcome-desc { font-size: 14px !important; margin-bottom: 16px !important; }
-      .welcome-click { font-size: 16px !important; margin-top: 12px !important; }
-    }
-  `;
-  content.classList.add("welcome-card");
-  modalEl.appendChild(style);
-  modalEl.appendChild(content);
-  document.body.appendChild(modalEl);
+/**
+ * Adopt the static `#boot-welcome` shell from index.html (already painted for
+ * LCP). Only creates a fallback DOM tree if that node is missing.
+ * Progress lives in the click prompt until {@link markWelcomeReady}.
+ */
+export const showBootWelcome = () => {
+  if (bootShellShown) return;
+  bootShellShown = true;
 
-  // Locale can change mid-load (rare, but keep prompt text in sync).
-  onLocaleChange(() => {
-    if (!modalEl) return;
-    const title = modalEl.querySelector(".welcome-title");
-    const subtitle = modalEl.querySelector(".welcome-subtitle");
-    const desc = modalEl.querySelector(".welcome-desc");
-    if (title) title.innerHTML = t("welcome.title");
-    if (subtitle) subtitle.innerHTML = t("welcome.subtitle");
-    if (desc) desc.innerHTML = t("welcome.desc");
-    if (welcomeReady && clickPromptEl) {
-      clickPromptEl.textContent = t("welcome.click");
-    } else {
-      refreshBootPromptText();
-    }
-  });
+  const existing = document.getElementById(
+    "boot-welcome",
+  ) as HTMLDivElement | null;
+  modalEl = existing ?? createBootShellFallback();
+  dimOverlayEl = modalEl.querySelector(
+    ".boot-welcome__dim",
+  ) as HTMLDivElement | null;
+  clickPromptEl = modalEl.querySelector(
+    ".welcome-click",
+  ) as HTMLDivElement | null;
+
+  if (existing) {
+    enhanceBootShell(existing);
+    // Sync copy with the full i18n module (early HTML script already set a
+    // best-effort locale string; this covers any drift / late init).
+    refreshBootCopy();
+  }
+
+  if (!bootLocaleListening) {
+    bootLocaleListening = true;
+    onLocaleChange(() => {
+      if (!modalEl) return;
+      refreshBootCopy();
+    });
+  }
 };
 
 /** Update the boot-shell prompt with loader progress (0–100). */
