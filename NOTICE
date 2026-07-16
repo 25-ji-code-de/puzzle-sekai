@@ -1,0 +1,109 @@
+puzzle-sekai
+=============
+
+This product includes software and other materials developed by third parties.
+Original code of this repository is licensed under the GNU Affero General
+Public License v3.0 only (AGPL-3.0-only). See the LICENSE file.
+
+This NOTICE file is for attribution only. It does not modify the license terms
+of this project or of any third-party component.
+
+
+Derived / upstream project
+--------------------------
+
+Pazuru-Pico
+  License: MIT
+  Source:  https://github.com/hamzaabamboo/pazuru-pico
+  Author:  HamP (hamzaabamboo)
+
+  This project is a derivative work based on Pazuru-Pico. The MIT license
+  requires preservation of the original copyright and permission notice.
+  Upstream package.json declares the MIT license; no separate LICENSE file
+  was present in the upstream repository at the time of attribution.
+
+
+Runtime libraries (shipped to clients)
+--------------------------------------
+
+pixi.js
+pixi.js-legacy
+  License: MIT
+  Copyright (c) 2013-2017 Mathew Groves, Chad Engler
+  Homepage: https://pixijs.com/
+  Repository: https://github.com/pixijs/pixijs
+
+pixi-sound
+  License: MIT
+  Copyright (c) 2017 Matt Karl, LLC
+  Repository: https://github.com/pixijs/sound
+
+hammer.js
+  License: MIT
+  Copyright (C) 2011-2014 by Jorik Tangelder (Eight Media)
+  Homepage: https://hammerjs.github.io/
+  Repository: https://github.com/hammerjs/hammer.js
+
+
+Fonts
+-----
+
+Production builds may subset large CJK display fonts to glyphs used by the
+UI/i18n. Subsetting is permitted under the licenses below. Copyright and
+license metadata are retained in font name tables where applicable.
+
+MaokenAssortedSans-Lite (猫啃什锦黑 Lite)
+  License: SIL Open Font License 1.1
+  Source:  https://github.com/Skr-ZERO/MaokenAssortedSans
+
+Nishiki-teki
+  License: SIL Open Font License 1.1
+  Copyright: 2008-2026 Umihotaru
+  Designer URL: https://umihotaru.work
+
+Droid Sans Mono
+  License: Apache License 2.0
+  Copyright: Digitized data copyright © 2007, Google Corporation.
+  License URL (embedded): http://www.apache.org/licenses/LICENSE-2.0
+
+
+Build-time / development tools (not shipped as app code)
+--------------------------------------------------------
+
+The following are used only for development or production builds. Their
+license texts remain with their packages under node_modules / the package
+registry. Listed for completeness:
+
+  TypeScript          Apache-2.0
+  Vite                MIT
+  vite-plugin-pwa     MIT
+  sass (Dart Sass)    MIT
+  prettier            MIT
+  sharp               Apache-2.0
+  subset-font         BSD-3-Clause
+  @types/hammerjs     MIT
+
+
+Game content disclaimer
+-----------------------
+
+This project is an unofficial, non-commercial fan work inspired by
+Project SEKAI COLORFUL STAGE! feat. Hatsune Miku.
+
+It is not affiliated with, endorsed by, or associated with SEGA,
+Colorful Palette Inc., Crypton Future Media, INC., or any other rights
+holder of Project SEKAI or related properties.
+
+All game-related assets used in this project (including but not limited to
+characters, music, images, and designs) remain the property of their
+respective copyright holders. AGPL-3.0-only applies only to original code
+in this repository, not to those assets.
+
+
+Full license texts
+------------------
+
+- AGPL-3.0-only: ./LICENSE
+- SIL OFL 1.1:   https://scripts.sil.org/OFL
+- Apache-2.0:    https://www.apache.org/licenses/LICENSE-2.0
+- MIT:           https://opensource.org/licenses/MIT
