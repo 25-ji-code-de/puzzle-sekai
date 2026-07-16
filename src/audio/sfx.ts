@@ -21,7 +21,7 @@ export type SfxChannel = "sfx" | "voice";
 export { SFX_MOVE_BASE, SFX_LAND_BASE, SFX_EFFECT_BASE };
 
 /** Resolve a sound from loader resources or pixi-sound alias registry. */
-const resolveSound = (key: string) => {
+export const resolveSound = (key: string) => {
   const fromLoader = app.loader.resources[key]?.sound;
   if (fromLoader) return fromLoader;
   try {
