@@ -3,7 +3,12 @@
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { BoardModel } from "./model";
-import { footprintFromPrimary, anchorFromFootprint } from "../piece";
+import {
+  footprintFromPrimary,
+  anchorFromFootprint,
+  columnsForPiece,
+  willCollidePrimary,
+} from "../piece";
 import { CHAR } from "../../characters/ids";
 import { ITEM_TOKEN } from "../types";
 
@@ -27,6 +32,30 @@ describe("footprint anchors", () => {
   });
 });
 
+describe("big2x2 primary (bottom-right)", () => {
+  it("footprint and columns use primary as bottom-right", () => {
+    const cells = footprintFromPrimary({ x: 3, y: 5 }, 0, "big2x2");
+    expect(cells).toEqual([
+      [3, 5],
+      [2, 5],
+      [3, 4],
+      [2, 4],
+    ]);
+    expect(columnsForPiece(3, 0, "big2x2")).toEqual([2, 3]);
+  });
+
+  it("willCollidePrimary sees the left column under a 2x2", () => {
+    const board = new BoardModel(6, 8);
+    board.write([[2, 5]], CHAR.Ichika);
+    expect(willCollidePrimary(board.grid, { x: 3, y: 5 }, 0, "big2x2")).toBe(
+      true,
+    );
+    expect(willCollidePrimary(board.grid, { x: 3, y: 4 }, 0, "big2x2")).toBe(
+      false,
+    );
+  });
+});
+
 describe("BoardModel.planGravity", () => {
   let board: BoardModel;
 
@@ -35,15 +64,13 @@ describe("BoardModel.planGravity", () => {
   });
 
   it("drops an unsupported footprint onto the floor", () => {
-    // Place a single cell at row 2
     board.write([[3, 2]], CHAR.Ichika);
     const plans = board.planGravity([
       { coords: [[3, 2]], token: CHAR.Ichika, id: 1 },
     ]);
     expect(plans).toHaveLength(1);
-    expect(plans[0].dy).toBe(5); // rows 3..7 free → drop 5 to y=7
+    expect(plans[0].dy).toBe(5);
     expect(plans[0].to).toEqual([[3, 7]]);
-    // planGravity must not permanently mutate
     expect(board.grid[2][3]).toBe(CHAR.Ichika);
     expect(board.grid[7][3]).toBeNull();
   });
@@ -55,7 +82,7 @@ describe("BoardModel.planGravity", () => {
       { coords: [[1, 3]], token: CHAR.Saki, id: 0 },
     ]);
     expect(plans).toHaveLength(1);
-    expect(plans[0].to).toEqual([[1, 6]]); // rest above item at y=7
+    expect(plans[0].to).toEqual([[1, 6]]);
   });
 
   it("applyGravityPlans commits dest footprints", () => {

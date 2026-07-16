@@ -1,10 +1,8 @@
 /**
- * 2×2 piece (NeneRobo / Mikudayo): geometry helpers + active controller.
+ * 2×2 piece (NeneRobo / Mikudayo): active controller.
  *
- * Coordinate convention (legacy, movement-compatible):
- * getNeneRoboCoordinates returns the **top-left** cell of the 2×2 footprint.
- * Domain primary for big2x2 is **bottom-right** (geometry/placement) —
- * do not mix the two without converting.
+ * Single coordinate convention: domain **bottom-right primary**
+ * via primaryFromSprite / willCollidePrimary / stackHeightForPrimary.
  */
 import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
@@ -14,7 +12,6 @@ import {
   RIGHT_BORDER,
   BOX_SIZE,
   SPEED,
-  COLUMNS,
   FALL_DELAY,
   FALL_SPEED,
 } from "../config";
@@ -26,39 +23,60 @@ import {
   getSpawnRotation,
 } from "../settings";
 import { consumeKanadeSlowForSpawn } from "../fun/effects";
-import { stackHeightBelow, activeLandPixelY } from "../board/geometry";
+import {
+  activeLandPixelY,
+  primaryFromSprite,
+  stackHeightForPrimary,
+  willCollidePrimary,
+  type RoundMethod,
+} from "../board/geometry";
 import { fileIsBig2x2 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
 import { loadTexture } from "./load-texture";
 
-/**
- * Top-left cell of the 2×2 (NOT domain bottom-right primary).
- * Sprite center sits on the shared 4-cell corner.
- */
+const KIND = "big2x2" as const;
+/** 2×2 footprint is orientation-independent for collision / stack. */
+const ORIENT = 0 as const;
+
+/** Bottom-right primary of the live 2×2 sprite. */
 export const getNeneRoboCoordinates = (
   sprite: PIXI.Sprite,
-  method: "floor" | "ceil" | "round" = "ceil",
-): { x: number; y: number } => {
-  return {
-    x: Math[method]((sprite.x - BOX_SIZE - LEFT_BORDER) / BOX_SIZE),
-    y: Math[method]((sprite.y - BOX_SIZE) / BOX_SIZE),
-  };
-};
+  method: RoundMethod = "ceil",
+): { x: number; y: number } => primaryFromSprite(sprite, KIND, method);
 
 export const getNeneRoboStackHeight = (sprite: PIXI.Sprite): number => {
-  const { x, y } = getNeneRoboCoordinates(sprite);
-  // Columns: top-left x and x+1. Filter rows with index+1 > y (legacy).
-  return stackHeightBelow(pieces, [x, x + 1], y - 1);
+  const primary = getNeneRoboCoordinates(sprite, "floor");
+  return stackHeightForPrimary(pieces, primary, ORIENT, KIND);
 };
 
 const landYFor = (sprite: PIXI.Sprite): number =>
   activeLandPixelY(
-    "big2x2",
+    KIND,
     getNeneRoboStackHeight(sprite),
-    0,
+    ORIENT,
     app.renderer.height,
   );
+
+/**
+ * Shift primary by (dx, dy) if the domain footprint is free.
+ * Pixel step only — do not placeSpritePrimary while actively falling
+ * (active land Y uses OFFSET_BOTTOM; settled placement does not).
+ */
+const tryMovePrimary = (
+  sprite: PIXI.Sprite,
+  dx: number,
+  dy: number,
+  onMoved: () => void,
+): boolean => {
+  const { x, y } = getNeneRoboCoordinates(sprite, "ceil");
+  const next = { x: x + dx, y: y + dy };
+  if (willCollidePrimary(pieces, next, ORIENT, KIND)) return false;
+  sprite.x += dx * BOX_SIZE;
+  sprite.y += dy * BOX_SIZE;
+  onMoved();
+  return true;
+};
 
 export const createNeneRobo = async (
   file: string,
@@ -67,6 +85,7 @@ export const createNeneRobo = async (
   const texture = await loadTexture(file);
   const nenerobo = new PIXI.Sprite(texture);
 
+  // Spawn near center; primaryFromSprite maps center → bottom-right primary
   nenerobo.x = (LEFT_BORDER + RIGHT_BORDER) / 2 - BOX_SIZE;
   nenerobo.y = -BOX_SIZE / 2;
   nenerobo.anchor.x = 0.5;
@@ -82,35 +101,17 @@ export const createNeneRobo = async (
   const canLift = fileIsBig2x2(file);
 
   const moveLeft = () => {
-    const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
-    if (y <= 0 && x > 0 && !pieces[0][x - 1]) {
-      nenerobo.x -= BOX_SIZE;
-      fall.onMoved();
-    } else if (x > 0 && !pieces[y][x - 1] && !pieces[y + 1][x - 1]) {
-      nenerobo.x -= BOX_SIZE;
-      fall.onMoved();
-    }
+    tryMovePrimary(nenerobo, -1, 0, fall.onMoved);
   };
 
   const moveRight = () => {
-    const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
-    if (y <= 0 && x + 2 < COLUMNS && !pieces[0][x + 2]) {
-      nenerobo.x += BOX_SIZE;
-      fall.onMoved();
-    } else if (x + 2 < COLUMNS && !pieces[y][x + 2] && !pieces[y + 1][x + 2]) {
-      nenerobo.x += BOX_SIZE;
-      fall.onMoved();
-    }
+    tryMovePrimary(nenerobo, 1, 0, fall.onMoved);
   };
 
+  /** Easter egg: Shift+↑ / swipe up lifts one cell when free. */
   const tryLift = () => {
     if (!canLift) return;
-    const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
-    if (y <= 0) return;
-    const above = y - 1;
-    if (pieces[above]?.[x] || pieces[above]?.[x + 1]) return;
-    nenerobo.y -= BOX_SIZE;
-    fall.onMoved();
+    tryMovePrimary(nenerobo, 0, -1, fall.onMoved);
   };
 
   const rotateCW = () => {
