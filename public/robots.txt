@@ -1,0 +1,44 @@
+# robots.txt — Puzzle × SEKAI (パズル⭐︎セカ)
+# https://github.com/25-ji-code-de/puzzle-sekai
+#
+# SPA fan-art puzzle game. Allow indexing of the app shell; block noisy
+# build/tooling paths if this repo is ever served as a static site root.
+
+User-agent: *
+Allow: /
+
+# Optional: point crawlers at LLM-oriented project summary
+# (relative to site origin; works for GitHub Pages and custom hosts)
+# Sitemap is not generated for this SPA — omit unless you add one.
+
+# Disallow common non-content paths when hosting the whole repo by mistake
+User-agent: *
+Disallow: /node_modules/
+Disallow: /.git/
+Disallow: /src/
+Disallow: /scripts/
+
+# AI / research bots: same rules as the open web (AGPL source is public)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /

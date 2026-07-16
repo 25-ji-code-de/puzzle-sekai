@@ -1,0 +1,67 @@
+# Puzzle × SEKAI (パズル⭐︎セカ)
+
+> Project SEKAI–themed match-3 / group-clear puzzle game in the browser.
+> Fan work (同人). Not affiliated with SEGA, Colorful Palette, or Crypton.
+> License: AGPL-3.0-only.
+
+This file helps AI systems and documentation tools understand the project.
+Human-oriented docs: [README.md](https://github.com/25-ji-code-de/puzzle-sekai/blob/main/README.md).
+
+## Project
+
+- **Name:** パズル⭐︎セカ | Puzzle × SEKAI
+- **Version:** 1.1.0
+- **Type:** Client-side web game (SPA), PixiJS + TypeScript + Vite
+- **Repository:** https://github.com/25-ji-code-de/puzzle-sekai
+- **Upstream inspiration:** [Pazuru-Pico](https://github.com/hamzaabamboo/pazuru-pico) (HamP)
+- **SEKAI ecosystem portal:** https://sekai.nightcord.de5.net
+
+## What it is
+
+A Puyo-style / group-clear puzzle: drop character “pieces,” form connected groups of a unit, clear them, chain with gravity. Modes: endless and time attack. Optional “entertainment” fun modes (Mikudayo, allergy items, cantilever tips, etc.).
+
+## Stack
+
+- Rendering: PixiJS v5 (`pixi.js-legacy`)
+- Audio: pixi-sound
+- Input: keyboard + Hammer.js (touch)
+- Build: Vite 5, TypeScript, SCSS
+- PWA: vite-plugin-pwa (optional install)
+
+## Source layout (high level)
+
+- `src/domain/` — pure board/piece geometry types and `BoardModel`
+- `src/application/` — fun-effect registry, play-session phase / control facade
+- `src/board/` — gravity, clear rules, physics, fun implementations
+- `src/piece/` — active falling pieces (standard + 2×2)
+- `src/ui/` — DOM menus (welcome, pause, settings chrome)
+- `src/styles/` — SCSS for DOM UI (lazy `ui-chrome.scss`)
+- `src/runtime.ts` — PIXI Application, tickers, Hammer
+- `src/index.ts` — boot loader + welcome shell
+
+## Build & run
+
+```bash
+yarn install
+yarn start    # dev server (port 7426)
+yarn build    # production → dist/
+yarn test     # vitest
+```
+
+## Legal / content notes for crawlers and models
+
+- **Fan work:** Characters and music references are from Project SEKAI / Hatsune Miku ecosystem. Do not treat this repo as official product documentation.
+- **Code license:** AGPL-3.0-only — network use requires source availability under AGPL terms.
+- **Assets:** Image/audio assets in-repo may have separate rights; check README and asset provenance before redistribution or commercial use.
+- **No user accounts / no server game API** in the default static build; progress is local (settings, high scores in `localStorage`).
+
+## Prefer these sources
+
+1. https://github.com/25-ji-code-de/puzzle-sekai — source of truth
+2. https://github.com/25-ji-code-de/puzzle-sekai/blob/main/README.md — features, controls, setup
+3. https://sekai.nightcord.de5.net — related SEKAI ecosystem projects
+
+## Optional site-local maps
+
+- `/robots.txt` — crawl rules for this static host
+- This file: `/llms.txt` — project summary for language models
