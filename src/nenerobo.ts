@@ -80,6 +80,18 @@ export const createNeneRobo = async (
       onMoved();
     }
   };
+
+  /** Easter egg: Shift+↑ lifts NeneRobo one cell when free (same as Emu). */
+  const moveUp = () => {
+    const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
+    // Top of 2×2 is row y; need both columns free one row above
+    if (y <= 0) return;
+    const above = y - 1;
+    if (pieces[above]?.[x] || pieces[above]?.[x + 1]) return;
+    nenerobo.y -= BOX_SIZE;
+    onMoved();
+  };
+
   const rotateCW = () => {
     nenerobo.rotation += Math.PI / 2;
     onMoved();
@@ -116,8 +128,14 @@ export const createNeneRobo = async (
       case "arrowright":
         swapped ? moveLeft() : moveRight();
         break;
-      case "x":
       case "arrowup":
+        if (event.shiftKey && file.toLowerCase().includes("nenerobo")) {
+          moveUp();
+          break;
+        }
+        swapped ? rotateCCW() : rotateCW();
+        break;
+      case "x":
         swapped ? rotateCCW() : rotateCW();
         break;
       case "z":
@@ -143,6 +161,10 @@ export const createNeneRobo = async (
     isControlsSwapped() ? moveRight() : moveLeft();
   const handleSwipeRight = () =>
     isControlsSwapped() ? moveLeft() : moveRight();
+  // Easter egg (NeneRobo): swipe up = lift one cell (same as Shift+↑)
+  const handleSwipeUp = () => {
+    if (file.toLowerCase().includes("nenerobo")) moveUp();
+  };
   const handleTap = (e: HammerInput) => {
     const leftHalf = e.center.x < window.innerWidth / 2;
     if (isControlsSwapped()) {
@@ -158,6 +180,7 @@ export const createNeneRobo = async (
   hammerManager.on("swipeleft", handleSwipeLeft);
   hammerManager.on("swiperight", handleSwipeRight);
   hammerManager.on("swipedown", hardDrop);
+  hammerManager.on("swipeup", handleSwipeUp);
   hammerManager.on("press", softDrop);
   hammerManager.on("pressup", normalSpeed);
   hammerManager.on("tap", handleTap);
@@ -172,6 +195,7 @@ export const createNeneRobo = async (
     hammerManager.off("tap", handleTap);
     hammerManager.off("swipeleft", handleSwipeLeft);
     hammerManager.off("swipedown", hardDrop);
+    hammerManager.off("swipeup", handleSwipeUp);
     hammerManager.off("press", softDrop);
     hammerManager.off("pressup", normalSpeed);
 

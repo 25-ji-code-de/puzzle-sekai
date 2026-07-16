@@ -182,6 +182,8 @@ export const en = {
     tapRotate: "Tap left / right half to rotate",
     swipeHardDrop: "Swipe down to hard drop",
     pressSoftDrop: "Hold to soft drop",
+    easterEgg:
+      "While falling, Emu / NeneRobo — keyboard Shift+↑ · touch swipe up — lift one cell",
   },
   noscript: {
     title: "Browser Not Supported",

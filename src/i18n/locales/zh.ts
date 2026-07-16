@@ -173,6 +173,7 @@ export const zh = {
     tapRotate: "点击左/右半屏 旋转",
     swipeHardDrop: "下滑 直接落到底部",
     pressSoftDrop: "长按 加速下落",
+    easterEgg: "笑梦 / NeneRobo 下落中 · 键盘 Shift+↑ · 手机上滑 上移一格",
   },
   noscript: {
     title: "浏览器不支持",

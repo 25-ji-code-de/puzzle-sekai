@@ -361,7 +361,8 @@ export const createPiece = async (
         swapped ? moveLeft() : moveRight();
         break;
       case "arrowup":
-        if (event.shiftKey && file.includes("emu")) {
+        // Easter egg: Emu can lift one cell with Shift+↑
+        if (event.shiftKey && file.toLowerCase().includes("emu")) {
           moveUp();
           break;
         }
@@ -394,6 +395,10 @@ export const createPiece = async (
     isControlsSwapped() ? moveRight() : moveLeft();
   const handleSwipeRight = () =>
     isControlsSwapped() ? moveLeft() : moveRight();
+  // Easter egg (Emu): swipe up = lift one cell (same as Shift+↑)
+  const handleSwipeUp = () => {
+    if (file.toLowerCase().includes("emu")) moveUp();
+  };
   const handleTap = (e: HammerInput) => {
     const leftHalf = e.center.x < window.innerWidth / 2;
     if (isControlsSwapped()) {
@@ -409,6 +414,7 @@ export const createPiece = async (
   hammerManager.on("swipeleft", handleSwipeLeft);
   hammerManager.on("swiperight", handleSwipeRight);
   hammerManager.on("swipedown", hardDrop);
+  hammerManager.on("swipeup", handleSwipeUp);
   hammerManager.on("press", softDrop);
   hammerManager.on("pressup", normalSpeed);
   hammerManager.on("tap", handleTap);
@@ -423,6 +429,7 @@ export const createPiece = async (
     hammerManager.off("tap", handleTap);
     hammerManager.off("swipeleft", handleSwipeLeft);
     hammerManager.off("swipedown", hardDrop);
+    hammerManager.off("swipeup", handleSwipeUp);
     hammerManager.off("press", softDrop);
     hammerManager.off("pressup", normalSpeed);
 

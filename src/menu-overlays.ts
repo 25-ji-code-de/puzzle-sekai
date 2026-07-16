@@ -77,6 +77,12 @@ export const showControlsOverlay = () => {
         <td style="padding:10px 0;"></td>
         <td style="padding:10px 0;">${t("controls.pressSoftDrop")}</td>
       </tr>
+      <tr>
+        <td style="padding:10px 0;"></td>
+        <td style="padding:10px 0;color:rgba(255,220,140,0.9);font-size:14px;">${t(
+          "controls.easterEgg",
+        )}</td>
+      </tr>
     </table>
     <div style="text-align:center;margin-top:20px;">
       <button type="button" class="overlay-close-btn" style="padding:10px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:8px;

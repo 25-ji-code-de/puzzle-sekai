@@ -182,6 +182,8 @@ export const ja = {
     tapRotate: "画面の左/右側をタップで回転",
     swipeHardDrop: "下スワイプでハードドロップ",
     pressSoftDrop: "長押しで加速落下",
+    easterEgg:
+      "えむ / ネネロボ落下中 · キーボード Shift+↑ · タッチ上スワイプ で1マス上昇",
   },
   noscript: {
     title: "ブラウザ非対応",
