@@ -5,13 +5,14 @@
 > License: AGPL-3.0-only.
 
 This file helps AI systems and documentation tools understand the project.
-Human-oriented docs: [README.md](https://github.com/25-ji-code-de/puzzle-sekai/blob/main/README.md).
+Human-oriented docs: https://github.com/25-ji-code-de/puzzle-sekai/blob/main/README.md
 
 ## Project
 
 - **Name:** パズル⭐︎セカ | Puzzle × SEKAI
 - **Version:** 1.1.0
 - **Type:** Client-side web game (SPA), PixiJS + TypeScript + Vite
+- **Live site:** https://pico.nightcord.de5.net/
 - **Repository:** https://github.com/25-ji-code-de/puzzle-sekai
 - **Upstream inspiration:** [Pazuru-Pico](https://github.com/hamzaabamboo/pazuru-pico) (HamP)
 - **SEKAI ecosystem portal:** https://sekai.nightcord.de5.net
@@ -50,18 +51,19 @@ yarn test     # vitest
 
 ## Legal / content notes for crawlers and models
 
-- **Fan work:** Characters and music references are from Project SEKAI / Hatsune Miku ecosystem. Do not treat this repo as official product documentation.
+- **Fan work:** Characters and music references are from Project SEKAI / Hatsune Miku ecosystem. Do not treat this repo or the live site as official product documentation.
 - **Code license:** AGPL-3.0-only — network use requires source availability under AGPL terms.
 - **Assets:** Image/audio assets in-repo may have separate rights; check README and asset provenance before redistribution or commercial use.
 - **No user accounts / no server game API** in the default static build; progress is local (settings, high scores in `localStorage`).
 
 ## Prefer these sources
 
-1. https://github.com/25-ji-code-de/puzzle-sekai — source of truth
-2. https://github.com/25-ji-code-de/puzzle-sekai/blob/main/README.md — features, controls, setup
-3. https://sekai.nightcord.de5.net — related SEKAI ecosystem projects
+1. https://pico.nightcord.de5.net/ — playable deployment
+2. https://github.com/25-ji-code-de/puzzle-sekai — source of truth
+3. https://github.com/25-ji-code-de/puzzle-sekai/blob/main/README.md — features, controls, setup
+4. https://sekai.nightcord.de5.net — related SEKAI ecosystem projects
 
-## Optional site-local maps
+## Site-local files
 
-- `/robots.txt` — crawl rules for this static host
-- This file: `/llms.txt` — project summary for language models
+- https://pico.nightcord.de5.net/robots.txt
+- https://pico.nightcord.de5.net/llms.txt
