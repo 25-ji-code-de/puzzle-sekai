@@ -3,6 +3,12 @@ import { VitePWA } from "vite-plugin-pwa";
 import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import {
+  SUBSET_FONTS,
+  collectCharset,
+  charsetHash,
+  subsetWoff2,
+} from "./scripts/subset-fonts.mjs";
 
 /**
  * Production-only: rewrite PNG/JPEG imports under src/assets to compressed WebP.
@@ -41,10 +47,60 @@ function assetsToWebp(options: { quality?: number } = {}): Plugin {
   };
 }
 
+/**
+ * Production-only: subset the large CJK display fonts down to characters
+ * actually used by UI/i18n. Dev keeps full faces. See scripts/subset-fonts.mjs.
+ */
+function subsetDisplayFonts(): Plugin {
+  let charsetPromise: Promise<string> | null = null;
+  const getCharset = () => {
+    if (!charsetPromise) charsetPromise = collectCharset();
+    return charsetPromise;
+  };
+
+  return {
+    name: "subset-display-fonts",
+    apply: "build",
+    enforce: "pre",
+    async load(id) {
+      const file = id.split("?")[0];
+      if (!/\.woff2$/i.test(file)) return null;
+      if (file.includes(`${path.sep}node_modules${path.sep}`)) return null;
+
+      const base = path.basename(file);
+      if (!(base in SUBSET_FONTS)) return null;
+
+      const charset = await getCharset();
+      const input = await fs.readFile(file);
+      const t0 = Date.now();
+      const output = await subsetWoff2(input, charset);
+      const hash = charsetHash(charset);
+      const label = SUBSET_FONTS[base as keyof typeof SUBSET_FONTS];
+      const pct = ((output.length / input.length) * 100).toFixed(1);
+      this.info(
+        `[subset-fonts] ${label}: ${(input.length / 1024).toFixed(0)} KB → ${(
+          output.length / 1024
+        ).toFixed(0)} KB (${pct}%, ${[...charset].length} chars, hash ${hash}, ${
+          Date.now() - t0
+        }ms)`,
+      );
+
+      const name = base.replace(/\.woff2$/i, `.subset.woff2`);
+      const referenceId = this.emitFile({
+        type: "asset",
+        name,
+        source: output,
+      });
+      return `export default import.meta.ROLLUP_FILE_URL_${referenceId};`;
+    },
+  };
+}
+
 export default defineConfig({
   base: "./",
   plugins: [
     assetsToWebp({ quality: 85 }),
+    subsetDisplayFonts(),
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "auto",
@@ -60,7 +116,7 @@ export default defineConfig({
         name: "パズル⭐︎セカ | Puzzle × SEKAI",
         short_name: "Puzzle×SEKAI",
         description:
-          "A Puyo-puyo-inspired puzzle game with Project SEKAI characters.",
+          "Project SEKAI 主题的方块消除游戏。收集成员、消除方块，挑战最高分！",
         lang: "zh-CN",
         theme_color: "#1a1a1e",
         background_color: "#1a1a1e",
