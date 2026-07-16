@@ -1,14 +1,20 @@
 /**
  * Live board occupancy — facade over domain BoardModel + sprite list.
+ * Separated from game-flow state machine so board/* can depend on occupancy
+ * without importing the full play session.
+ *
+ * entityId links a settled SpriteData row to a domain BoardEntity identity.
+ * Full Map<EntityId, Sprite> presentation split can land later; today the
+ * sprite remains on SpriteData for PIXI ownership.
  */
 import type * as PIXI from "pixi.js-legacy";
 import type { CharacterName } from "../characters/ids";
 import type { GroupName } from "../settings/types";
-import type { BoardCell, BoardGrid } from "../domain/types";
+import type { BoardCell, BoardGrid, EntityId } from "../domain/types";
 import { ITEM_TOKEN } from "../domain/types";
 import { getLiveBoard, resetLiveBoard } from "../domain/board";
 
-export type { BoardCell, BoardGrid };
+export type { BoardCell, BoardGrid, EntityId };
 export { ITEM_TOKEN };
 
 export interface SpriteData {
@@ -18,6 +24,8 @@ export interface SpriteData {
   isItem?: boolean;
   itemFile?: string;
   isShrunk?: boolean;
+  /** Domain entity id once settled (assigned in updateCoordinates / shrink). */
+  entityId?: EntityId;
 }
 
 export let sprites: SpriteData[] = [];

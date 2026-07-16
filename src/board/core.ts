@@ -24,6 +24,14 @@ import {
   primaryFromSprite,
 } from "./geometry";
 import { ITEM_TOKEN, type CellToken } from "../domain/types";
+import {
+  makeCell2Entity,
+  makeBig2x2Entity,
+  makeItemEntity,
+  makeShrunkEntity,
+} from "../domain/board/entity";
+import type { CharacterName } from "../characters/ids";
+import type { GroupName } from "../settings/types";
 
 const kindOf = (entry: {
   character?: Pick<CharacterData, "name"> | SpriteData["character"];
@@ -73,6 +81,43 @@ export const updateCoordinates = (
 
   getBoardModel().write(cells, name);
   sprites[idx].coordinates = cells.map(([x, y]) => [x, y] as Cell);
+
+  // Assign domain entity identity once on land (stable across later gravity).
+  if (!sprites[idx].entityId) {
+    const group = (sprites[idx].character?.group ??
+      "Special") as GroupName | "Special";
+    const charName = (character?.name ??
+      sprites[idx].character?.name) as CharacterName | undefined;
+    if (kind === "item") {
+      const ent = makeItemEntity({
+        itemFile: sprites[idx].itemFile ?? "item",
+        cells: cells as Cell[],
+      });
+      sprites[idx].entityId = ent.id;
+    } else if (kind === "big2x2" && charName) {
+      const ent = makeBig2x2Entity({
+        character: charName,
+        group,
+        cells: cells as Cell[],
+        orientation: orient,
+      });
+      sprites[idx].entityId = ent.id;
+    } else if (kind === "shrunk" && charName) {
+      const ent = makeShrunkEntity({
+        character: charName,
+        cells: cells as Cell[],
+      });
+      sprites[idx].entityId = ent.id;
+    } else if (charName) {
+      const ent = makeCell2Entity({
+        character: charName,
+        group,
+        cells: cells as Cell[],
+        orientation: orient,
+      });
+      sprites[idx].entityId = ent.id;
+    }
+  }
 
   // Snap to settled pixel pose so active land Y (OFFSET_BOTTOM) matches gravity/tip placement.
   const anchor = anchorFromFootprint(cells, kind, orient);
