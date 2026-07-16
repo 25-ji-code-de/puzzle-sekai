@@ -16,6 +16,11 @@ import droidSansMonoFontUrl from "./assets/fonts/DroidSansMono.woff2";
  *  - body    : same stack as display (settings, captions, descriptions, credits)
  *  - mono    : DroidSansMono for scores / timers / pure factors
  *
+ * Fallback faces (`* Fallback`, `* Fallback Latin`) are local()-only @font-face
+ * rules with metric overrides (and size-adjust where needed) so font-display
+ * swap does not shift layout. Values computed from font tables via fontkit —
+ * see Chrome's "Improved font fallbacks" guidance.
+ *
  * Schemes map to families + weight; call sites use scheme names only.
  */
 export type FontFamilyRole = "brand" | "display" | "body" | "mono";
@@ -33,13 +38,20 @@ export interface ResolvedFontScheme {
   fontWeight: "400" | "700";
 }
 
+// Adjusted local fallback family names (defined in FALLBACK_FACE_CSS).
+const MAOKEN_FB = "MaokenAssortedSans Fallback";
+const MAOKEN_FB_LATIN = "MaokenAssortedSans Fallback Latin";
+const NISHIKI_FB = "NishikiTeki Fallback";
+const NISHIKI_FB_LATIN = "NishikiTeki Fallback Latin";
+const MONO_FB = "DroidSansMono Fallback";
+
 // Per-locale display stacks; body reuses the same string (all-cartoon policy).
-const DISPLAY_ZH =
-  "'MaokenAssortedSans','PingFang SC','Microsoft YaHei',sans-serif";
-const DISPLAY_JA = "'NishikiTeki','Hiragino Sans','Yu Gothic',sans-serif";
-const DISPLAY_EN = "'NishikiTeki','Helvetica Neue','Arial',sans-serif";
-const BRAND_STACK = "'NishikiTeki','Hiragino Sans','Yu Gothic',sans-serif";
-const MONO_STACK = "'DroidSansMono',monospace";
+// Order: web face → metric-matched CJK local → metric-matched Latin local → generic.
+const DISPLAY_ZH = `'MaokenAssortedSans','${MAOKEN_FB}','${MAOKEN_FB_LATIN}',sans-serif`;
+const DISPLAY_JA = `'NishikiTeki','${NISHIKI_FB}','${NISHIKI_FB_LATIN}',sans-serif`;
+const DISPLAY_EN = `'NishikiTeki','${NISHIKI_FB}','${NISHIKI_FB_LATIN}',sans-serif`;
+const BRAND_STACK = `'NishikiTeki','${NISHIKI_FB}','${NISHIKI_FB_LATIN}',sans-serif`;
+const MONO_STACK = `'DroidSansMono','${MONO_FB}',monospace`;
 
 const FAMILY_STACKS: Record<Locale, Record<FontFamilyRole, string>> = {
   zh: {
@@ -55,7 +67,7 @@ const FAMILY_STACKS: Record<Locale, Record<FontFamilyRole, string>> = {
     mono: MONO_STACK,
   },
   en: {
-    brand: "'NishikiTeki','Helvetica Neue','Arial',sans-serif",
+    brand: BRAND_STACK,
     display: DISPLAY_EN,
     body: DISPLAY_EN,
     mono: MONO_STACK,
@@ -81,6 +93,58 @@ const CSS_VARIABLES: Record<FontFamilyRole, string> = {
   body: "--font-body",
   mono: "--font-mono",
 };
+
+/**
+ * Local-only faces that approximate each web font's vertical (and, where
+ * needed, horizontal) metrics so swap does not cause layout shift.
+ *
+ * CJK system faces (YaHei / Yu Gothic / PingFang) already share full-width
+ * advance with our display faces → size-adjust 100%, metrics-only.
+ * Latin Arial is narrower → size-adjust + rescaled overrides.
+ * Courier New matches DroidSansMono advance exactly.
+ */
+const FALLBACK_FACE_CSS = `
+@font-face {
+  font-family: "${MAOKEN_FB}";
+  src: local("Microsoft YaHei"), local("PingFang SC"), local("Noto Sans CJK SC"),
+       local("Noto Sans SC");
+  ascent-override: 85.938%;
+  descent-override: 14.063%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "${MAOKEN_FB_LATIN}";
+  src: local("Arial"), local("Helvetica Neue"), local("Helvetica");
+  size-adjust: 107.832%;
+  ascent-override: 79.696%;
+  descent-override: 13.041%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "${NISHIKI_FB}";
+  src: local("Yu Gothic"), local("Hiragino Sans"),
+       local("Hiragino Kaku Gothic ProN"), local("Microsoft YaHei"),
+       local("PingFang SC");
+  ascent-override: 87.891%;
+  descent-override: 17.09%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "${NISHIKI_FB_LATIN}";
+  src: local("Arial"), local("Helvetica Neue"), local("Helvetica");
+  size-adjust: 107.832%;
+  ascent-override: 81.507%;
+  descent-override: 15.849%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "${MONO_FB}";
+  src: local("Courier New"), local("Consolas"), local("Menlo"), local("Monaco");
+  ascent-override: 105.615%;
+  descent-override: 27.1%;
+  line-gap-override: 0%;
+}
+`.trim();
 
 export const resolveFontScheme = (
   scheme: FontScheme,
@@ -108,12 +172,26 @@ const applyFontVariables = (locale: Locale = getLocale()) => {
   });
 };
 
+/** Inject metric-matched local fallback @font-face rules once. */
+const injectFallbackFaces = () => {
+  if (document.getElementById("font-fallback-faces")) return;
+  const style = document.createElement("style");
+  style.id = "font-fallback-faces";
+  style.textContent = FALLBACK_FACE_CSS;
+  document.head.appendChild(style);
+};
+
 const loadFace = async (family: string, url: string): Promise<void> => {
-  const face = await new FontFace(family, `url(${url})`, {
+  // Register the face immediately with font-display: swap so the stack can
+  // paint metric-matched local fallbacks while the woff2 downloads, then
+  // swap in the web font without a layout shift.
+  const face = new FontFace(family, `url(${url})`, {
     style: "normal",
     weight: "400",
-  }).load();
+    display: "swap",
+  });
   document.fonts.add(face);
+  await face.load();
 };
 
 const fontLoads = [
@@ -141,6 +219,7 @@ let initialized = false;
 export const initializeFontSystem = (): Promise<void> => {
   if (!initialized) {
     initialized = true;
+    injectFallbackFaces();
     applyFontVariables();
     onLocaleChange((locale) => applyFontVariables(locale));
   }
