@@ -30,8 +30,7 @@ export const appendFunModesSection = (
 
   const group = makeSettingGroup(t("settings.fun.label"));
   const options = makeOptionsRow();
-  options.style.flexDirection = "column";
-  options.style.alignItems = "stretch";
+  options.classList.add("setting-options--stack");
 
   const chipRow = makeOptionsRow();
   const help = document.createElement("div");

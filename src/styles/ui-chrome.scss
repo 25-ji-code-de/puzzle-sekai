@@ -1,0 +1,10 @@
+// Non-critical DOM chrome — loaded after boot shell paint (see index.ts).
+// Do not re-introduce large cssText dumps in TS.
+
+@import "./tokens";
+@import "./keyframes";
+@import "./dialog";
+@import "./overlays";
+@import "./menu";
+@import "./settings-panel";
+@import "./display";

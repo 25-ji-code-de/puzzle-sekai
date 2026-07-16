@@ -114,8 +114,7 @@ export const showAboutOverlay = () => {
   });
   title.classList.add("ui-dialog__title--spaced");
   overlay.classList.add("ui-overlay--dim");
-  card.style.maxHeight = "min(85vh, 720px)";
-  card.style.overflowY = "auto";
+  card.classList.add("ui-dialog--scroll");
 
   const join = (...nodes: (Node | string)[]) => {
     const span = document.createElement("span");
@@ -193,9 +192,7 @@ export const showAboutOverlay = () => {
     legal.appendChild(p);
   }
   const agree = document.createElement("p");
-  agree.style.marginTop = "12px";
-  agree.style.fontSize = "12px";
-  agree.style.opacity = "0.8";
+  agree.className = "about-legal__agree";
   agree.textContent = t("about.disclaimerAgree");
   legal.appendChild(agree);
   card.appendChild(legal);

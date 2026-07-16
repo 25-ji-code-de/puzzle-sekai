@@ -5,6 +5,10 @@
 import * as PIXI from "pixi.js-legacy";
 import sound from "pixi-sound";
 import "./style.scss";
+// Non-critical DOM chrome (menus/dialogs/settings) — does not block first paint.
+// Boot LCP CSS is inlined in index.html.
+void import("./styles/ui-chrome.scss");
+
 import land from "./assets/sounds/land.mp3";
 import move from "./assets/sounds/move.mp3";
 import emuShrinkSfx from "./assets/sounds/effects/47_004_007.mp3";

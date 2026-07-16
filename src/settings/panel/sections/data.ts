@@ -9,8 +9,7 @@ import {
 export const appendDataSection = (panel: HTMLElement): void => {
   const group = makeSettingGroup(t("settings.data.label"));
   const options = makeOptionsRow();
-  options.style.flexDirection = "column";
-  options.style.alignItems = "stretch";
+  options.classList.add("setting-options--stack");
 
   const status = document.createElement("div");
   status.className = "setting-status";

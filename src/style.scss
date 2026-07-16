@@ -1,13 +1,6 @@
-// DOM chrome styles live in SCSS under tokens; TS assigns className.
-// See src/styles/*.scss — do not re-introduce large cssText dumps.
-
-@import "./styles/tokens";
-@import "./styles/keyframes";
-@import "./styles/dialog";
-@import "./styles/overlays";
-@import "./styles/menu";
-@import "./styles/settings-panel";
-@import "./styles/display";
+// App shell only — needed for canvas host after JS boots.
+// UI chrome (menus/dialogs/settings) loads async via styles/ui-chrome.scss.
+// Boot LCP styles stay inlined in index.html.
 
 * {
   box-sizing: border-box;

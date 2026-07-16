@@ -84,6 +84,11 @@
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+
+  &--stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .setting-opt {
