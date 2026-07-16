@@ -1,6 +1,9 @@
 /**
  * Boot entry — loader, boot welcome, main ticker. Runtime handles live in
  * `./runtime` so gameplay leaves do not import this boot graph.
+ *
+ * Heavy match code (game/states → board/piece) is not imported here; it loads
+ * when the player starts a match (see application/play-session).
  */
 import * as PIXI from "pixi.js-legacy";
 import sound from "pixi-sound";
@@ -21,16 +24,16 @@ import gameOver from "./assets/gameOver.png";
 import avatar from "./assets/chara/avatar.png";
 import welcomeImg from "./assets/welcome.png";
 import barrelTexture from "./assets/objects/barrel.png";
-import { start, welcome } from "./game/states";
 import { items } from "./items";
 import { initializeFontSystem } from "./ui/fonts";
-import { togglePauseMenu } from "./ui/pause-menu";
 import {
   showBootWelcome,
   setWelcomeLoadProgress,
   markWelcomeReady,
+  welcome,
 } from "./ui/welcome";
 import { prefetchMenuBgm } from "./audio/bgm";
+import { preloadGame } from "./application/play-session";
 import {
   app,
   setState,
@@ -59,10 +62,10 @@ window.addEventListener("resize", () => {
   (main as HTMLDivElement).style.height = window.innerHeight + "px";
 });
 
-// Initial main-loop state
+// Initial main-loop state (boot shell only — not the match FSM)
 setState(welcome);
 
-// load the texture we need
+// Register textures + voice aliases for boot loader
 characterData.forEach((character) => {
   app.loader.add(character.file);
   if (character.preview) {
@@ -75,7 +78,7 @@ characterData.forEach((character) => {
   });
 });
 Object.values(groupSounds).forEach((url) => {
-  if (!sound.exists(url)) {
+  if (url && !sound.exists(url)) {
     sound.add(url, { url });
   }
 });
@@ -114,16 +117,29 @@ app.loader
     window.addEventListener("keydown", (event) => {
       const key = event.key.toLowerCase();
       if (key === "r") {
-        setState(start);
+        // Restart only after game chunk is available
+        void import("./application/play-session").then(({ getStartState }) => {
+          void getStartState().then((start) => setState(start));
+        });
       } else if (key === "escape" || key === "p") {
         event.preventDefault();
-        togglePauseMenu();
+        void import("./ui/pause-menu").then(({ togglePauseMenu }) => {
+          togglePauseMenu();
+        });
       }
     });
 
     void fontsReady;
     markWelcomeReady();
     prefetchMenuBgm();
+
+    // Idle-prewarm match code so first "Start" is snappy without blocking boot parse
+    const warm = () => preloadGame();
+    if (typeof requestIdleCallback === "function") {
+      requestIdleCallback(warm, { timeout: 2500 });
+    } else {
+      setTimeout(warm, 1);
+    }
 
     app.ticker.add((delta) => {
       tickMain(delta);

@@ -2,7 +2,12 @@
  * Start-match flow: fullscreen, landscape gate, hand off to play state machine.
  */
 import { setState } from "../../runtime";
-import { start, pausePlay, resumePlay } from "../../application/play-session";
+import {
+  getStartState,
+  pausePlay,
+  resumePlay,
+  preloadGame,
+} from "../../application/play-session";
 import { setCurrentGameMode, type GameMode } from "../../settings";
 import { t } from "../../i18n";
 import {
@@ -11,7 +16,6 @@ import {
   startPlayOrientationGate,
   type OrientationGate,
 } from "../display";
-import { isPauseMenuOpen } from "../pause-menu";
 
 let orientationGate: OrientationGate | null = null;
 let onTeardownMenu: (() => void) | null = null;
@@ -40,7 +44,10 @@ export const startGame = (mode: GameMode) => {
   onTeardownMenu?.();
   onRemoveWelcomeSprite?.();
 
-  // Don't start the match until landscape 鈥?otherwise pieces drop while the
+  // Prefetch game chunk while waiting for landscape / fullscreen.
+  preloadGame();
+
+  // Don't start the match until landscape — otherwise pieces drop while the
   // player is still rotating the phone.
   disposeOrientationGate();
   orientationGate = waitForLandscape(t("display.rotateLandscape"), () => {
@@ -51,10 +58,12 @@ export const startGame = (mode: GameMode) => {
       onPause: pausePlay,
       // Don't auto-resume if the player opened the pause menu before rotating.
       onResume: () => {
-        if (isPauseMenuOpen()) return;
-        resumePlay();
+        void import("../pause-menu").then(({ isPauseMenuOpen }) => {
+          if (isPauseMenuOpen()) return;
+          resumePlay();
+        });
       },
     });
-    setState(start);
+    void getStartState().then((start) => setState(start));
   });
 };

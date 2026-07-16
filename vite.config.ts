@@ -108,6 +108,28 @@ export default defineConfig({
     // (not inlined). Workbox globPatterns omit `*.map`, so PWA install size
     // is unaffected; maps only load when a developer opens DevTools.
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        // Split heavy vendors so the browser can parse/cache them separately
+        // and so the entry chunk is smaller for Lighthouse bootup-time.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("pixi.js-legacy") || id.includes("pixi.js" + path.sep) || id.includes(`${path.sep}pixi.js${path.sep}`)) {
+            return "pixi";
+          }
+          // pixi package path variants
+          if (/[/\\]pixi\.js[/\\]/.test(id) || /[/\\]@pixi[/\\]/.test(id)) {
+            return "pixi";
+          }
+          if (id.includes("pixi-sound")) {
+            return "pixi-sound";
+          }
+          if (id.includes("hammerjs")) {
+            return "hammer";
+          }
+        },
+      },
+    },
   },
   css: {
     // Dev: SCSS → original partials in browser Styles panel
