@@ -2,7 +2,7 @@
  * Shared active-piece fall loop: gravity, soft-drop speed, drop score, land lock.
  */
 import type * as PIXI from "pixi.js-legacy";
-import { gameTicker } from "../index";
+import { gameTicker } from "../runtime";
 import { BOX_SIZE, SPEED } from "../config";
 import { SFX_LAND_BASE, SFX_MOVE_BASE } from "../settings";
 import { playLoadedSfx, replayLoadedSfx } from "../audio/sfx";

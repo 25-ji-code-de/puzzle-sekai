@@ -1,4 +1,4 @@
-import { app } from "../index";
+import { app } from "../runtime";
 import * as PIXI from "pixi.js-legacy";
 import barrelTexture from "../assets/objects/barrel.png";
 import { avatar_X, avatar_Y } from "../config";

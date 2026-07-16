@@ -3,7 +3,7 @@
  */
 import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
-import { app } from "../index";
+import { app } from "../runtime";
 import { LEFT_BORDER, BOX_SIZE, SPEED } from "../config";
 import { getStackHeight } from "../utils/coords";
 import { activeLandPixelY } from "../board/geometry";

@@ -3,7 +3,7 @@
  * Separated from the play state machine so audio concerns stay in audio/.
  */
 import type * as PIXI from "pixi.js-legacy";
-import { gameTicker } from "../index";
+import { gameTicker } from "../runtime";
 import {
   BGM_BASE_VOLUME,
   ensureBgm,

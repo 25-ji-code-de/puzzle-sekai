@@ -2,7 +2,7 @@
  * Next-piece preview sprite + intro fly animation.
  */
 import * as PIXI from "pixi.js-legacy";
-import { app, gameTicker } from "../index";
+import { app, gameTicker } from "../runtime";
 import {
   BOX_SIZE,
   SPEED,

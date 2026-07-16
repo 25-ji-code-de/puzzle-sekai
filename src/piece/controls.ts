@@ -2,7 +2,7 @@
  * Shared keyboard + Hammer bindings for the active falling piece.
  * Handles control-swap (Shizuku fun mode) for both standard and 2×2 pieces.
  */
-import { hammerManager } from "../index";
+import { hammerManager } from "../runtime";
 import { isControlsSwapped } from "../fun/effects";
 
 export type PieceControlActions = {
@@ -14,7 +14,7 @@ export type PieceControlActions = {
   softDrop: () => void;
   normalSpeed: () => void;
   /**
-   * Optional easter-egg lift (Shift+↑ / swipe up).
+   * Optional easter-egg lift (Shift+�?/ swipe up).
    * Called only when the piece opts in (Emu / NeneRobo).
    */
   tryLift?: () => void;

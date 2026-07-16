@@ -3,7 +3,7 @@
  */
 import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
-import { app, gameTicker } from "../index";
+import { app, gameTicker } from "../runtime";
 import {
   LEFT_BORDER,
   RIGHT_BORDER,
@@ -38,7 +38,7 @@ export const getNeneRoboCoordinates = (
 
 export const getNeneRoboStackHeight = (sprite: PIXI.Sprite): number => {
   const { x, y } = getNeneRoboCoordinates(sprite);
-  // Legacy filter: index + 1 > y  â‡”  index > y - 1
+  // Legacy filter: index + 1 > y  â‡? index > y - 1
   return stackHeightBelow(pieces, [x, x + 1], y - 1);
 };
 
@@ -93,7 +93,7 @@ export const createNeneRobo = async (
     }
   };
 
-  /** Easter egg: Shift+â†‘ / swipe up lifts one cell when free. */
+  /** Easter egg: Shift+â†?/ swipe up lifts one cell when free. */
   const tryLift = () => {
     if (!canLift) return;
     const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");

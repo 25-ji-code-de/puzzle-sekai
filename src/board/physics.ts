@@ -4,10 +4,10 @@
  * - truePhysics: registered only (not implemented yet)
  *
  * 2×2 pieces (NeneRobo / Mikudayo) tip the same way as horizontal 2-cell pieces:
- * only one bottom column supported → rotate 90° over the support edge.
+ * only one bottom column supported �?rotate 90° over the support edge.
  */
 
-import { gameTicker } from "../index";
+import { gameTicker } from "../runtime";
 import { BOX_SIZE, COLUMNS, LEFT_BORDER, ROWS } from "../config";
 import { SpriteData, pieces } from "../game/board-state";
 import { getOffset } from "../utils/coords";
@@ -81,7 +81,7 @@ const bottomCells = (sp: SpriteData): Cell[] =>
   bottomCellsOf((sp.coordinates ?? []) as Cell[]);
 
 /**
- * Roots must span ≥2 columns so there is a hang side vs support side.
+ * Roots must span �? columns so there is a hang side vs support side.
  * Covers horizontal 2-cell pieces AND 2×2 NeneRobo/Mikudayo.
  */
 const canSpanHorizontally = (sp: SpriteData): boolean => {
@@ -150,11 +150,11 @@ const fulcrumPixel = (
 /**
  * 90° grid remap around the ledge corner (matches fulcrumPixel rotation).
  *
- * tip right (dir=+1), pivot P — CW around bottom-right of P:
- *   support P      → hang column, same row
- *   hang H         → one row below hang column
- *   cell above P   → pryed up & over to the right
- *   2×2 top-right  → swings down-right with the hang
+ * tip right (dir=+1), pivot P �?CW around bottom-right of P:
+ *   support P      �?hang column, same row
+ *   hang H         �?one row below hang column
+ *   cell above P   �?pryed up & over to the right
+ *   2×2 top-right  �?swings down-right with the hang
  *
  * tip left mirrored.
  */
@@ -275,7 +275,7 @@ const planTipForRoot = (
 
 const findTipPlan = (list: SpriteData[]): TipPlan | null => {
   const occupancy = buildOccupancy(list);
-  // Lowest first — foundations tip before free-floating tops
+  // Lowest first �?foundations tip before free-floating tops
   const order = list
     .map((sp, index) => ({
       index,
@@ -293,7 +293,7 @@ const findTipPlan = (list: SpriteData[]): TipPlan | null => {
   return null;
 };
 
-/** Write footprint directly — never re-derive cells from sprite math after a tip. */
+/** Write footprint directly �?never re-derive cells from sprite math after a tip. */
 const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
   const name = sp.isItem ? ITEM_TOKEN : sp.character?.name;
   if (!name || !newCells.length) {
@@ -307,8 +307,8 @@ const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
 
   // Snap rotation so later gravity / updateCoordinates stay consistent
   if (kind === "cell2") {
-    // Match piece.ts convention: spawn at π, orient 0 → π, orient 1 → π + π/2, …
-    // getOffset: (rotation/π * 2 + 2) % 4 — we only need getOffset === orient.
+    // Match piece.ts convention: spawn at π, orient 0 �?π, orient 1 �?π + π/2, �?
+    // getOffset: (rotation/π * 2 + 2) % 4 �?we only need getOffset === orient.
     const current = getOffset(sp.sprite);
     const delta = ((orient - current) % 4 + 4) % 4;
     sp.sprite.rotation += (delta * Math.PI) / 2;
@@ -321,7 +321,7 @@ const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
 
 /**
  * Rigid-body tip: every member orbits the shared ledge fulcrum.
- * Pieces on the support side arc upward (翘起来), hang side swings down.
+ * Pieces on the support side arc upward (翘起�?, hang side swings down.
  * 2×2 squares rotate as a rigid body the same way.
  */
 const animateTip = (plan: TipPlan): Promise<void> => {
@@ -382,7 +382,7 @@ const animateTip = (plan: TipPlan): Promise<void> => {
           const p = poses[i];
           sp.sprite.rotation = p.startRot + angleEnd;
           sp.sprite.zIndex = Math.max(0, (sp.sprite.zIndex || 0) - 100);
-          // Commit cells by tip geometry — never via getCoordinates
+          // Commit cells by tip geometry �?never via getCoordinates
           commitTipLanding(sp, p.newCells);
         });
         resolve();

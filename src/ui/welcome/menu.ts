@@ -2,7 +2,7 @@
  * Main menu overlay: mode buttons, toolbar, high score row.
  */
 import * as PIXI from "pixi.js-legacy";
-import { app, bgSprite } from "../../index";
+import { app, bgSprite } from "../../runtime";
 import { playMenuBgm } from "../../audio/session";
 import { clearAppCaches } from "../../settings";
 import { t, onLocaleChange } from "../../i18n";
@@ -22,6 +22,7 @@ import {
   setStartGameHooks,
   startGame,
 } from "./start-game";
+import { setPlayPhase } from "../../application/play-session";
 
 let welcomeSprite: PIXI.Sprite;
 let menuOverlay: HTMLDivElement | null = null;
@@ -292,10 +293,11 @@ export const showWelcomePage = () => {
 };
 
 /**
- * Re-enter the welcome menu from gameplay (e.g. pause → Quit to menu).
+ * Re-enter the welcome menu from gameplay (e.g. pause �?Quit to menu).
  * Restores the welcome cover/bg, the menu BGM (bgm161), and shows the menu.
  */
 export const enterMenu = () => {
   showWelcomePage();
+  setPlayPhase({ type: "menu" });
   void playMenuBgm();
 };

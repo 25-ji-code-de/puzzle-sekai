@@ -2,7 +2,7 @@
  * Clear / blast particle burst VFX.
  */
 import * as PIXI from "pixi.js-legacy";
-import { app, gameTicker } from "../index";
+import { app, gameTicker } from "../runtime";
 import type { SpriteData } from "../game/board-state";
 
 export const createParticles = (list: SpriteData[]) => {

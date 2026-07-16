@@ -3,7 +3,7 @@
  */
 import * as PIXI from "pixi.js-legacy";
 import sound from "pixi-sound";
-import { app, gameTicker, resetGameTicker, setState } from "../index";
+import { app, gameTicker, resetGameTicker, setState } from "../runtime";
 import {
   createavatarSan,
   avatarFlyDown,
@@ -44,6 +44,7 @@ import {
 } from "../settings";
 import { resetFunEffects } from "../fun/effects";
 import { CHAR } from "../characters/ids";
+import { setPlayPhase } from "../application/play-session";
 import { enterMenu } from "../ui/welcome";
 import {
   disposePauseMenu,
@@ -165,6 +166,7 @@ const start = () => {
     startTimeAttackTimer();
   }
   setPlayActive(true);
+  setPlayPhase({ type: "playing", mode });
   showPauseButton();
 };
 export { start };
@@ -187,7 +189,7 @@ const create = async () => {
         if (isCarrotItem(itemFile)) {
           allergyCleared = await applyCarrotAllergy(x, y);
         }
-        // ポテトと瑞希: fries land → nearest board Mizuki moves above fries
+        // ポテトと瑞希: fries land �?nearest board Mizuki moves above fries
         if (isFriesItem(itemFile)) {
           await applyMizukiShift(x, y);
         }
@@ -240,7 +242,7 @@ const create = async () => {
         setState(end);
       } else {
         updateCoordinates(sprite, index, character);
-        // にんじん嫌い: Ena/Akito landing next to carrot → clear character
+        // にんじん嫌い: Ena/Akito landing next to carrot �?clear character
         let allergyCleared = false;
         if (character.name === CHAR.Ena || character.name === CHAR.Akito) {
           allergyCleared = await applyCarrotAllergyOnCharacter(index);
@@ -290,6 +292,8 @@ export const pausePlay = () => {
   playPaused = true;
   setBgmSessionPaused(true);
   pauseBgmPlayback();
+  const mode = getCurrentGameMode();
+  setPlayPhase({ type: "paused", reason: "user", mode });
 };
 
 /** Resume gameplay after a pause (caller ensures ticker is restarted). */
@@ -301,12 +305,14 @@ export const resumePlay = () => {
   setBgmSessionPaused(false);
   // pausePlay stopped the ticker; start it again so pieces resume falling.
   if (!gameTicker.started) gameTicker.start();
+  const mode = getCurrentGameMode();
+  setPlayPhase({ type: "playing", mode });
 };
 
 /**
  * Abandon the current match and return to the welcome menu. Tears down the
  * board, stops timers/BGM, drops the pause overlay, and shows the menu. The
- * match state is fully cleared — calling `start` again later re-seeds it.
+ * match state is fully cleared �?calling `start` again later re-seeds it.
  */
 export const returnToMenu = () => {
   clearStage();
@@ -315,6 +321,7 @@ export const returnToMenu = () => {
   playPaused = false;
   setBgmSessionPaused(false);
   setPlayActive(false);
+  setPlayPhase({ type: "menu" });
   disposePauseMenu();
   disposeGameOverMenu();
   hidePauseButton();
@@ -327,6 +334,11 @@ const end = async () => {
     // Stop time attack timer if running
     stopTimeAttackTimer();
     setPlayActive(false);
+    setPlayPhase({
+      type: "gameOver",
+      cause: "topOut",
+      mode: getCurrentGameMode(),
+    });
     hidePauseButton();
     disposePauseMenu();
 
@@ -372,6 +384,11 @@ const endTimeAttack = async () => {
   if (!endAnimation) {
     stopTimeAttackTimer();
     setPlayActive(false);
+    setPlayPhase({
+      type: "gameOver",
+      cause: "timeUp",
+      mode: getCurrentGameMode(),
+    });
     hidePauseButton();
     disposePauseMenu();
 

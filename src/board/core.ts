@@ -5,7 +5,7 @@
  * No local re-derivation of anchor or footprint rules.
  */
 import type * as PIXI from "pixi.js-legacy";
-import { gameTicker } from "../index";
+import { gameTicker } from "../runtime";
 import { getCoordinates, getOffset } from "../utils/coords";
 import type { CharacterData } from "../characters/data";
 import { FALL_SPEED } from "../config";
@@ -47,7 +47,7 @@ export const updateCoordinates = (
   character?: Pick<CharacterData, "name">,
   isItem: boolean = false,
 ) => {
-  // Prefer live index by sprite ref â€” fixed indices go stale after clears / async item spawn
+  // Prefer live index by sprite ref â€?fixed indices go stale after clears / async item spawn
   let idx = sprites.findIndex((s) => s.sprite === sprite);
   if (idx < 0) idx = index;
   if (!sprites[idx]) return;
@@ -92,7 +92,7 @@ type FallPlan = {
 
 /**
  * Simulate gravity for all currently unsupported pieces via BoardModel.
- * Pure coordinate math on the grid â€” never re-derives footprint from rotation.
+ * Pure coordinate math on the grid â€?never re-derives footprint from rotation.
  */
 const planFalls = (canFall: FallEntry[]): FallPlan[] => {
   const model = getBoardModel();
@@ -156,7 +156,7 @@ const commitFall = (plan: FallPlan) => {
   const orient = asOrientation(getOffset(entry.sprite));
   const anchor = anchorFromFootprint(dest, kind, orient);
   placeSpriteAtAnchor(entry.sprite, kind, anchor.x, anchor.y);
-  // Write coordinates / grid directly â€” do NOT call updateCoordinates
+  // Write coordinates / grid directly â€?do NOT call updateCoordinates
   // (it re-derives footprint from rotation and can desync after a tip).
   syncLiveCoordinates(entry, dest);
   const token = cellName(entry);
@@ -221,14 +221,14 @@ export const fallChunk = async (spritesList: SpriteData[]) => {
     if (canFall.length > 0) {
       const plans = planFalls(canFall);
       if (plans.length === 0) {
-        // Marked unsupported but no drop distance â€” stop to avoid spin
+        // Marked unsupported but no drop distance â€?stop to avoid spin
         break;
       }
       await applyFalls(plans);
       continue;
     }
 
-    // Vertical gravity settled â†’ maybe tip overhangs
+    // Vertical gravity settled â†?maybe tip overhangs
     if (isFunModeOn("cantilever")) {
       const { tryCantileverPhysics } = await import("./physics");
       if (await tryCantileverPhysics(spritesList)) {
@@ -239,4 +239,4 @@ export const fallChunk = async (spritesList: SpriteData[]) => {
   }
 };
 
-// Particle VFX lives in ./particles â€” re-exported from board/index.
+// Particle VFX lives in ./particles â€?re-exported from board/index.

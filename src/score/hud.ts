@@ -2,7 +2,7 @@
  * In-game score / combo / timer PIXI HUD.
  */
 import * as PIXI from "pixi.js-legacy";
-import { app } from "../index";
+import { app } from "../runtime";
 import {
   DifficultyLevel,
   getCurrentGameMode,

@@ -1,7 +1,7 @@
 /**
  * One-shot SFX / voice from textures already registered on the PIXI loader.
  */
-import { app } from "../index";
+import { app } from "../runtime";
 import { sfxVol, voiceVol } from "../settings";
 
 export type SfxChannel = "sfx" | "voice";

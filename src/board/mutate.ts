@@ -1,7 +1,7 @@
 /**
  * Low-level board mutations shared by clear animation and fun-mode effects.
  */
-import { app } from "../index";
+import { app } from "../runtime";
 import {
   SpriteData,
   sprites,

@@ -1,7 +1,7 @@
 /**
  * Start-match flow: fullscreen, landscape gate, hand off to play state machine.
  */
-import { setState } from "../../index";
+import { setState } from "../../runtime";
 import { start, pausePlay, resumePlay } from "../../game/states";
 import { setCurrentGameMode, type GameMode } from "../../settings";
 import { t } from "../../i18n";
@@ -40,7 +40,7 @@ export const startGame = (mode: GameMode) => {
   onTeardownMenu?.();
   onRemoveWelcomeSprite?.();
 
-  // Don't start the match until landscape â€” otherwise pieces drop while the
+  // Don't start the match until landscape â€?otherwise pieces drop while the
   // player is still rotating the phone.
   disposeOrientationGate();
   orientationGate = waitForLandscape(t("display.rotateLandscape"), () => {

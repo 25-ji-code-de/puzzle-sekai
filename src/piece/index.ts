@@ -3,7 +3,7 @@
  */
 import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
-import { app, gameTicker } from "../index";
+import { app, gameTicker } from "../runtime";
 import {
   LEFT_BORDER,
   RIGHT_BORDER,
