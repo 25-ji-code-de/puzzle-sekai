@@ -23,6 +23,7 @@ import {
   writeFootprint,
   clearFootprint,
   isUnsupported,
+  primaryFromSprite,
 } from "./geometry";
 import { ITEM_TOKEN, type CellToken } from "../domain/types";
 
@@ -40,6 +41,7 @@ const kindOf = (entry: {
 /**
  * Land a sprite into the board grid from its current pixel pose.
  * Builds footprint via geometry atoms, then writes grid + coordinates.
+ * big2x2 uses bottom-right primaryFromSprite; cell2 uses cell-center coords.
  */
 export const updateCoordinates = (
   sprite: PIXI.Sprite,
@@ -47,19 +49,22 @@ export const updateCoordinates = (
   character?: Pick<CharacterData, "name">,
   isItem: boolean = false,
 ) => {
-  // Prefer live index by sprite ref â€?fixed indices go stale after clears / async item spawn
+  // Prefer live index by sprite ref â€” fixed indices go stale after clears / async item spawn
   let idx = sprites.findIndex((s) => s.sprite === sprite);
   if (idx < 0) idx = index;
   if (!sprites[idx]) return;
 
-  const primary = getCoordinates(sprite);
-  const orient = asOrientation(getOffset(sprite));
   const kind = pieceKindFrom({
     characterName: character?.name ?? sprites[idx].character?.name,
     isItem: isItem || sprites[idx].isItem,
     isShrunk: sprites[idx].isShrunk,
   });
-
+  // big2x2 primary is bottom-right; cell2 uses cell-center getCoordinates
+  const primary =
+    kind === "big2x2"
+      ? primaryFromSprite(sprite, "big2x2")
+      : getCoordinates(sprite);
+  const orient = asOrientation(getOffset(sprite));
   const cells = footprintFromPrimary(primary, orient, kind);
   const name: CellToken | undefined =
     kind === "item"
@@ -92,7 +97,7 @@ type FallPlan = {
 
 /**
  * Simulate gravity for all currently unsupported pieces via BoardModel.
- * Pure coordinate math on the grid â€?never re-derives footprint from rotation.
+ * Pure coordinate math on the grid ï¿½?never re-derives footprint from rotation.
  */
 const planFalls = (canFall: FallEntry[]): FallPlan[] => {
   const model = getBoardModel();
@@ -156,7 +161,7 @@ const commitFall = (plan: FallPlan) => {
   const orient = asOrientation(getOffset(entry.sprite));
   const anchor = anchorFromFootprint(dest, kind, orient);
   placeSpriteAtAnchor(entry.sprite, kind, anchor.x, anchor.y);
-  // Write coordinates / grid directly â€?do NOT call updateCoordinates
+  // Write coordinates / grid directly ï¿½?do NOT call updateCoordinates
   // (it re-derives footprint from rotation and can desync after a tip).
   syncLiveCoordinates(entry, dest);
   const token = cellName(entry);
@@ -221,14 +226,14 @@ export const fallChunk = async (spritesList: SpriteData[]) => {
     if (canFall.length > 0) {
       const plans = planFalls(canFall);
       if (plans.length === 0) {
-        // Marked unsupported but no drop distance â€?stop to avoid spin
+        // Marked unsupported but no drop distance ï¿½?stop to avoid spin
         break;
       }
       await applyFalls(plans);
       continue;
     }
 
-    // Vertical gravity settled â†?maybe tip overhangs
+    // Vertical gravity settled ï¿½?maybe tip overhangs
     if (isFunModeOn("cantilever")) {
       const { tryCantileverPhysics } = await import("./physics");
       if (await tryCantileverPhysics(spritesList)) {
@@ -239,4 +244,4 @@ export const fallChunk = async (spritesList: SpriteData[]) => {
   }
 };
 
-// Particle VFX lives in ./particles â€?re-exported from board/index.
+// Particle VFX lives in ./particles ï¿½?re-exported from board/index.

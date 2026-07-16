@@ -1,5 +1,10 @@
 /**
  * 2×2 piece (NeneRobo / Mikudayo): geometry helpers + active controller.
+ *
+ * Coordinate convention (legacy, movement-compatible):
+ * getNeneRoboCoordinates returns the **top-left** cell of the 2×2 footprint.
+ * Domain primary for big2x2 is **bottom-right** (geometry/placement) —
+ * do not mix the two without converting.
  */
 import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
@@ -21,24 +26,29 @@ import {
   getSpawnRotation,
 } from "../settings";
 import { consumeKanadeSlowForSpawn } from "../fun/effects";
-import {
-  stackHeightBelow,
-  activeLandPixelY,
-  primaryFromSprite,
-} from "../board/geometry";
+import { stackHeightBelow, activeLandPixelY } from "../board/geometry";
 import { fileIsBig2x2 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
 import { loadTexture } from "./load-texture";
 
+/**
+ * Top-left cell of the 2×2 (NOT domain bottom-right primary).
+ * Sprite center sits on the shared 4-cell corner.
+ */
 export const getNeneRoboCoordinates = (
   sprite: PIXI.Sprite,
   method: "floor" | "ceil" | "round" = "ceil",
-): { x: number; y: number } => primaryFromSprite(sprite, "big2x2", method);
+): { x: number; y: number } => {
+  return {
+    x: Math[method]((sprite.x - BOX_SIZE - LEFT_BORDER) / BOX_SIZE),
+    y: Math[method]((sprite.y - BOX_SIZE) / BOX_SIZE),
+  };
+};
 
 export const getNeneRoboStackHeight = (sprite: PIXI.Sprite): number => {
   const { x, y } = getNeneRoboCoordinates(sprite);
-  // Legacy filter: index + 1 > y  �? index > y - 1
+  // Columns: top-left x and x+1. Filter rows with index+1 > y (legacy).
   return stackHeightBelow(pieces, [x, x + 1], y - 1);
 };
 
@@ -93,7 +103,6 @@ export const createNeneRobo = async (
     }
   };
 
-  /** Easter egg: Shift+�?/ swipe up lifts one cell when free. */
   const tryLift = () => {
     if (!canLift) return;
     const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
@@ -152,7 +161,6 @@ export const createNeneRobo = async (
   return nenerobo;
 };
 
-/** Post-land gravity helper for 2×2 pieces (used by board settle paths if needed). */
 export const neneRoboFall = (
   sprite: PIXI.Sprite,
   onFell: (sprite: PIXI.Sprite) => void,
