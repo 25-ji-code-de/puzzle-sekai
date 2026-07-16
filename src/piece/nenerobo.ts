@@ -1,4 +1,9 @@
-import { app, gameTicker, hammerManager } from "../index";
+/**
+ * 2×2 piece (NeneRobo / Mikudayo): geometry helpers + active controller.
+ */
+import * as PIXI from "pixi.js-legacy";
+import "pixi-sound";
+import { app, gameTicker } from "../index";
 import {
   LEFT_BORDER,
   RIGHT_BORDER,
@@ -9,280 +14,17 @@ import {
   FALL_DELAY,
   FALL_SPEED,
 } from "../config";
-import * as PIXI from "pixi.js-legacy";
-import "pixi-sound";
 import { pieces } from "../game/board-state";
 import { addDropScore } from "../score";
 import {
   getCurrentSettings,
   getSpeedMultiplier,
   getSpawnRotation,
-  sfxVol,
-  SFX_MOVE_BASE,
-  SFX_LAND_BASE,
 } from "../settings";
-import { isControlsSwapped, consumeKanadeSlowForSpawn } from "../fun/effects";
-
-export const createNeneRobo = async (
-  file: string,
-  onDropped: (sprite: PIXI.Sprite) => void,
-) => {
-  // load the texture we need
-  const texture =
-    app.loader.resources[file]?.texture ??
-    (await new Promise((resolve) => {
-      app.loader
-        .add(file)
-        .load((_, resources) => resolve(resources[file]!.texture!));
-    }));
-
-  const nenerobo = new PIXI.Sprite(texture);
-
-  nenerobo.x = (LEFT_BORDER + RIGHT_BORDER) / 2 - BOX_SIZE;
-  nenerobo.y = -BOX_SIZE / 2;
-
-  nenerobo.anchor.x = 0.5;
-  nenerobo.anchor.y = 0.5;
-
-  // inverted (default, head-down) or upright — see settings.spawnOrientation
-  nenerobo.rotation = getSpawnRotation();
-  // app.stage.addChild(bunny);
-
-  let dropped: number | undefined = undefined;
-  const settings = getCurrentSettings();
-  const speedMultiplier = getSpeedMultiplier(settings);
-  const funSpeedMult = consumeKanadeSlowForSpawn();
-  let speed = SPEED * speedMultiplier * funSpeedMult;
-  let dropScore = 0;
-
-  const onMoved = () => {
-    if (dropped) {
-      clearTimeout(dropped);
-      dropped = undefined;
-    }
-    const sound = app.loader.resources.move.sound;
-    if (sound.isPlaying) {
-      sound.stop();
-    }
-    sound.play({ volume: sfxVol(SFX_MOVE_BASE) });
-  };
-
-  const moveLeft = () => {
-    const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
-    if (y <= 0 && x > 0 && !pieces[0][x - 1]) {
-      nenerobo.x -= BOX_SIZE;
-      onMoved();
-    } else if (x > 0 && !pieces[y][x - 1] && !pieces[y + 1][x - 1]) {
-      nenerobo.x -= BOX_SIZE;
-      onMoved();
-    }
-  };
-
-  const moveRight = () => {
-    const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
-    if (y <= 0 && x + 2 < COLUMNS && !pieces[0][x + 2]) {
-      nenerobo.x += BOX_SIZE;
-      onMoved();
-    } else if (x + 2 < COLUMNS && !pieces[y][x + 2] && !pieces[y + 1][x + 2]) {
-      nenerobo.x += BOX_SIZE;
-      onMoved();
-    }
-  };
-
-  /** Easter egg: Shift+↑ lifts NeneRobo one cell when free (same as Emu). */
-  const moveUp = () => {
-    const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
-    // Top of 2×2 is row y; need both columns free one row above
-    if (y <= 0) return;
-    const above = y - 1;
-    if (pieces[above]?.[x] || pieces[above]?.[x + 1]) return;
-    nenerobo.y -= BOX_SIZE;
-    onMoved();
-  };
-
-  const rotateCW = () => {
-    nenerobo.rotation += Math.PI / 2;
-    onMoved();
-  };
-
-  const rotateCCW = () => {
-    nenerobo.rotation -= Math.PI / 2;
-    onMoved();
-  };
-
-  const hardDrop = () => {
-    const stackHeight = getNeneRoboStackHeight(nenerobo);
-    const newY = app.renderer.height - OFFSET_BOTTOM - BOX_SIZE * stackHeight - BOX_SIZE;
-    const distance = Math.floor((newY - nenerobo.y) / BOX_SIZE);
-    dropScore += distance * 5;
-    nenerobo.y = newY;
-    onMoved();
-  };
-
-  const softDrop = () => {
-    speed = SPEED * 4 * speedMultiplier * funSpeedMult;
-  };
-
-  const normalSpeed = () => {
-    speed = SPEED * speedMultiplier * funSpeedMult;
-  };
-
-  const handleKeyPress = (event: KeyboardEvent) => {
-    const swapped = isControlsSwapped();
-    switch (event.key.toLowerCase()) {
-      case "arrowleft":
-        swapped ? moveRight() : moveLeft();
-        break;
-      case "arrowright":
-        swapped ? moveLeft() : moveRight();
-        break;
-      case "arrowup":
-        if (event.shiftKey && file.toLowerCase().includes("nenerobo")) {
-          moveUp();
-          break;
-        }
-        swapped ? rotateCCW() : rotateCW();
-        break;
-      case "x":
-        swapped ? rotateCCW() : rotateCW();
-        break;
-      case "z":
-      case "control":
-        swapped ? rotateCW() : rotateCCW();
-        break;
-      case "arrowdown":
-        softDrop();
-        break;
-      case " ":
-        hardDrop();
-        break;
-    }
-  };
-
-  const handleKeyUp = (event: KeyboardEvent) => {
-    if (event.key === "ArrowDown") {
-      normalSpeed();
-    }
-  };
-
-  const handleSwipeLeft = () =>
-    isControlsSwapped() ? moveRight() : moveLeft();
-  const handleSwipeRight = () =>
-    isControlsSwapped() ? moveLeft() : moveRight();
-  // Easter egg (NeneRobo): swipe up = lift one cell (same as Shift+↑)
-  const handleSwipeUp = () => {
-    if (file.toLowerCase().includes("nenerobo")) moveUp();
-  };
-  const handleTap = (e: HammerInput) => {
-    const leftHalf = e.center.x < window.innerWidth / 2;
-    if (isControlsSwapped()) {
-      leftHalf ? rotateCW() : rotateCCW();
-    } else {
-      leftHalf ? rotateCCW() : rotateCW();
-    }
-  };
-
-  window.addEventListener("keydown", handleKeyPress, false);
-  window.addEventListener("keyup", handleKeyUp, false);
-
-  hammerManager.on("swipeleft", handleSwipeLeft);
-  hammerManager.on("swiperight", handleSwipeRight);
-  hammerManager.on("swipedown", hardDrop);
-  hammerManager.on("swipeup", handleSwipeUp);
-  hammerManager.on("press", softDrop);
-  hammerManager.on("pressup", normalSpeed);
-  hammerManager.on("tap", handleTap);
-
-  app.stage.addChild(nenerobo);
-
-  const cleanup = () => {
-    window.removeEventListener("keydown", handleKeyPress, false);
-    window.removeEventListener("keyup", handleKeyUp, false);
-
-    hammerManager.off("swiperight", handleSwipeRight);
-    hammerManager.off("tap", handleTap);
-    hammerManager.off("swipeleft", handleSwipeLeft);
-    hammerManager.off("swipedown", hardDrop);
-    hammerManager.off("swipeup", handleSwipeUp);
-    hammerManager.off("press", softDrop);
-    hammerManager.off("pressup", normalSpeed);
-
-    gameTicker.remove(checkOffset);
-
-    // Add accumulated drop score
-    if (dropScore > 0) {
-      addDropScore(dropScore);
-    }
-
-    onDropped(nenerobo);
-  };
-  const checkOffset = (delta: number) => {
-    // each frame we spin the bunny around a bit
-    const stackHeight = getNeneRoboStackHeight(nenerobo);
-    const dropHeight =
-      app.renderer.height - (BOX_SIZE + OFFSET_BOTTOM) - BOX_SIZE * stackHeight;
-    if (nenerobo.y < dropHeight) {
-      const prevY = nenerobo.y;
-      nenerobo.y += speed * delta;
-      if (nenerobo.y > dropHeight) nenerobo.y = dropHeight;
-      const moved = Math.floor((nenerobo.y - prevY) / BOX_SIZE);
-      if (moved > 0) {
-        const mult = speed > SPEED ? 2 : 1;
-        dropScore += moved * mult;
-      }
-    } else {
-      if (!dropped) {
-        dropped = setTimeout(() => {
-          app.loader.resources.land.sound.play({ volume: sfxVol(SFX_LAND_BASE) });
-          nenerobo.y =
-            app.renderer.height -
-            OFFSET_BOTTOM -
-            BOX_SIZE * stackHeight -
-            BOX_SIZE;
-          cleanup();
-        }, 200);
-      }
-    }
-  };
-  // Listen for frame updates
-  gameTicker.add(checkOffset);
-
-  return nenerobo;
-};
-
-export const neneRoboFall = (
-  sprite: PIXI.Sprite,
-  onFell: (sprite: PIXI.Sprite) => void,
-) => {
-  let timer: number;
-  const cleanup = () => {
-    gameTicker.remove(checkOffset);
-    onFell(sprite);
-  };
-  const checkOffset = (delta: number) => {
-    // each frame we spin the bunny around a bit
-    const stackHeight = getNeneRoboStackHeight(sprite);
-    const dropHeight =
-      app.renderer.height - (BOX_SIZE + OFFSET_BOTTOM) - BOX_SIZE * stackHeight;
-    if (sprite.y < dropHeight) {
-      sprite.y += FALL_SPEED * delta;
-      if (timer) clearTimeout(timer);
-    } else {
-      if (!timer) {
-        timer = setTimeout(() => {
-          sprite.y =
-            app.renderer.height -
-            OFFSET_BOTTOM -
-            BOX_SIZE * stackHeight -
-            BOX_SIZE;
-          cleanup();
-        }, FALL_DELAY);
-      }
-    }
-  };
-  // Listen for frame updates
-  gameTicker.add(checkOffset);
-};
+import { consumeKanadeSlowForSpawn } from "../fun/effects";
+import { bindPieceControls } from "./controls";
+import { createActiveFall } from "./active-fall";
+import { loadTexture } from "./load-texture";
 
 export const getNeneRoboCoordinates = (
   sprite: PIXI.Sprite,
@@ -301,4 +43,153 @@ export const getNeneRoboStackHeight = (sprite: PIXI.Sprite): number => {
     .filter((_, index) => index + 1 > y)
     .reverse()
     .reduce((acc, row, index) => (row[0] || row[1] ? index + 1 : acc), 0);
+};
+
+const dropHeightFor = (sprite: PIXI.Sprite) => {
+  const stackHeight = getNeneRoboStackHeight(sprite);
+  return (
+    app.renderer.height - (BOX_SIZE + OFFSET_BOTTOM) - BOX_SIZE * stackHeight
+  );
+};
+
+const landYFor = (sprite: PIXI.Sprite) => {
+  const stackHeight = getNeneRoboStackHeight(sprite);
+  return (
+    app.renderer.height - OFFSET_BOTTOM - BOX_SIZE * stackHeight - BOX_SIZE
+  );
+};
+
+export const createNeneRobo = async (
+  file: string,
+  onDropped: (sprite: PIXI.Sprite) => void,
+) => {
+  const texture = await loadTexture(file);
+  const nenerobo = new PIXI.Sprite(texture);
+
+  nenerobo.x = (LEFT_BORDER + RIGHT_BORDER) / 2 - BOX_SIZE;
+  nenerobo.y = -BOX_SIZE / 2;
+  nenerobo.anchor.x = 0.5;
+  nenerobo.anchor.y = 0.5;
+  nenerobo.rotation = getSpawnRotation();
+
+  const settings = getCurrentSettings();
+  const speedMultiplier = getSpeedMultiplier(settings);
+  const funSpeedMult = consumeKanadeSlowForSpawn();
+  const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
+  const fall = createActiveFall(nenerobo, baseSpeed);
+
+  const canLift =
+    file.toLowerCase().includes("nenerobo") ||
+    file.toLowerCase().includes("mikudayo");
+
+  const moveLeft = () => {
+    const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
+    if (y <= 0 && x > 0 && !pieces[0][x - 1]) {
+      nenerobo.x -= BOX_SIZE;
+      fall.onMoved();
+    } else if (x > 0 && !pieces[y][x - 1] && !pieces[y + 1][x - 1]) {
+      nenerobo.x -= BOX_SIZE;
+      fall.onMoved();
+    }
+  };
+
+  const moveRight = () => {
+    const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
+    if (y <= 0 && x + 2 < COLUMNS && !pieces[0][x + 2]) {
+      nenerobo.x += BOX_SIZE;
+      fall.onMoved();
+    } else if (x + 2 < COLUMNS && !pieces[y][x + 2] && !pieces[y + 1][x + 2]) {
+      nenerobo.x += BOX_SIZE;
+      fall.onMoved();
+    }
+  };
+
+  /** Easter egg: Shift+↑ / swipe up lifts one cell when free. */
+  const tryLift = () => {
+    if (!canLift) return;
+    const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");
+    if (y <= 0) return;
+    const above = y - 1;
+    if (pieces[above]?.[x] || pieces[above]?.[x + 1]) return;
+    nenerobo.y -= BOX_SIZE;
+    fall.onMoved();
+  };
+
+  const rotateCW = () => {
+    nenerobo.rotation += Math.PI / 2;
+    fall.onMoved();
+  };
+
+  const rotateCCW = () => {
+    nenerobo.rotation -= Math.PI / 2;
+    fall.onMoved();
+  };
+
+  const hardDrop = () => {
+    const newY = landYFor(nenerobo);
+    const distance = Math.floor((newY - nenerobo.y) / BOX_SIZE);
+    fall.addHardDropScore(distance);
+    nenerobo.y = newY;
+    fall.onMoved();
+  };
+
+  const unbind = bindPieceControls({
+    moveLeft,
+    moveRight,
+    rotateCW,
+    rotateCCW,
+    hardDrop,
+    softDrop: fall.softDrop,
+    normalSpeed: fall.normalSpeed,
+    tryLift: canLift ? tryLift : undefined,
+  });
+
+  app.stage.addChild(nenerobo);
+
+  const finish = () => {
+    unbind();
+    fall.stop();
+    const dropScore = fall.getDropScore();
+    if (dropScore > 0) addDropScore(dropScore);
+    onDropped(nenerobo);
+  };
+
+  fall.start(
+    () => dropHeightFor(nenerobo),
+    () => landYFor(nenerobo),
+    finish,
+  );
+
+  return nenerobo;
+};
+
+/** Post-land gravity helper for 2×2 pieces (used by board settle paths if needed). */
+export const neneRoboFall = (
+  sprite: PIXI.Sprite,
+  onFell: (sprite: PIXI.Sprite) => void,
+) => {
+  let timer: number | undefined;
+  const cleanup = () => {
+    gameTicker.remove(checkOffset);
+    onFell(sprite);
+  };
+  const checkOffset = (delta: number) => {
+    const stackHeight = getNeneRoboStackHeight(sprite);
+    const dropHeight =
+      app.renderer.height - (BOX_SIZE + OFFSET_BOTTOM) - BOX_SIZE * stackHeight;
+    if (sprite.y < dropHeight) {
+      sprite.y += FALL_SPEED * delta;
+      if (timer) clearTimeout(timer);
+    } else if (!timer) {
+      timer = window.setTimeout(() => {
+        sprite.y =
+          app.renderer.height -
+          OFFSET_BOTTOM -
+          BOX_SIZE * stackHeight -
+          BOX_SIZE;
+        cleanup();
+      }, FALL_DELAY);
+    }
+  };
+  gameTicker.add(checkOffset);
 };

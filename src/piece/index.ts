@@ -1,14 +1,15 @@
+/**
+ * Standard 2-cell active piece controller.
+ */
 import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
-import { app, gameTicker, hammerManager } from "../index";
+import { app, gameTicker } from "../index";
 import {
   LEFT_BORDER,
   RIGHT_BORDER,
   BOX_SIZE,
   COLUMNS,
   SPEED,
-  NEXT_CHARACTER_Y,
-  NEXT_CHARACTER_X,
   OFFSET_BOTTOM,
   FALL_DELAY,
   FALL_SPEED,
@@ -19,25 +20,35 @@ import {
   getStackHeight,
   getOffset,
 } from "../utils/coords";
-import { characterData, CharacterData } from "../characters/data";
 import { createNeneRobo } from "./nenerobo";
 import { addDropScore } from "../score";
 import {
   getCurrentSettings,
   getSpeedMultiplier,
   getSpawnRotation,
-  sfxVol,
-  SFX_MOVE_BASE,
-  SFX_LAND_BASE,
 } from "../settings";
 import {
-  isControlsSwapped,
   onShihoLanded,
   consumeKanadeSlowForSpawn,
   getKanadeSelfSpeedMult,
   onKanadeLanded,
 } from "../fun/effects";
-import { getMizukiLockColumns, getCarrotHazardColumns } from "../board/contact";
+import {
+  getMizukiLockColumns,
+  getCarrotHazardColumns,
+} from "../board/contact";
+import { bindPieceControls } from "./controls";
+import { createActiveFall } from "./active-fall";
+import { loadTexture } from "./load-texture";
+
+export { nextCharacter, initRNG, randomCharacter } from "./rng";
+export { fly, showNextPiece } from "./preview";
+export {
+  createNeneRobo,
+  neneRoboFall,
+  getNeneRoboCoordinates,
+  getNeneRoboStackHeight,
+} from "./nenerobo";
 
 /** Index of the value in `list` nearest to `target`. Assumes list is non-empty. */
 const nearestIndex = (list: number[], target: number): number => {
@@ -53,46 +64,18 @@ const nearestIndex = (list: number[], target: number): number => {
   return idx;
 };
 
-// Get filtered character list based on selected groups
-const getFilteredCharacterData = (): CharacterData[] => {
-  const settings = getCurrentSettings();
-  return characterData.filter(
-    (c) =>
-      settings.selectedGroups.includes(c.group as any) ||
-      (c.group === "Special" && settings.funModes?.mikudayo),
-  );
-};
-
-export let nextCharacter: CharacterData | undefined;
-let characterList: CharacterData[] = [];
-
-export const fly = (
-  sprite: PIXI.Sprite,
-  onExit: (sprite: PIXI.Sprite) => void,
-) => {
-  const settings = getCurrentSettings();
-  const speedMultiplier = getSpeedMultiplier(settings);
-  const handleFly = (delta: number) => {
-    sprite.y -= 25 * SPEED * speedMultiplier * delta;
-    if (sprite.y + 2 * BOX_SIZE < 0) {
-      gameTicker.remove(handleFly);
-      onExit(sprite);
-    }
-  };
-  gameTicker.add(handleFly);
-};
+/** Legacy post-land fall helper for standard pieces. */
 export const fall = (
   sprite: PIXI.Sprite,
   onFall?: (sprite: PIXI.Sprite) => void,
 ) => {
-  let timer: number;
+  let timer: number | undefined;
   const cleanup = () => {
     gameTicker.remove(checkOffset);
     onFall && onFall(sprite);
   };
 
   const checkOffset = (delta: number) => {
-    // each frame we spin the bunny around a bit
     const offset = getOffset(sprite);
     const stackHeight = getStackHeight(sprite);
     const dropHeight =
@@ -103,98 +86,60 @@ export const fall = (
     if (sprite.y < dropHeight) {
       sprite.y += FALL_SPEED * delta;
       if (timer) clearTimeout(timer);
-    } else {
-      if (!timer) {
-        timer = setTimeout(() => {
-          sprite.y =
-            app.renderer.height -
-            (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-            (offset === 2 ? BOX_SIZE : 0) -
-            BOX_SIZE * stackHeight;
-          cleanup();
-        }, FALL_DELAY);
-      }
+    } else if (!timer) {
+      timer = window.setTimeout(() => {
+        sprite.y =
+          app.renderer.height -
+          (BOX_SIZE / 2 + OFFSET_BOTTOM) -
+          (offset === 2 ? BOX_SIZE : 0) -
+          BOX_SIZE * stackHeight;
+        cleanup();
+      }, FALL_DELAY);
     }
   };
 
-  // Listen for frame updates
   gameTicker.add(checkOffset);
 };
-export const initRNG = () => {
-  const filtered = getFilteredCharacterData();
-  characterList = [...filtered];
-  nextCharacter = characterList.splice(
-    Math.floor(Math.random() * characterList.length),
-    1,
-  )[0];
-};
-export const randomCharacter = (): CharacterData => {
-  if (characterList.length === 0) {
-    const filtered = getFilteredCharacterData();
-    characterList = [...filtered];
-  }
-  let res: CharacterData;
-  if (!nextCharacter) {
-    res = characterList.splice(
-      Math.floor(Math.random() * characterList.length),
-      1,
-    )[0];
-    return res;
-  } else {
-    res = { ...nextCharacter };
-    nextCharacter = characterList.splice(
-      Math.floor(Math.random() * characterList.length),
-      1,
-    )[0];
-  }
-  return res;
+
+const standardDropHeight = (sprite: PIXI.Sprite) => {
+  const offset = getOffset(sprite);
+  const stackHeight = getStackHeight(sprite);
+  return (
+    app.renderer.height -
+    (BOX_SIZE / 2 + OFFSET_BOTTOM) -
+    BOX_SIZE * stackHeight -
+    (offset === 2 ? BOX_SIZE : 0)
+  );
 };
 
-export const showNextPiece = async (file: string) => {
-  const texture =
-    app.loader.resources[file]?.texture ??
-    (await new Promise((resolve) => {
-      app.loader
-        .add(file)
-        .load((_, resources) => resolve(resources[file]!.texture!));
-    }));
-
-  const kasumi = new PIXI.Sprite(texture);
-  kasumi.anchor.x = 0.5;
-  kasumi.anchor.y = 1;
-
-  kasumi.y = NEXT_CHARACTER_Y;
-  kasumi.x = NEXT_CHARACTER_X;
-
-  app.stage.addChild(kasumi);
-  return kasumi;
+const standardLandY = (sprite: PIXI.Sprite) => {
+  const offset = getOffset(sprite);
+  const stackHeight = getStackHeight(sprite);
+  return (
+    app.renderer.height -
+    (BOX_SIZE / 2 + OFFSET_BOTTOM) -
+    (offset === 2 ? BOX_SIZE : 0) -
+    BOX_SIZE * stackHeight
+  );
 };
 
 export const createPiece = async (
   file: string,
   onDropped: (sprite: PIXI.Sprite) => void,
 ) => {
-  // load the texture we need
+  if (file.includes("nenerobo") || file.includes("mikudayo")) {
+    return await createNeneRobo(file, onDropped);
+  }
 
-  if (file.includes("nenerobo") || file.includes("mikudayo")) return await createNeneRobo(file, onDropped);
-  const texture =
-    app.loader.resources[file]?.texture ??
-    (await new Promise((resolve) => {
-      app.loader
-        .add(file)
-        .load((_, resources) => resolve(resources[file]!.texture!));
-    }));
-
-  const kasumi = new PIXI.Sprite(texture);
+  const texture = await loadTexture(file);
+  const piece = new PIXI.Sprite(texture);
 
   const isMizuki = file.toLowerCase().includes("mizuki");
   const isAllergyAvoider =
     file.toLowerCase().includes("ena") ||
     file.toLowerCase().includes("akito");
-  // ポテトと瑞希: if fries on board and open columns exist, lock Mizuki to those cols
   const mizukiLockCols = isMizuki ? getMizukiLockColumns() : [];
   const mizukiLocked = mizukiLockCols.length > 0;
-  // にんじん嫌い: Ena/Akito skip carrot hazard columns (cannot voluntarily land there)
   const carrotHazards = isAllergyAvoider ? getCarrotHazardColumns() : [];
   const avoidCarrotCols = carrotHazards.length > 0;
 
@@ -203,7 +148,6 @@ export const createPiece = async (
   if (mizukiLocked) {
     spawnCol = mizukiLockCols[Math.floor(mizukiLockCols.length / 2)];
   } else if (avoidCarrotCols) {
-    // Prefer center among columns that do NOT contact carrots
     const mid = Math.floor(COLUMNS / 2);
     const free = Array.from({ length: COLUMNS }, (_, c) => c).filter(
       (c) => !carrotHazards.includes(c),
@@ -215,46 +159,38 @@ export const createPiece = async (
       );
     }
   }
-  kasumi.x =
+  piece.x =
     spawnCol !== undefined
       ? LEFT_BORDER + spawnCol * BOX_SIZE + BOX_SIZE / 2
       : (LEFT_BORDER + RIGHT_BORDER) / 2 - BOX_SIZE / 2;
-  kasumi.y = -BOX_SIZE / 2;
+  piece.y = -BOX_SIZE / 2;
+  piece.anchor.x = 0.5;
+  piece.anchor.y = 0.25;
+  piece.rotation = getSpawnRotation();
 
-  kasumi.anchor.x = 0.5;
-  kasumi.anchor.y = 0.25;
-
-  // inverted (default, head-down) or upright — see settings.spawnOrientation
-  kasumi.rotation = getSpawnRotation();
-  // app.stage.addChild(bunny);
-
-  let dropped: number | undefined = undefined;
   const settings = getCurrentSettings();
   const speedMultiplier = getSpeedMultiplier(settings);
   const isKanade = file.toLowerCase().includes("kanade");
   const funSpeedMult =
-    consumeKanadeSlowForSpawn() *
-    (isKanade ? getKanadeSelfSpeedMult() : 1);
-  let speed = SPEED * speedMultiplier * funSpeedMult;
-  let dropScore = 0;
+    consumeKanadeSlowForSpawn() * (isKanade ? getKanadeSelfSpeedMult() : 1);
+  const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
+  const activeFall = createActiveFall(piece, baseSpeed);
 
-  /** When locked, left/right move only among allowed columns (skip others). */
   const currentCol = () =>
-    Math.round((kasumi.x - LEFT_BORDER - BOX_SIZE / 2) / BOX_SIZE);
+    Math.round((piece.x - LEFT_BORDER - BOX_SIZE / 2) / BOX_SIZE);
 
   const pieceY = () => {
-    const rawY = (kasumi.y - BOX_SIZE / 2) / BOX_SIZE;
+    const rawY = (piece.y - BOX_SIZE / 2) / BOX_SIZE;
     return Math.max(0, Math.ceil(rawY));
   };
 
   const tryShiftToCol = (fromCol: number, targetCol: number, y: number) => {
     if (targetCol < 0 || targetCol >= COLUMNS || targetCol === fromCol) return;
-    if (willCollide(targetCol, y, kasumi.rotation)) return;
-    kasumi.x += (targetCol - fromCol) * BOX_SIZE;
-    onMoved();
+    if (willCollide(targetCol, y, piece.rotation)) return;
+    piece.x += (targetCol - fromCol) * BOX_SIZE;
+    activeFall.onMoved();
   };
 
-  /** Jump among locked columns only (Mizuki + fries). Snap if off-list. */
   const moveAlongLockedCols = (direction: -1 | 1) => {
     const col = currentCol();
     const y = pieceY();
@@ -270,7 +206,6 @@ export const createPiece = async (
     tryShiftToCol(col, sorted[nextIdx], y);
   };
 
-  /** Skip forbidden columns (Ena/Akito + carrot). */
   const moveAvoidingHazards = (direction: -1 | 1) => {
     const col = currentCol();
     let next = col + direction;
@@ -296,157 +231,60 @@ export const createPiece = async (
     moveFree(direction);
   };
 
-  const onMoved = () => {
-    if (dropped) {
-      clearTimeout(dropped);
-      dropped = undefined;
-    }
-    const sound = app.loader.resources.move.sound;
-    if (sound.isPlaying) {
-      sound.stop();
-    }
-    sound.play({ volume: sfxVol(SFX_MOVE_BASE) });
-  };
-
   const moveUp = () => {
-    const { x, y } = getCoordinates(kasumi, "ceil");
-    if (y >= 0 && !willCollide(x, y - 1, kasumi.rotation)) {
-      kasumi.y -= BOX_SIZE;
-      onMoved();
+    const { x, y } = getCoordinates(piece, "ceil");
+    if (y >= 0 && !willCollide(x, y - 1, piece.rotation)) {
+      piece.y -= BOX_SIZE;
+      activeFall.onMoved();
     }
   };
 
-  const moveLeft = () => moveToAllowedCol(-1);
+  const canLift = file.toLowerCase().includes("emu");
 
-  const moveRight = () => moveToAllowedCol(1);
   const rotateCW = () => {
-    const { x, y } = getCoordinates(kasumi, "ceil");
-    if (!willCollide(x, y, kasumi.rotation + Math.PI / 2)) {
-      const offset = (getOffset(kasumi) - 1) / 2;
-      kasumi.rotation = offset * Math.PI;
-      onMoved();
+    const { x, y } = getCoordinates(piece, "ceil");
+    if (!willCollide(x, y, piece.rotation + Math.PI / 2)) {
+      const offset = (getOffset(piece) - 1) / 2;
+      piece.rotation = offset * Math.PI;
+      activeFall.onMoved();
     }
   };
 
   const rotateCCW = () => {
-    const { x, y } = getCoordinates(kasumi, "ceil");
-    if (!willCollide(x, y, kasumi.rotation - Math.PI / 2)) {
-      const offset = (getOffset(kasumi) + 1) / 2;
-      kasumi.rotation = offset * Math.PI;
-      onMoved();
+    const { x, y } = getCoordinates(piece, "ceil");
+    if (!willCollide(x, y, piece.rotation - Math.PI / 2)) {
+      const offset = (getOffset(piece) + 1) / 2;
+      piece.rotation = offset * Math.PI;
+      activeFall.onMoved();
     }
   };
 
   const hardDrop = () => {
-    const offset = getOffset(kasumi);
-    const stackHeight = getStackHeight(kasumi);
-    const newY =
-      app.renderer.height -
-      (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-      (offset === 2 ? BOX_SIZE : 0) -
-      BOX_SIZE * stackHeight;
-    const distance = Math.floor((newY - kasumi.y) / BOX_SIZE);
-    dropScore += distance * 5;
-    kasumi.y = newY;
-    onMoved();
+    const newY = standardLandY(piece);
+    const distance = Math.floor((newY - piece.y) / BOX_SIZE);
+    activeFall.addHardDropScore(distance);
+    piece.y = newY;
+    activeFall.onMoved();
   };
 
-  const softDrop = () => {
-    speed = SPEED * 4 * speedMultiplier * funSpeedMult;
-  };
+  const unbind = bindPieceControls({
+    moveLeft: () => moveToAllowedCol(-1),
+    moveRight: () => moveToAllowedCol(1),
+    rotateCW,
+    rotateCCW,
+    hardDrop,
+    softDrop: activeFall.softDrop,
+    normalSpeed: activeFall.normalSpeed,
+    tryLift: canLift ? moveUp : undefined,
+  });
 
-  const normalSpeed = () => {
-    speed = SPEED * speedMultiplier * funSpeedMult;
-  };
+  app.stage.addChild(piece);
 
-  const handleKeyPress = (event: KeyboardEvent) => {
-    const swapped = isControlsSwapped();
-    switch (event.key.toLowerCase()) {
-      case "arrowleft":
-        swapped ? moveRight() : moveLeft();
-        break;
-      case "arrowright":
-        swapped ? moveLeft() : moveRight();
-        break;
-      case "arrowup":
-        // Easter egg: Emu can lift one cell with Shift+↑
-        if (event.shiftKey && file.toLowerCase().includes("emu")) {
-          moveUp();
-          break;
-        }
-        swapped ? rotateCCW() : rotateCW();
-        break;
-      case "x":
-        swapped ? rotateCCW() : rotateCW();
-        break;
-      case "z":
-      case "control":
-        swapped ? rotateCW() : rotateCCW();
-        break;
-      case "arrowdown":
-        softDrop();
-        break;
-      case " ":
-        hardDrop();
-        break;
-    }
-  };
-
-  const handleKeyUp = (event: KeyboardEvent) => {
-    if (event.key === "ArrowDown") {
-      speed = SPEED * speedMultiplier * funSpeedMult;
-    }
-  };
-
-  // Mobile: swipe left/right move, tap left/right rotate — swap pairs when mirrored
-  const handleSwipeLeft = () =>
-    isControlsSwapped() ? moveRight() : moveLeft();
-  const handleSwipeRight = () =>
-    isControlsSwapped() ? moveLeft() : moveRight();
-  // Easter egg (Emu): swipe up = lift one cell (same as Shift+↑)
-  const handleSwipeUp = () => {
-    if (file.toLowerCase().includes("emu")) moveUp();
-  };
-  const handleTap = (e: HammerInput) => {
-    const leftHalf = e.center.x < window.innerWidth / 2;
-    if (isControlsSwapped()) {
-      leftHalf ? rotateCW() : rotateCCW();
-    } else {
-      leftHalf ? rotateCCW() : rotateCW();
-    }
-  };
-
-  window.addEventListener("keydown", handleKeyPress, false);
-  window.addEventListener("keyup", handleKeyUp, false);
-
-  hammerManager.on("swipeleft", handleSwipeLeft);
-  hammerManager.on("swiperight", handleSwipeRight);
-  hammerManager.on("swipedown", hardDrop);
-  hammerManager.on("swipeup", handleSwipeUp);
-  hammerManager.on("press", softDrop);
-  hammerManager.on("pressup", normalSpeed);
-  hammerManager.on("tap", handleTap);
-
-  app.stage.addChild(kasumi);
-
-  const cleanup = () => {
-    window.removeEventListener("keydown", handleKeyPress, false);
-    window.removeEventListener("keyup", handleKeyUp, false);
-
-    hammerManager.off("swiperight", handleSwipeRight);
-    hammerManager.off("tap", handleTap);
-    hammerManager.off("swipeleft", handleSwipeLeft);
-    hammerManager.off("swipedown", hardDrop);
-    hammerManager.off("swipeup", handleSwipeUp);
-    hammerManager.off("press", softDrop);
-    hammerManager.off("pressup", normalSpeed);
-
-    gameTicker.remove(checkOffset);
-
-    // Add accumulated drop score
-    if (dropScore > 0) {
-      addDropScore(dropScore);
-    }
+  const finish = () => {
+    unbind();
+    activeFall.stop();
+    const dropScore = activeFall.getDropScore();
+    if (dropScore > 0) addDropScore(dropScore);
 
     if (file.toLowerCase().includes("shiho")) {
       onShihoLanded();
@@ -455,43 +293,14 @@ export const createPiece = async (
       onKanadeLanded();
     }
 
-    onDropped(kasumi);
+    onDropped(piece);
   };
-  const checkOffset = (delta: number) => {
-    // each frame we spin the bunny around a bit
-    const offset = getOffset(kasumi);
-    const stackHeight = getStackHeight(kasumi);
-    const dropHeight =
-      app.renderer.height -
-      (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-      BOX_SIZE * stackHeight -
-      (offset === 2 ? BOX_SIZE : 0);
-    if (kasumi.y < dropHeight) {
-      const prevY = kasumi.y;
-      kasumi.y += speed * delta;
-      if (kasumi.y > dropHeight) kasumi.y = dropHeight;
-      // Accumulate score based on actual movement
-      const moved = Math.floor((kasumi.y - prevY) / BOX_SIZE);
-      if (moved > 0) {
-        const mult = speed > SPEED ? 2 : 1;
-        dropScore += moved * mult;
-      }
-    } else {
-      if (!dropped) {
-        dropped = setTimeout(() => {
-          app.loader.resources.land.sound.play({ volume: sfxVol(SFX_LAND_BASE) });
-          kasumi.y =
-            app.renderer.height -
-            (BOX_SIZE / 2 + OFFSET_BOTTOM) -
-            (offset === 2 ? BOX_SIZE : 0) -
-            BOX_SIZE * stackHeight;
-          cleanup();
-        }, 200);
-      }
-    }
-  };
-  // Listen for frame updates
-  gameTicker.add(checkOffset);
 
-  return kasumi;
+  activeFall.start(
+    () => standardDropHeight(piece),
+    () => standardLandY(piece),
+    finish,
+  );
+
+  return piece;
 };
