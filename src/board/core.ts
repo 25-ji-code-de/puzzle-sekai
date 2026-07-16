@@ -95,7 +95,7 @@ type FallPlan = {
 
 /**
  * Simulate gravity for all currently unsupported pieces via BoardModel.
- * Pure coordinate math on the grid �?never re-derives footprint from rotation.
+ * Pure coordinate math on the grid — never re-derives footprint from rotation.
  */
 const planFalls = (canFall: FallEntry[]): FallPlan[] => {
   const model = getBoardModel();
@@ -159,7 +159,7 @@ const commitFall = (plan: FallPlan) => {
   const orient = asOrientation(getOffset(entry.sprite));
   const anchor = anchorFromFootprint(dest, kind, orient);
   placeSpriteAtAnchor(entry.sprite, kind, anchor.x, anchor.y);
-  // Write coordinates / grid directly �?do NOT call updateCoordinates
+  // Write coordinates / grid directly — do NOT call updateCoordinates
   // (it re-derives footprint from rotation and can desync after a tip).
   syncLiveCoordinates(entry, dest);
   const token = cellName(entry);
@@ -224,14 +224,14 @@ export const fallChunk = async (spritesList: SpriteData[]) => {
     if (canFall.length > 0) {
       const plans = planFalls(canFall);
       if (plans.length === 0) {
-        // Marked unsupported but no drop distance �?stop to avoid spin
+        // Marked unsupported but no drop distance — stop to avoid spin
         break;
       }
       await applyFalls(plans);
       continue;
     }
 
-    // Vertical gravity settled �?maybe tip overhangs
+    // Vertical gravity settled → maybe tip overhangs
     if (isFunModeOn("cantilever")) {
       const { tryCantileverPhysics } = await import("./physics");
       if (await tryCantileverPhysics(spritesList)) {
@@ -242,4 +242,4 @@ export const fallChunk = async (spritesList: SpriteData[]) => {
   }
 };
 
-// Particle VFX lives in ./particles �?re-exported from board/index.
+// Particle VFX lives in ./particles — re-exported from board/index.

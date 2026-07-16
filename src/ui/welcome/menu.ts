@@ -293,7 +293,7 @@ export const showWelcomePage = () => {
 };
 
 /**
- * Re-enter the welcome menu from gameplay (e.g. pause �?Quit to menu).
+ * Re-enter the welcome menu from gameplay (e.g. pause → Quit to menu).
  * Restores the welcome cover/bg, the menu BGM (bgm161), and shows the menu.
  */
 export const enterMenu = () => {

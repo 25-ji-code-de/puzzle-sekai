@@ -1,6 +1,6 @@
 /**
- * Clear presentation: white flash â†?glow â†?particles â†?remove from board.
- * No fun-mode imports â€?safe for allergy / silent clears without cycles.
+ * Clear presentation: white flash â†’ glow â†’ particles â†’ remove from board.
+ * No fun-mode imports â€” safe for allergy / silent clears without cycles.
  */
 import * as PIXI from "pixi.js-legacy";
 import { gameTicker } from "../runtime";
@@ -8,7 +8,7 @@ import type { SpriteData } from "../game/board-state";
 import { removeSpritesFromBoard } from "./mutate";
 import { createParticles } from "./particles";
 
-/** Desaturate â†?glow â†?burst â†?remove. */
+/** Desaturate â†’ glow â†’ burst â†’ remove. */
 export const playClearAnimation = async (
   toRemove: SpriteData[],
 ): Promise<void> => {

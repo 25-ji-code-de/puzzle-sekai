@@ -2,9 +2,9 @@
  * Lazy BGM loader via pixi-sound.
  *
  * Boot no longer blocks on ~5.5 MB of music. Tracks are fetched by scene:
- *  - menu  → bgm161 (prefetched once the boot shell is ready; played on click)
- *  - play  → bgm038 + bgm168 (idle-prefetched from the menu; also on match start)
- *  - over  → bgm182_1 + bgm182_2 (idle-prefetched; also just-in-time at game over)
+ *  - menu → bgm161 (prefetched once the boot shell is ready; played on click)
+ *  - play → bgm038 + bgm168 (idle-prefetched from the menu; also on match start)
+ *  - over → bgm182_1 + bgm182_2 (idle-prefetched; also just-in-time at game over)
  *
  * Sound.add({ preload: true }) downloads once and caches the Sound instance.
  * Subsequent ensureBgm() calls resolve immediately from the in-memory map.

@@ -14,7 +14,7 @@ export type PieceControlActions = {
   softDrop: () => void;
   normalSpeed: () => void;
   /**
-   * Optional easter-egg lift (Shift+â†?/ swipe up).
+   * Optional easter-egg lift (Shift+â†‘ / swipe up).
    * Called only when the piece opts in (Emu / NeneRobo).
    */
   tryLift?: () => void;

@@ -3,7 +3,7 @@
  *
  * Layers:
  *   kinds / cells / footprint / stack / active-land / collision — pure
- *   placement / grid-write / sprite-primary                     — medium
+ *   placement / grid-write / sprite-primary — medium
  *
  * Gravity, cantilever, active piece fall, collision, and items MUST call
  * these — do not re-derive anchor / footprint / land-Y rules locally.

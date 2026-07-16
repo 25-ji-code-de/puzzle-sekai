@@ -284,7 +284,7 @@ export const resumePlay = () => {
 /**
  * Abandon the current match and return to the welcome menu. Tears down the
  * board, stops timers/BGM, drops the pause overlay, and shows the menu. The
- * match state is fully cleared �?calling `start` again later re-seeds it.
+ * match state is fully cleared — calling `start` again later re-seeds it.
  */
 
 export const returnToMenu = () => {
