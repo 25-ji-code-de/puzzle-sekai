@@ -13,6 +13,7 @@ import type { GroupName } from "../settings/types";
 import type { BoardCell, BoardGrid, EntityId } from "../domain/types";
 import { ITEM_TOKEN } from "../domain/types";
 import { getLiveBoard, resetLiveBoard } from "../domain/board";
+import { clearEntitySprites } from "../presentation/entity-view";
 
 export type { BoardCell, BoardGrid, EntityId };
 export { ITEM_TOKEN };
@@ -39,10 +40,12 @@ export let pieces: BoardGrid = getLiveBoard().grid;
 export const resetPieces = () => {
   const model = resetLiveBoard();
   pieces = model.grid;
+  clearEntitySprites();
 };
 
 export const clearSpritesList = () => {
   sprites = [];
+  clearEntitySprites();
 };
 
 /** Access the domain BoardModel; rebinds `pieces` to its grid. */

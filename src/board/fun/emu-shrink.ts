@@ -9,6 +9,7 @@ import { SFX_EFFECT_BASE } from "../../settings";
 import { isAdjacentToAny } from "../grid";
 import { placeSpriteAtAnchor } from "../geometry";
 import { makeShrunkEntity } from "../../domain/board/entity";
+import { registerEntitySprite } from "../../presentation/entity-view";
 import { CHAR } from "../../characters/ids";
 import { playLoadedSfx } from "../../audio/sfx";
 
@@ -88,6 +89,7 @@ const shrinkEmuSprite = (
   model.write([keep as any], CHAR.Emu);
   const ent = makeShrunkEntity({ character: CHAR.Emu, cells: [keep as any] });
   sp.entityId = ent.id;
+  registerEntitySprite(ent.id, sprite);
 
   playLoadedSfx("emuShrink", "sfx", SFX_EFFECT_BASE);
   return true;

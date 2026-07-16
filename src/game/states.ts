@@ -2,7 +2,6 @@
  * Play state machine: start / spawn / land / pause / game-over / menu return.
  */
 import * as PIXI from "pixi.js-legacy";
-import { playLoadedSfx } from "../audio/sfx";
 import { app, gameTicker, resetGameTicker, setState } from "../runtime";
 import {
   createavatarSan,
@@ -11,17 +10,13 @@ import {
   createFallingavatar,
 } from "../characters/avatar";
 import { barrel, curtain, createBarrel, gameOverCurtain } from "../props/objects";
-import { COLUMNS, BOX_SIZE, LEFT_BORDER } from "../config";
+import { BOX_SIZE, LEFT_BORDER } from "../config";
 import {
   initRNG,
   nextCharacter,
-  randomCharacter,
-  fly,
-  createPiece,
   showNextPiece,
 } from "../piece";
-import { getOffset, getCoordinates, getMaxStackHeight } from "../utils/coords";
-import { createItem, getRandomItem } from "../items";
+import { getOffset, getCoordinates } from "../utils/coords";
 import {
   resetScore,
   initScoreDisplay,
@@ -29,21 +24,15 @@ import {
   decrementTime,
 } from "../score";
 import {
-} from "../board";
-import {
   getCurrentGameMode,
   getCurrentSettings,
-  getItemDropChance,
 } from "../settings";
 import { resetFunEffects } from "../fun/effects";
 import {
   setPlayPhase,
   isPausedPhase,
 } from "../application/play-session/phase";
-import {
-  handleItemLand,
-  handleCharacterLand,
-} from "../application/play-session/land";
+import { spawnNext } from "../application/play-session/spawn";
 import { enterMenu } from "../ui/welcome";
 import {
   disposePauseMenu,
@@ -161,83 +150,21 @@ export { start };
 
 const create = async () => {
   if (created) return;
-  const index = sprites.length;
-  const maxHeight = getMaxStackHeight();
-  if (maxHeight < 5 && Math.random() < getItemDropChance(getCurrentSettings())) {
-    const itemFile = getRandomItem();
-    let dropped = [false, false];
-    const onDropped = (id: number) => async (sprite: PIXI.Sprite) => {
-      const { x, y } = getCoordinates(sprite);
-      const outcome = await handleItemLand(sprite, index + id, itemFile, x, y);
-      if (outcome.topOut) {
-        setState(end);
-      } else {
-        dropped[id] = true;
-        if (dropped.every((e) => e)) {
-          setState(create);
-          created = false;
-        }
-      }
-    };
-    const positions = Array(COLUMNS)
-      .fill(0)
-      .map((_, i) => i);
-    const itemSprites = await Promise.all([
-      createItem(
-        itemFile,
-        positions.splice(Math.floor(Math.random() * positions.length))[0],
-        onDropped(0),
-      ).then((item) => {
-        // Register as soon as the sprite exists so early land can't miss sprites[]
-        if (!sprites.some((s) => s.sprite === item)) {
-          sprites.push({ sprite: item, isItem: true, itemFile });
-        }
-        return item;
-      }),
-      createItem(
-        itemFile,
-        positions.splice(Math.floor(Math.random() * positions.length))[0],
-        onDropped(1),
-      ).then((item) => {
-        if (!sprites.some((s) => s.sprite === item)) {
-          sprites.push({ sprite: item, isItem: true, itemFile });
-        }
-        return item;
-      }),
-    ]);
-    void itemSprites;
-  } else {
-    const character = randomCharacter();
-    const onDropped = async (sprite: PIXI.Sprite) => {
-      const outcome = await handleCharacterLand(sprite, index, character);
-      if (outcome.topOut) {
-        setState(end);
-      } else {
-        setState(create);
-        created = false;
-      }
-    };
-    if (nextPiece) {
-      avatarStab.play();
-      fly(nextPiece, async (s) => {
-        avatarStab.gotoAndStop(0);
-        app.stage.removeChild(s);
-        if (nextCharacter) {
-          nextPiece = await showNextPiece(
-            nextCharacter.preview ?? nextCharacter.file,
-          );
-        }
-        const piece = await createPiece(character.file, onDropped);
-        sprites.push({ sprite: piece, character });
-      });
-    }
-    if (character.sounds?.fall) {
-      const fallSounds = character.sounds.fall;
-      const key = fallSounds[Math.floor(Math.random() * fallSounds.length)];
-      playLoadedSfx(key, "voice", 0.5);
-    }
-  }
-  setState(falling);
+  created = true;
+  await spawnNext({
+    getSpriteIndexBase: () => sprites.length,
+    avatarStab,
+    getNextPiece: () => nextPiece,
+    setNextPiece: (s: PIXI.Sprite) => {
+      nextPiece = s;
+    },
+    onTopOut: () => setState(end),
+    onSpawnComplete: () => {
+      created = false;
+      setState(create);
+    },
+    onFalling: () => setState(falling),
+  });
 };
 
 const falling = () => {};

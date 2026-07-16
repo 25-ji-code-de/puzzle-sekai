@@ -32,6 +32,7 @@ import {
 } from "../domain/board/entity";
 import type { CharacterName } from "../characters/ids";
 import type { GroupName } from "../settings/types";
+import { registerEntitySprite } from "../presentation/entity-view";
 
 const kindOf = (entry: {
   character?: Pick<CharacterData, "name"> | SpriteData["character"];
@@ -94,6 +95,7 @@ export const updateCoordinates = (
         cells: cells as Cell[],
       });
       sprites[idx].entityId = ent.id;
+      registerEntitySprite(ent.id, sprite);
     } else if (kind === "big2x2" && charName) {
       const ent = makeBig2x2Entity({
         character: charName,
@@ -102,12 +104,14 @@ export const updateCoordinates = (
         orientation: orient,
       });
       sprites[idx].entityId = ent.id;
+      registerEntitySprite(ent.id, sprite);
     } else if (kind === "shrunk" && charName) {
       const ent = makeShrunkEntity({
         character: charName,
         cells: cells as Cell[],
       });
       sprites[idx].entityId = ent.id;
+      registerEntitySprite(ent.id, sprite);
     } else if (charName) {
       const ent = makeCell2Entity({
         character: charName,
@@ -116,6 +120,7 @@ export const updateCoordinates = (
         orientation: orient,
       });
       sprites[idx].entityId = ent.id;
+      registerEntitySprite(ent.id, sprite);
     }
   }
 

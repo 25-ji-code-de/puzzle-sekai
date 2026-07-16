@@ -9,13 +9,17 @@ import {
   getBoardModel,
 } from "../game/board-state";
 import type { Cell } from "./geometry";
+import { unregisterEntitySprite } from "../presentation/entity-view";
 
-/** Wipe footprint cells, remove from stage, and drop from sprites[]. */
+/** Wipe footprint cells, remove from stage, drop sprites[], unregister entity views. */
 export const removeSpritesFromBoard = (toRemove: SpriteData[]): void => {
   const model = getBoardModel();
   toRemove.forEach((sp) => {
     if (sp.coordinates?.length) {
       model.clear(sp.coordinates as Cell[]);
+    }
+    if (sp.entityId) {
+      unregisterEntitySprite(sp.entityId);
     }
     app.stage.removeChild(sp.sprite);
   });
