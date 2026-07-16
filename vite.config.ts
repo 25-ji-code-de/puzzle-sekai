@@ -103,6 +103,15 @@ export default defineConfig({
   // (`modules`) leaves those operators intact.
   build: {
     target: "es2019",
+    // Open-source: emit production source maps so DevTools can map minified
+    // bundles back to original .ts / .scss. Maps are separate `*.map` files
+    // (not inlined). Workbox globPatterns omit `*.map`, so PWA install size
+    // is unaffected; maps only load when a developer opens DevTools.
+    sourcemap: true,
+  },
+  css: {
+    // Dev: SCSS → original partials in browser Styles panel
+    devSourcemap: true,
   },
   plugins: [
     assetsToWebp({ quality: 85 }),
