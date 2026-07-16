@@ -1,6 +1,6 @@
 import { clampVolumePercent } from "../../volume";
 import { updateCurrentSettings } from "../../store";
-import { t } from "../../../i18n";
+import { t, type MessageKey } from "../../../i18n";
 import {
   applyBgmVolume,
   playSfxPreview,
@@ -16,7 +16,7 @@ export const appendAudioSection = (
   const group = makeSettingGroup(t("settings.audio.label"));
 
   type VolKey = "bgmVolume" | "sfxVolume" | "voiceVolume";
-  const volRows: { key: VolKey; labelKey: string }[] = [
+  const volRows: { key: VolKey; labelKey: MessageKey }[] = [
     { key: "bgmVolume", labelKey: "settings.audio.bgm" },
     { key: "sfxVolume", labelKey: "settings.audio.sfx" },
     { key: "voiceVolume", labelKey: "settings.audio.voice" },

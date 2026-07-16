@@ -5,7 +5,7 @@ import {
   scaleItemLinkedFactor,
   type FunModeId,
 } from "../../../fun/modes";
-import { t } from "../../../i18n";
+import { t, type MessageKey } from "../../../i18n";
 import {
   commitAndRefresh,
   makeOptionsRow,
@@ -43,17 +43,17 @@ export const appendFunModesSection = (
     const on = !!settings.funModes[def.id];
     const opt = document.createElement("div");
     opt.className = `setting-opt ${on ? "active" : ""}`;
-    opt.title = t(`fun.${def.id}.description`);
+    opt.title = t(`fun.${def.id}.description` as MessageKey);
     const shownFactor = def.itemLinked
       ? scaleItemLinkedFactor(def.scoreFactor, currentItemRate)
       : def.scoreFactor;
     const factorNote = def.itemLinked ? t("settings.fun.itemLinked") : "";
-    opt.innerHTML = `<div>${t(`fun.${def.id}.name`)}</div>
+    opt.innerHTML = `<div>${t(`fun.${def.id}.name` as MessageKey)}</div>
       <div class="setting-opt-sub">${t(
-        `fun.${def.id}.subtitle`,
+        `fun.${def.id}.subtitle` as MessageKey,
       )} · ×${shownFactor.toFixed(2)}${factorNote}</div>`;
     opt.onmouseenter = () => {
-      help.textContent = t(`fun.${def.id}.description`);
+      help.textContent = t(`fun.${def.id}.description` as MessageKey);
     };
     opt.onclick = () => {
       const next = !settings.funModes[def.id];

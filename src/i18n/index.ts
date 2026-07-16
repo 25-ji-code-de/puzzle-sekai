@@ -2,10 +2,13 @@ import { getStoragePort } from "../settings/storage";
 import { zh } from "./locales/zh";
 import { ja } from "./locales/ja";
 import { en } from "./locales/en";
+import type { LocaleTree, MessageKey } from "./types";
 
+export type { MessageKey, LocaleTree } from "./types";
 export type Locale = "zh" | "ja" | "en";
 
-const LOCALES: Record<Locale, Record<string, any>> = { zh, ja, en };
+/** All catalogs must match the English key tree (string leaves). */
+const LOCALES: Record<Locale, LocaleTree> = { zh, ja, en };
 
 let currentLocale: Locale = "zh";
 const listeners: Array<(locale: Locale) => void> = [];
@@ -27,8 +30,8 @@ export function getLocale(): Locale {
 
 /** Keep <meta name="description"> in sync with the active locale. */
 function applyMetaDescription(locale: Locale = currentLocale): void {
-  const content = LOCALES[locale]?.page?.description;
-  if (typeof content !== "string" || !content) return;
+  const content = LOCALES[locale].page.description;
+  if (!content) return;
   let meta = document.querySelector(
     'meta[name="description"]',
   ) as HTMLMetaElement | null;
@@ -57,7 +60,7 @@ function applyDataI18n(): void {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
     if (key) {
-      const translated = t(key);
+      const translated = t(key as MessageKey);
       if (translated !== key) el.innerHTML = translated;
     }
   });
@@ -72,10 +75,21 @@ export function onLocaleChange(fn: (locale: Locale) => void): void {
  * Translate a dot-separated key with optional interpolation.
  * `t("settings.speed.slow")` → `"慢速"`
  * `t("settings.ta.duration", { seconds: 90 })` → `"90秒"`
+ *
+ * Dynamic keys built at runtime (e.g. fun mode ids) should be cast:
+ * `t(\`fun.${id}.name\` as MessageKey)`.
  */
-export function t(key: string, params?: Record<string, string | number>): string {
-  const dict = LOCALES[currentLocale];
-  const value = key.split(".").reduce((obj: any, k) => obj?.[k], dict);
+export function t(
+  key: MessageKey,
+  params?: Record<string, string | number>,
+): string {
+  const dict: unknown = LOCALES[currentLocale];
+  const value = key.split(".").reduce<unknown>((obj, k) => {
+    if (obj && typeof obj === "object" && k in obj) {
+      return (obj as Record<string, unknown>)[k];
+    }
+    return undefined;
+  }, dict);
   let str = typeof value === "string" ? value : key;
   if (params) {
     for (const [pk, pv] of Object.entries(params)) {

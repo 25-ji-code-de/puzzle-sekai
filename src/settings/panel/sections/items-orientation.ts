@@ -6,7 +6,7 @@ import {
   SPAWN_ORIENTATION_SCORE_FACTORS,
 } from "../../types";
 import { getItemDropLabel } from "../../difficulty";
-import { t } from "../../../i18n";
+import { t, type MessageKey } from "../../../i18n";
 import {
   commitAndRefresh,
   makeChip,
@@ -58,15 +58,15 @@ export const appendOrientationSection = (
   SPAWN_ORIENTATIONS.forEach((orient) => {
     options.appendChild(
       makeChip(
-        t(`settings.orientation.${orient}`),
+        t(`settings.orientation.${orient}` as MessageKey),
         orient === currentOrient,
         () =>
           commitAndRefresh(ctx, () => {
             ctx.settings.spawnOrientation = orient;
           }),
         {
-          title: t(`settings.orientation.${orient}Help`),
-          html: `<div>${t(`settings.orientation.${orient}`)}</div>
+          title: t(`settings.orientation.${orient}Help` as MessageKey),
+          html: `<div>${t(`settings.orientation.${orient}` as MessageKey)}</div>
       <div class="setting-opt-sub">×${SPAWN_ORIENTATION_SCORE_FACTORS[
         orient
       ].toFixed(2)}</div>`,
@@ -77,7 +77,9 @@ export const appendOrientationSection = (
   group.appendChild(options);
   const help = document.createElement("div");
   help.className = "setting-help setting-help--muted";
-  help.textContent = t(`settings.orientation.${currentOrient}Help`);
+  help.textContent = t(
+    `settings.orientation.${currentOrient}Help` as MessageKey,
+  );
   group.appendChild(help);
   panel.appendChild(group);
 };

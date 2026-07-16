@@ -43,7 +43,7 @@ export function getDifficultyLabel(
     typeof settingsOrLevel === "number"
       ? settingsOrLevel
       : getDifficultyLevel(settingsOrLevel);
-  const i18nKey = `difficulty.${level}`;
+  const i18nKey = `difficulty.${level}` as import("../i18n").MessageKey;
   const translated = t(i18nKey);
   return translated !== i18nKey ? translated : `${level}`;
 }
@@ -146,7 +146,7 @@ export function getScoreMultiplierBreakdown(
     },
     {
       label: t("settings.difficulty.orientLine", {
-        orient: t(`settings.orientation.${orientation}`),
+        orient: t(`settings.orientation.${orientation}` as import("../i18n").MessageKey),
       }),
       factor: orient,
     },
@@ -157,7 +157,7 @@ export function getScoreMultiplierBreakdown(
     const factor = def.itemLinked
       ? scaleItemLinkedFactor(def.scoreFactor, rate)
       : def.scoreFactor;
-    const funName = t(`fun.${def.id}.name`);
+    const funName = t(`fun.${def.id}.name` as import("../i18n").MessageKey);
     lines.push({
       label: def.itemLinked
         ? t("settings.difficulty.funLineItemLinked", { name: funName })
