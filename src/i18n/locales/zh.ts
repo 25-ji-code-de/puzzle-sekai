@@ -2,6 +2,8 @@ export const zh = {
   loading: "加载中",
   page: {
     title: "パズル⭐︎セカ | Puzzle × SEKAI",
+    description:
+      "Project SEKAI 主题的方块消除游戏。收集成员、消除方块，挑战最高分！（同人作品）",
   },
   welcome: {
     title: "パズル⭐︎セカ",

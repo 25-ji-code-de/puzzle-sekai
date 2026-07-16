@@ -2,6 +2,8 @@ export const ja = {
   loading: "読み込み中",
   page: {
     title: "パズル⭐︎セカ | Puzzle × SEKAI",
+    description:
+      "Project SEKAIのメンバーを集めてブロックを消すパズルゲーム。ハイスコアを目指そう！（ファン作品）",
   },
   welcome: {
     title: "パズル⭐︎セカ",

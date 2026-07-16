@@ -24,6 +24,21 @@ export function getLocale(): Locale {
   return detectLocale();
 }
 
+/** Keep <meta name="description"> in sync with the active locale. */
+function applyMetaDescription(locale: Locale = currentLocale): void {
+  const content = LOCALES[locale]?.page?.description;
+  if (typeof content !== "string" || !content) return;
+  let meta = document.querySelector(
+    'meta[name="description"]',
+  ) as HTMLMetaElement | null;
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "description";
+    document.head.appendChild(meta);
+  }
+  meta.content = content;
+}
+
 /** Switch locale, save to localStorage, notify listeners */
 export function setLocale(locale: Locale): void {
   if (!LOCALES[locale]) return;
@@ -31,6 +46,7 @@ export function setLocale(locale: Locale): void {
   localStorage.setItem("puzzleSekaiLocale", locale);
   document.documentElement.lang = locale === "zh" ? "zh-CN" : locale;
   document.title = LOCALES[locale].page.title;
+  applyMetaDescription(locale);
   applyDataI18n();
   for (const fn of listeners) fn(locale);
 }
@@ -79,4 +95,5 @@ export const SUPPORTED_LOCALES: { value: Locale; label: string }[] = [
 currentLocale = getLocale();
 document.documentElement.lang = currentLocale === "zh" ? "zh-CN" : currentLocale;
 document.title = LOCALES[currentLocale].page.title;
+applyMetaDescription(currentLocale);
 applyDataI18n();

@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>パズル⭐︎セカ | Puzzle × SEKAI</title>
+    <meta
+      name="description"
+      content="Project SEKAI 主题的方块消除游戏。收集成员、消除方块，挑战最高分！（同人作品）"
+    />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -13,18 +17,30 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
     />
     <script>
-      // Early locale detection: set <html lang> and <title> before paint
+      // Early locale detection: set <html lang>, <title>, meta description before paint
       (function () {
         var saved = localStorage.getItem("puzzleSekaiLocale");
         var lang = saved || (navigator.language || "").toLowerCase();
-        var locale = lang.startsWith("ja") ? "ja" : lang.startsWith("en") ? "en" : "zh";
+        var locale = lang.startsWith("ja")
+          ? "ja"
+          : lang.startsWith("en")
+            ? "en"
+            : "zh";
         document.documentElement.lang = locale === "zh" ? "zh-CN" : locale;
         var titles = {
           zh: "パズル⭐︎セカ | Puzzle × SEKAI",
           ja: "パズル⭐︎セカ | Puzzle × SEKAI",
           en: "Puzzle ⭐︎ SEKAI",
         };
+        var descriptions = {
+          zh: "Project SEKAI 主题的方块消除游戏。收集成员、消除方块，挑战最高分！（同人作品）",
+          ja: "Project SEKAIのメンバーを集めてブロックを消すパズルゲーム。ハイスコアを目指そう！（ファン作品）",
+          en: "A Project SEKAI-themed puzzle game. Clear blocks with unit members and chase high scores. Unofficial fan work.",
+        };
         document.title = titles[locale] || titles.zh;
+        var meta = document.querySelector('meta[name="description"]');
+        if (meta)
+          meta.setAttribute("content", descriptions[locale] || descriptions.zh);
       })();
     </script>
   </head>
