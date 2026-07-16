@@ -1,21 +1,14 @@
 /**
- * Domain piece math facade.
- *
- * Pure footprint / collision / stack / land-Y atoms currently live under
- * `board/geometry`. This module is the stable domain entry; geometry remains
- * the implementation home until a physical move (optional later).
+ * Domain piece math facade — pure only (no PIXI).
+ * Imports individual pure geometry modules (not the geometry barrel) to
+ * avoid pulling placement → coords → board-state into domain init.
  */
-export type {
-  PieceKind,
-  Cell,
-  Orientation,
-  BoardGrid,
-  RoundMethod,
-} from "../../board/geometry";
 
+export type { PieceKind } from "../../board/geometry/kinds";
+export { isBig2x2Name, pieceKindFrom } from "../../board/geometry/kinds";
+
+export type { Cell } from "../../board/geometry/cells";
 export {
-  isBig2x2Name,
-  pieceKindFrom,
   cellToXY,
   pickMaxY,
   pickMinY,
@@ -24,17 +17,34 @@ export {
   bottomCells,
   maxFootprintY,
   translateCells,
+} from "../../board/geometry/cells";
+
+export type { Orientation } from "../../board/geometry/footprint";
+export {
   asOrientation,
   footprintFromPrimary,
   anchorFromFootprint,
   orientFromFootprint,
+} from "../../board/geometry/footprint";
+
+export {
   columnsForPiece,
   stackHeightBelow,
   stackHeightForPrimary,
+} from "../../board/geometry/stack";
+
+export {
   activeLandPixelY,
   activeDropPixelY,
+} from "../../board/geometry/active-land";
+
+export {
   footprintCollides,
   willCollidePrimary,
+} from "../../board/geometry/collision";
+
+export type { BoardGrid } from "../../board/geometry/grid-write";
+export {
   writeFootprint,
   clearFootprint,
   maxDropDistance,
@@ -42,13 +52,4 @@ export {
   dropFootprint,
   cloneGrid,
   copyGridInto,
-} from "../../board/geometry";
-
-// PIXI-touching placement stays importable for presentation adapters only.
-export {
-  primaryFromSprite,
-  placeSpritePrimary,
-  placeSpriteAtAnchor,
-  anchorPixelX,
-  anchorPixelY,
-} from "../../board/geometry";
+} from "../../board/geometry/grid-write";

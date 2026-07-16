@@ -16,7 +16,8 @@ import {
   copyGridInto,
   maxFootprintY,
 } from "../piece";
-import { findClearPieces } from "../../board/clear-rules";
+
+// findClearPieces stays at board/clear-rules call sites (avoids domain→board cycles).
 
 export type FootprintEntry = {
   /** Current cells occupied by this entity on the grid. */
@@ -124,11 +125,6 @@ export class BoardModel {
     for (const p of plans) {
       writeFootprint(this.grid, p.to, p.token);
     }
-  }
-
-  /** Clear-detection on current grid (domain pure rules). */
-  findClearChunk(): [number, number][] | undefined {
-    return findClearPieces(this.grid);
   }
 }
 

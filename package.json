@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "fonts:subset": "node scripts/subset-fonts.mjs",
     "format": "prettier --write src",
-    "format:check": "prettier --check src"
+    "format:check": "prettier --check src",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "prettier": "^2.1.2",
@@ -18,7 +20,8 @@
     "subset-font": "^2.5.0",
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
-    "vite-plugin-pwa": "^1.3.0"
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "2.1.9"
   },
   "dependencies": {
     "@types/hammerjs": "^2.0.36",

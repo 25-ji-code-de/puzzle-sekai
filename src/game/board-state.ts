@@ -1,7 +1,5 @@
 /**
  * Live board occupancy — facade over domain BoardModel + sprite list.
- * Separated from game-flow state machine so board/* can depend on occupancy
- * without importing the full play session.
  */
 import type * as PIXI from "pixi.js-legacy";
 import type { CharacterName } from "../characters/ids";
@@ -18,9 +16,7 @@ export interface SpriteData {
   coordinates?: [number, number][];
   character?: { name: CharacterName; group: GroupName | string };
   isItem?: boolean;
-  /** Source asset path for items (carrot / fries detection) */
   itemFile?: string;
-  /** Emu shrunk to 1 cell by えむちぢみ fun mode */
   isShrunk?: boolean;
 }
 
@@ -29,7 +25,7 @@ export const setSprites = (s: SpriteData[]) => {
   sprites = s;
 };
 
-/** Live grid — always the BoardModel singleton's grid reference. */
+/** Live grid — always the BoardModel singleton grid reference. */
 export let pieces: BoardGrid = getLiveBoard().grid;
 
 export const resetPieces = () => {
@@ -41,5 +37,9 @@ export const clearSpritesList = () => {
   sprites = [];
 };
 
-/** Access the domain BoardModel backing this facade. */
-export const getBoardModel = () => getLiveBoard();
+/** Access the domain BoardModel; rebinds `pieces` to its grid. */
+export const getBoardModel = () => {
+  const model = getLiveBoard();
+  pieces = model.grid;
+  return model;
+};
