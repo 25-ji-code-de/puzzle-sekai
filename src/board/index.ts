@@ -1,6 +1,7 @@
 /**
  * Board public API — re-exports split modules.
  *
+ *  - geometry:   pure footprint / anchor / grid-write atoms
  *  - core:       coordinate write + gravity
  *  - contact:    item contact-column helpers for spawn filters
  *  - fun/*:      entertainment-mode side effects (carrot / mizuki / emu / blast)
@@ -8,6 +9,24 @@
  *  - clear-flow: clear animation + post-clear cascade
  *  - particles:  burst VFX
  */
+export {
+  type Cell,
+  type PieceKind,
+  type Orientation,
+  type BoardGrid,
+  isBig2x2Name,
+  pieceKindFrom,
+  footprintFromPrimary,
+  anchorFromFootprint,
+  orientFromFootprint,
+  placeSpriteAtAnchor,
+  writeFootprint,
+  clearFootprint,
+  maxDropDistance,
+  isUnsupported,
+  bottomCells,
+} from "./geometry";
+
 export { updateCoordinates, fallChunk } from "./core";
 export { createParticles } from "./particles";
 

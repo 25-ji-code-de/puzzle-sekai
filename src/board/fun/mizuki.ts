@@ -11,6 +11,29 @@ import { updateCoordinates, fallChunk } from "../core";
 import { createParticles } from "../particles";
 import { removeSpritesFromBoard } from "../mutate";
 import { DIRS_ORTHO } from "../grid";
+import {
+  type Cell,
+  asOrientation,
+  footprintFromPrimary,
+  clearFootprint,
+} from "../geometry";
+
+/** 2-cell footprint for primary (ax,ay) if every cell is on-board; else null. */
+const cellsFor = (
+  orientation: number,
+  ax: number,
+  ay: number,
+): Cell[] | null => {
+  const cells = footprintFromPrimary(
+    { x: ax, y: ay },
+    asOrientation(orientation),
+    "cell2",
+  );
+  const inBoard = cells.every(
+    ([x, y]) => x >= 0 && x < COLUMNS && y >= 0 && y < ROWS,
+  );
+  return inBoard ? cells : null;
+};
 
 export const applyMizukiShift = async (
   itemX: number,
@@ -41,46 +64,11 @@ export const applyMizukiShift = async (
     (c) => c >= 0 && c < COLUMNS,
   );
 
-  const cellsFor = (
-    orientation: number,
-    ax: number,
-    ay: number,
-  ): [number, number][] | null => {
-    switch (orientation) {
-      case 0:
-        if (ay < 1 || ay >= ROWS || ax < 0 || ax >= COLUMNS) return null;
-        return [
-          [ax, ay],
-          [ax, ay - 1],
-        ];
-      case 1:
-        if (ay < 0 || ay >= ROWS || ax < 0 || ax + 1 >= COLUMNS) return null;
-        return [
-          [ax, ay],
-          [ax + 1, ay],
-        ];
-      case 2:
-        if (ay < 0 || ay + 1 >= ROWS || ax < 0 || ax >= COLUMNS) return null;
-        return [
-          [ax, ay],
-          [ax, ay + 1],
-        ];
-      case 3:
-        if (ay < 0 || ay >= ROWS || ax - 1 < 0 || ax >= COLUMNS) return null;
-        return [
-          [ax, ay],
-          [ax - 1, ay],
-        ];
-      default:
-        return null;
-    }
-  };
+  if (mizuki.coordinates?.length) {
+    clearFootprint(pieces, mizuki.coordinates as Cell[]);
+  }
 
-  mizuki.coordinates?.forEach(([x, y]) => {
-    pieces[y][x] = null;
-  });
-
-  const isFree = (cells: [number, number][]) =>
+  const isFree = (cells: Cell[]) =>
     cells.every(([x, y]) => pieces[y][x] === null);
 
   const currentOrient = getOffset(mizuki.sprite);
@@ -100,6 +88,7 @@ export const applyMizukiShift = async (
       placed = true;
       break;
     }
+    // fall back to vertical (orient 0 / rotation π)
     if (currentOrient !== 0 && tryPlace(col, 0, Math.PI)) {
       placed = true;
       break;

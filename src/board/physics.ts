@@ -10,8 +10,20 @@
 import { gameTicker } from "../index";
 import { BOX_SIZE, COLUMNS, LEFT_BORDER, ROWS } from "../config";
 import { SpriteData, pieces } from "../game/board-state";
-import { getOffset, moveToCoordinate } from "../utils/coords";
+import { getOffset } from "../utils/coords";
 import { isFunModeOn } from "../fun/effects";
+import { cellKey } from "./grid";
+import {
+  type Cell,
+  type PieceKind,
+  pieceKindFrom,
+  bottomCells as bottomCellsOf,
+  maxFootprintY,
+  anchorFromFootprint,
+  orientFromFootprint,
+  placeSpriteAtAnchor,
+  writeFootprint,
+} from "./geometry";
 
 /** Slightly slower than a snap so the pry-up arc reads clearly. */
 const TIP_ROTATE_FRAMES = 18;
@@ -26,12 +38,12 @@ type TipPlan = {
   pivot: { x: number; y: number };
 };
 
-const cellKey = (x: number, y: number) => `${x},${y}`;
-
-const isBig2x2 = (sp: SpriteData): boolean => {
-  const n = sp.character?.name;
-  return n === "NeneRobo" || n === "Mikudayo";
-};
+const kindOf = (sp: SpriteData): PieceKind =>
+  pieceKindFrom({
+    characterName: sp.character?.name,
+    isItem: sp.isItem,
+    isShrunk: sp.isShrunk,
+  });
 
 const buildOccupancy = (list: SpriteData[]): Map<string, number> => {
   const map = new Map<string, number>();
@@ -64,11 +76,8 @@ const supportCells = (
   return supported;
 };
 
-const bottomCells = (sp: SpriteData): [number, number][] => {
-  if (!sp.coordinates?.length) return [];
-  const maxY = Math.max(...sp.coordinates.map(([, y]) => y));
-  return sp.coordinates.filter(([, y]) => y === maxY) as [number, number][];
-};
+const bottomCells = (sp: SpriteData): Cell[] =>
+  bottomCellsOf((sp.coordinates ?? []) as Cell[]);
 
 /**
  * Roots must span ≥2 columns so there is a hang side vs support side.
@@ -209,61 +218,6 @@ const choosePivot = (
   return { x: pick[0], y: pick[1] };
 };
 
-const pickAnchorCell = (
-  cells: [number, number][],
-  orientation: number,
-  sp: SpriteData,
-): { x: number; y: number } => {
-  if (!cells.length) return { x: 0, y: 0 };
-  if (sp.isItem || sp.isShrunk || cells.length === 1) {
-    return { x: cells[0][0], y: cells[0][1] };
-  }
-  // 2×2: updateCoordinates anchor is bottom-right
-  if (isBig2x2(sp)) {
-    return {
-      x: Math.max(...cells.map(([x]) => x)),
-      y: Math.max(...cells.map(([, y]) => y)),
-    };
-  }
-  switch (orientation) {
-    case 0: {
-      const c = cells.reduce((a, b) => (a[1] >= b[1] ? a : b));
-      return { x: c[0], y: c[1] };
-    }
-    case 1: {
-      const c = cells.reduce((a, b) => (a[0] <= b[0] ? a : b));
-      return { x: c[0], y: c[1] };
-    }
-    case 2: {
-      const c = cells.reduce((a, b) => (a[1] <= b[1] ? a : b));
-      return { x: c[0], y: c[1] };
-    }
-    case 3: {
-      const c = cells.reduce((a, b) => (a[0] >= b[0] ? a : b));
-      return { x: c[0], y: c[1] };
-    }
-    default:
-      return { x: cells[0][0], y: cells[0][1] };
-  }
-};
-
-/**
- * Place sprite so updateCoordinates will re-derive the right cells.
- * NeneRobo/Mikudayo use center-of-2×2 anchor (not cell center).
- */
-const placeAtAnchor = (
-  sp: SpriteData,
-  anchor: { x: number; y: number },
-) => {
-  if (isBig2x2(sp)) {
-    // Center of 2×2 = shared corner of the four cells = bottom-right cell's top-left
-    sp.sprite.x = LEFT_BORDER + anchor.x * BOX_SIZE;
-    sp.sprite.y = anchor.y * BOX_SIZE;
-    return;
-  }
-  moveToCoordinate(sp.sprite, anchor.x, anchor.y);
-};
-
 const planTipForRoot = (
   list: SpriteData[],
   occupancy: Map<string, number>,
@@ -324,9 +278,7 @@ const findTipPlan = (list: SpriteData[]): TipPlan | null => {
   const order = list
     .map((sp, index) => ({
       index,
-      maxY: sp.coordinates?.length
-        ? Math.max(...sp.coordinates.map(([, y]) => y))
-        : -1,
+      maxY: maxFootprintY((sp.coordinates ?? []) as Cell[]),
       // Prefer wider / bigger roots first (2×2 before a 2-cell sitting on it)
       area: sp.coordinates?.length ?? 0,
     }))
@@ -340,57 +292,30 @@ const findTipPlan = (list: SpriteData[]): TipPlan | null => {
   return null;
 };
 
-/**
- * Infer the board orientation (0–3) that matches a 2-cell footprint,
- * and the anchor cell updateCoordinates would use for that orientation.
- */
-const orientAndAnchorFromCells = (
-  cells: [number, number][],
-  sp: SpriteData,
-): { orient: number; anchor: { x: number; y: number } } => {
-  if (isBig2x2(sp) || sp.isItem || sp.isShrunk || cells.length === 1) {
-    return {
-      orient: 0,
-      anchor: pickAnchorCell(cells, 0, sp),
-    };
-  }
-  const [a, b] = cells;
-  if (a[0] === b[0]) {
-    // vertical: use orient 0 (anchor = lower cell)
-    const lower = a[1] >= b[1] ? a : b;
-    return { orient: 0, anchor: { x: lower[0], y: lower[1] } };
-  }
-  // horizontal: use orient 1 (anchor = left cell)
-  const left = a[0] <= b[0] ? a : b;
-  return { orient: 1, anchor: { x: left[0], y: left[1] } };
-};
-
 /** Write footprint directly — never re-derive cells from sprite math after a tip. */
-const commitTipLanding = (sp: SpriteData, newCells: [number, number][]) => {
+const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
   const name = sp.isItem ? "Item" : sp.character?.name;
   if (!name || !newCells.length) {
     sp.coordinates = newCells;
     return;
   }
 
-  const { orient, anchor } = orientAndAnchorFromCells(newCells, sp);
+  const kind = kindOf(sp);
+  const orient = orientFromFootprint(newCells, kind);
+  const anchor = anchorFromFootprint(newCells, kind, orient);
+
   // Snap rotation so later gravity / updateCoordinates stay consistent
-  if (!isBig2x2(sp) && !sp.isItem && !sp.isShrunk) {
+  if (kind === "cell2") {
     // Match piece.ts convention: spawn at π, orient 0 → π, orient 1 → π + π/2, …
-    // getOffset: (rotation/π * 2 + 2) % 4
-    // We only need getOffset(sprite) === orient.
+    // getOffset: (rotation/π * 2 + 2) % 4 — we only need getOffset === orient.
     const current = getOffset(sp.sprite);
     const delta = ((orient - current) % 4 + 4) % 4;
     sp.sprite.rotation += (delta * Math.PI) / 2;
   }
 
-  placeAtAnchor(sp, anchor);
-  sp.coordinates = newCells.map(([x, y]) => [x, y] as [number, number]);
-  for (const [x, y] of newCells) {
-    if (y >= 0 && y < ROWS && x >= 0 && x < COLUMNS) {
-      pieces[y][x] = name;
-    }
-  }
+  placeSpriteAtAnchor(sp.sprite, kind, anchor.x, anchor.y);
+  sp.coordinates = newCells.map(([x, y]) => [x, y] as Cell);
+  writeFootprint(pieces, newCells, name);
 };
 
 /**
