@@ -1,40 +1,32 @@
 /**
  * Clear cascade orchestration + group clear entry point.
+ * Fun contacts after settle go through application/fun-effects registry.
  */
 import sound from "pixi-sound";
 import { groupSounds } from "../characters/data";
 import { addScore } from "../score";
 import { sprites, pieces } from "../game/board-state";
 import {
-  isFunModeOn,
   onKanadeCleared,
   onShizukuCleared,
   cancelShizukuSwapIfShihoPresent,
 } from "../fun/effects";
 import { fallChunk } from "./core";
-import {
-  recheckCarrotAllergy,
-  tryMizukiEatFries,
-  tryEmuShrink,
-  applyWonderBlast,
-} from "./fun";
 import { findClearPieces } from "./clear-rules";
 import { playClearAnimation } from "./clear-vfx";
 import { spritesInChunk } from "./mutate";
 import { voiceVol } from "../settings";
 import { CHAR } from "../characters/ids";
+import {
+  runSettledEffects,
+  runClearedEffects,
+} from "../application/fun-effects";
 
 /**
- * After gravity + cantilever tips settle: re-check fun contacts.
- * Tips can create new adjacencies (e.g. Emu next to Mafuyu) that the
- * pre-fall checks never saw — must re-run until quiet.
- * Returns true if any effect fired (may have cleared / shrunk / eaten).
+ * After gravity + cantilever tips settle: re-check fun contacts via plugins.
  */
 const runPostGravityEffects = async (): Promise<boolean> => {
-  let changed = false;
-  if (await recheckCarrotAllergy()) changed = true;
-  if (await tryMizukiEatFries()) changed = true;
-  if (await tryEmuShrink()) changed = true;
+  const { changed } = await runSettledEffects();
   cancelShizukuSwapIfShihoPresent(
     sprites.some((sp) => sp.character?.name === CHAR.Shiho),
   );
@@ -54,17 +46,9 @@ export const settleBoard = async (): Promise<{ cleared: boolean }> => {
     await fallChunk(sprites);
 
     let changed = false;
-    if (await recheckCarrotAllergy()) {
-      changed = true;
-      cleared = true;
-    }
-    if (await tryMizukiEatFries()) {
-      changed = true;
-      cleared = true;
-    }
-    if (await tryEmuShrink()) {
-      changed = true;
-    }
+    const settled = await runSettledEffects();
+    if (settled.changed) changed = true;
+    if (settled.scored) cleared = true;
     cancelShizukuSwapIfShihoPresent(
       sprites.some((sp) => sp.character?.name === CHAR.Shiho),
     );
@@ -119,10 +103,8 @@ export const clearChunk = async (
 
   await playClearAnimation(toRemove);
 
-  // Wonder Blast: Rui + NeneRobo in same clear → random board blast
-  if (isFunModeOn("wonderBlast")) {
-    applyWonderBlast(toRemove);
-  }
+  // Wonder Blast and other clear-time fun plugins
+  await runClearedEffects(toRemove);
 
   // Fall + tips, then re-check fun contacts until quiet.
   for (let guard = 0; guard < 16; guard++) {
