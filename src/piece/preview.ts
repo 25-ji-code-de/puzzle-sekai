@@ -10,6 +10,7 @@ import {
   NEXT_CHARACTER_X,
 } from "../config";
 import { getCurrentSettings, getSpeedMultiplier } from "../settings";
+import { loadTexture } from "../assets/load-texture";
 
 export const fly = (
   sprite: PIXI.Sprite,
@@ -28,13 +29,7 @@ export const fly = (
 };
 
 export const showNextPiece = async (file: string) => {
-  const texture =
-    app.loader.resources[file]?.texture ??
-    (await new Promise((resolve) => {
-      app.loader
-        .add(file)
-        .load((_, resources) => resolve(resources[file]!.texture!));
-    }));
+  const texture = await loadTexture(file);
 
   const preview = new PIXI.Sprite(texture);
   preview.anchor.x = 0.5;

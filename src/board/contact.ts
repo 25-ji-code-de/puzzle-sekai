@@ -2,12 +2,12 @@ import { ROWS, COLUMNS } from "../config";
 import { sprites, pieces } from "../game/board-state";
 import { isFunModeOn } from "../fun/effects";
 import { isCarrotItem, isFriesItem } from "../items";
+import { manhattan } from "./grid";
+import { footprintFromPrimary } from "./geometry";
 
 /** Same cell or orthogonal neighbor */
-const cellsTouch = (ax: number, ay: number, bx: number, by: number) => {
-  const d = Math.abs(ax - bx) + Math.abs(ay - by);
-  return d === 0 || d === 1;
-};
+const cellsTouch = (ax: number, ay: number, bx: number, by: number) =>
+  manhattan(ax, ay, bx, by) <= 1;
 
 /**
  * Landing row (bottom cell) for a piece falling in `col` under gravity,
@@ -16,30 +16,12 @@ const cellsTouch = (ax: number, ay: number, bx: number, by: number) => {
  */
 const landYInColumn = (col: number): number => {
   if (col < 0 || col >= COLUMNS) return -1;
-  // First occupied cell from the top; land on the cell above it
   for (let y = 0; y < ROWS; y++) {
     if (pieces[y][col] != null) {
       return y - 1;
     }
   }
-  return ROWS - 1; // empty column → rest on floor
-};
-
-/**
- * Cells occupied by a default-orientation (vertical 2-cell) character
- * after landing with bottom at (col, landY).
- */
-const landedVerticalCells = (
-  col: number,
-  landY: number,
-): [number, number][] | null => {
-  if (landY < 0 || landY >= ROWS || col < 0 || col >= COLUMNS) return null;
-  // Need room for the upper cell (spawn orientation is vertical)
-  if (landY < 1) return null;
-  return [
-    [col, landY],
-    [col, landY - 1],
-  ];
+  return ROWS - 1;
 };
 
 /**
@@ -50,8 +32,9 @@ const contactColumnsForItem = (itemX: number, itemY: number): number[] => {
   const cols: number[] = [];
   for (let col = 0; col < COLUMNS; col++) {
     const landY = landYInColumn(col);
-    const cells = landedVerticalCells(col, landY);
-    if (!cells) continue;
+    // Default spawn is vertical head-down (orient 0); need room for upper cell.
+    if (landY < 1) continue;
+    const cells = footprintFromPrimary({ x: col, y: landY }, 0, "cell2");
     if (cells.some(([x, y]) => cellsTouch(x, y, itemX, itemY))) {
       cols.push(col);
     }
@@ -60,9 +43,7 @@ const contactColumnsForItem = (itemX: number, itemY: number): number[] => {
 };
 
 /**
- * Unified ContactColumns for all items matching `itemPred` (e.g. isCarrotItem / isFriesItem).
- * A column is included if landing a vertical 2-cell piece there would contact
- * at least one matching item.
+ * Unified ContactColumns for all items matching `itemPred`.
  */
 export const getItemContactColumns = (
   itemPred: (file: string) => boolean,

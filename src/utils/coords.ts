@@ -1,17 +1,17 @@
-import { BOX_SIZE, LEFT_BORDER, COLUMNS, ROWS } from "../config";
+import { BOX_SIZE, LEFT_BORDER } from "../config";
 import { pieces } from "../game/board-state";
-import { asOrientation } from "../board/geometry/footprint";
-import { stackHeightForPrimary } from "../board/geometry/stack";
+import {
+  asOrientation,
+  stackHeightForPrimary,
+  willCollidePrimary,
+  primaryFromSprite,
+} from "../board/geometry";
 
 export const getCoordinates = (
   sprite: PIXI.Sprite,
   method: "floor" | "ceil" | "round" = "ceil",
-): { x: number; y: number } => {
-  return {
-    x: Math[method]((sprite.x - BOX_SIZE / 2 - LEFT_BORDER) / BOX_SIZE),
-    y: Math[method]((sprite.y - BOX_SIZE / 2) / BOX_SIZE),
-  };
-};
+): { x: number; y: number } =>
+  primaryFromSprite(sprite, "cell2", method);
 
 export const moveToCoordinate = (
   sprite: PIXI.Sprite,
@@ -23,61 +23,24 @@ export const moveToCoordinate = (
 };
 
 /** Normalize sprite rotation into 0–3 orientation slots. */
-const rotationToOffset = (rotation: number): number =>
+export const rotationToOrientation = (rotation: number): number =>
   (Math.fround(rotation / Math.PI) * 2 + 2) % 4;
 
-/** Collision when the piece is still in the top spawn band (y < 1). */
-const collideAtTopRow = (x: number, offset: number): boolean => {
-  switch (offset) {
-    case 2:
-    case 0:
-      return x < 0 || x > COLUMNS || !!pieces[0][x];
-    case 1:
-      return x < 0 || x + 1 >= COLUMNS || !!pieces[0][x] || !!pieces[0][x + 1];
-    case 3:
-      return x - 1 < 0 || x > COLUMNS || !!pieces[0][x] || !!pieces[0][x - 1];
-    default:
-      return false;
-  }
-};
-
-/** Collision once the piece is fully on the board (y >= 1). */
-const collideAtMidBoard = (x: number, y: number, offset: number): boolean => {
-  if (x < 0 || x > COLUMNS || y > ROWS) return true;
-  switch (offset) {
-    case 0:
-      return !!pieces[y][x] || !!pieces[y - 1][x];
-    case 1:
-      return x + 1 > COLUMNS - 1 || !!pieces[y][x] || !!pieces[y][x + 1];
-    case 2:
-      return y + 1 > ROWS - 1 || !!pieces[y][x] || !!pieces[y + 1][x];
-    case 3:
-      return x - 1 < 0 || !!pieces[y][x] || !!pieces[y][x - 1];
-    default:
-      return false;
-  }
-};
-
+/**
+ * Collision for an active standard piece at primary (x,y) with the given
+ * rotation. Uses geometry footprint — same cells as land / updateCoordinates.
+ */
 export const willCollide = (
   x: number,
   y: number,
   rotation: number,
 ): boolean => {
-  try {
-    if (x === undefined || y === undefined) return true;
-    const offset = rotationToOffset(rotation);
-    return y < 1
-      ? collideAtTopRow(x, offset)
-      : collideAtMidBoard(x, y, offset);
-  } catch {
-    console.log(x, y);
-    return false;
-  }
+  const orient = asOrientation(rotationToOrientation(rotation));
+  return willCollidePrimary(pieces, { x, y }, orient, "cell2");
 };
 
-export const getOffset = (sprite: PIXI.Sprite) => {
-  return rotationToOffset(sprite.rotation);
-};
+export const getOffset = (sprite: PIXI.Sprite) =>
+  rotationToOrientation(sprite.rotation);
 
 /**
  * Stack height under an active standard piece / item (floor-primary coords).
@@ -86,7 +49,6 @@ export const getOffset = (sprite: PIXI.Sprite) => {
 export const getStackHeight = (sprite: PIXI.Sprite) => {
   const { x, y } = getCoordinates(sprite, "floor");
   const orient = asOrientation(getOffset(sprite));
-  // Items share cell-center land math; treat as single-column cell2 height.
   return stackHeightForPrimary(pieces, { x, y }, orient, "cell2");
 };
 

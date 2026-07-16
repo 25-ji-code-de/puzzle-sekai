@@ -24,7 +24,9 @@ import { consumeKanadeSlowForSpawn } from "../fun/effects";
 import {
   stackHeightBelow,
   activeLandPixelY,
+  primaryFromSprite,
 } from "../board/geometry";
+import { fileIsBig2x2 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
 import { loadTexture } from "./load-texture";
@@ -32,12 +34,7 @@ import { loadTexture } from "./load-texture";
 export const getNeneRoboCoordinates = (
   sprite: PIXI.Sprite,
   method: "floor" | "ceil" | "round" = "ceil",
-): { x: number; y: number } => {
-  return {
-    x: Math[method]((sprite.x - BOX_SIZE - LEFT_BORDER) / BOX_SIZE),
-    y: Math[method]((sprite.y - BOX_SIZE) / BOX_SIZE),
-  };
-};
+): { x: number; y: number } => primaryFromSprite(sprite, "big2x2", method);
 
 export const getNeneRoboStackHeight = (sprite: PIXI.Sprite): number => {
   const { x, y } = getNeneRoboCoordinates(sprite);
@@ -72,9 +69,7 @@ export const createNeneRobo = async (
   const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
   const fall = createActiveFall(nenerobo, baseSpeed);
 
-  const canLift =
-    file.toLowerCase().includes("nenerobo") ||
-    file.toLowerCase().includes("mikudayo");
+  const canLift = fileIsBig2x2(file);
 
   const moveLeft = () => {
     const { x, y } = getNeneRoboCoordinates(nenerobo, "ceil");

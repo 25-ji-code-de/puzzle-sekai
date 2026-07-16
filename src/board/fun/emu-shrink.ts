@@ -1,18 +1,20 @@
 /**
  * えむちぢみ — Mafuyu adjacent to full-size Emu shrinks Emu to 1 cell.
  */
-import { app } from "../../index";
-import { BOX_SIZE, LEFT_BORDER } from "../../config";
+import { BOX_SIZE } from "../../config";
 import { SpriteData, sprites, pieces } from "../../game/board-state";
 import { isFunModeOn } from "../../fun/effects";
 import { fallChunk } from "../core";
-import { sfxVol, SFX_EFFECT_BASE } from "../../settings";
+import { SFX_EFFECT_BASE } from "../../settings";
 import { isAdjacentToAny } from "../grid";
+import { placeSpriteAtAnchor } from "../geometry";
+import { CHAR } from "../../characters/ids";
+import { playLoadedSfx } from "../../audio/sfx";
 
 const collectMafuyuCells = (): [number, number][] => {
   const cells: [number, number][] = [];
   for (const sp of sprites) {
-    if (sp.character?.name !== "Mafuyu" || !sp.coordinates?.length) continue;
+    if (sp.character?.name !== CHAR.Mafuyu || !sp.coordinates?.length) continue;
     for (const c of sp.coordinates) cells.push(c);
   }
   return cells;
@@ -61,7 +63,7 @@ const shrinkEmuSprite = (
   sp: SpriteData,
   mafuyuCells: [number, number][],
 ): boolean => {
-  if (sp.character?.name !== "Emu") return false;
+  if (sp.character?.name !== CHAR.Emu) return false;
   if (sp.isShrunk || !sp.coordinates || sp.coordinates.length < 2) return false;
   if (!isAdjacentToAny(sp.coordinates, mafuyuCells)) return false;
 
@@ -80,13 +82,11 @@ const shrinkEmuSprite = (
   sprite.anchor.set(0.5, 0.5);
   sprite.width = BOX_SIZE;
   sprite.height = BOX_SIZE;
-  sprite.x = BOX_SIZE * keep[0] + LEFT_BORDER + BOX_SIZE / 2;
-  sprite.y = BOX_SIZE * keep[1] + BOX_SIZE / 2;
+  placeSpriteAtAnchor(sprite, "shrunk", keep[0], keep[1]);
 
-  pieces[keep[1]][keep[0]] = "Emu";
+  pieces[keep[1]][keep[0]] = CHAR.Emu;
 
-  const sfx = app.loader.resources["emuShrink"]?.sound;
-  if (sfx) sfx.play({ volume: sfxVol(SFX_EFFECT_BASE) });
+  playLoadedSfx("emuShrink", "sfx", SFX_EFFECT_BASE);
   return true;
 };
 

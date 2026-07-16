@@ -2,9 +2,10 @@
  * Shared active-piece fall loop: gravity, soft-drop speed, drop score, land lock.
  */
 import type * as PIXI from "pixi.js-legacy";
-import { app, gameTicker } from "../index";
+import { gameTicker } from "../index";
 import { BOX_SIZE, SPEED } from "../config";
-import { sfxVol, SFX_LAND_BASE, SFX_MOVE_BASE } from "../settings";
+import { SFX_LAND_BASE, SFX_MOVE_BASE } from "../settings";
+import { playLoadedSfx, replayLoadedSfx } from "../audio/sfx";
 
 export type ActiveFall = {
   softDrop: () => void;
@@ -28,13 +29,30 @@ export type ActiveFall = {
   stop: () => void;
 };
 
-const LAND_LOCK_MS = 200;
-const SOFT_DROP_MULT = 4;
+export type ActiveFallOptions = {
+  /** Soft-drop multiplier (default 4). Items can use this as continuous speed. */
+  softDropMult?: number;
+  /** Play move SFX on onMoved (default true). */
+  moveSfx?: boolean;
+  /** Play land SFX on lock (default true). */
+  landSfx?: boolean;
+  /** Land lock delay ms (default 200). Items often use 0 for instant. */
+  landLockMs?: number;
+};
+
+const DEFAULT_LAND_LOCK_MS = 200;
+const DEFAULT_SOFT_DROP_MULT = 4;
 
 export const createActiveFall = (
   sprite: PIXI.Sprite,
   baseSpeed: number,
+  options: ActiveFallOptions = {},
 ): ActiveFall => {
+  const softDropMult = options.softDropMult ?? DEFAULT_SOFT_DROP_MULT;
+  const moveSfx = options.moveSfx !== false;
+  const landSfx = options.landSfx !== false;
+  const landLockMs = options.landLockMs ?? DEFAULT_LAND_LOCK_MS;
+
   let speed = baseSpeed;
   let dropScore = 0;
   let landTimer: number | undefined;
@@ -60,16 +78,23 @@ export const createActiveFall = (
 
   const onMoved = () => {
     clearLandTimer();
-    const sound = app.loader.resources.move.sound;
-    if (sound.isPlaying) {
-      sound.stop();
+    if (moveSfx) replayLoadedSfx("move", "sfx", SFX_MOVE_BASE);
+  };
+
+  const fireLand = (getLandY: () => number, onLand: () => void) => {
+    if (landSfx) playLoadedSfx("land", "sfx", SFX_LAND_BASE);
+    sprite.y = getLandY();
+    if (checkOffset) {
+      gameTicker.remove(checkOffset);
+      checkOffset = null;
     }
-    sound.play({ volume: sfxVol(SFX_MOVE_BASE) });
+    falling = false;
+    onLand();
   };
 
   return {
     softDrop: () => {
-      speed = baseSpeed * SOFT_DROP_MULT;
+      speed = baseSpeed * softDropMult;
     },
     normalSpeed: () => {
       speed = baseSpeed;
@@ -96,20 +121,14 @@ export const createActiveFall = (
             dropScore += moved * mult;
           }
         } else if (landTimer === undefined) {
+          if (landLockMs <= 0) {
+            fireLand(getLandY, onLand);
+            return;
+          }
           landTimer = window.setTimeout(() => {
             landTimer = undefined;
-            app.loader.resources.land.sound.play({
-              volume: sfxVol(SFX_LAND_BASE),
-            });
-            sprite.y = getLandY();
-            // Detach fall ticker before onLand so re-entrant work is clean
-            if (checkOffset) {
-              gameTicker.remove(checkOffset);
-              checkOffset = null;
-            }
-            falling = false;
-            onLand();
-          }, LAND_LOCK_MS);
+            fireLand(getLandY, onLand);
+          }, landLockMs);
         }
       };
 

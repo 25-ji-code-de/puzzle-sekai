@@ -30,6 +30,10 @@ export {
   stackHeightForPrimary,
   activeLandPixelY,
   activeDropPixelY,
+  willCollidePrimary,
+  footprintCollides,
+  primaryFromSprite,
+  placeSpritePrimary,
 } from "./geometry";
 
 export { updateCoordinates, fallChunk } from "./core";

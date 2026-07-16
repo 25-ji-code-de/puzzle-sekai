@@ -1,38 +1,42 @@
 /**
- * Falling item entity (create + auto-fall).
+ * Falling item entity (create + auto-fall via shared active-fall loop).
  */
 import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
-import { app, gameTicker } from "../index";
+import { app } from "../index";
 import { LEFT_BORDER, BOX_SIZE, SPEED } from "../config";
 import { getStackHeight } from "../utils/coords";
-import { sfxVol, SFX_LAND_BASE } from "../settings";
 import { activeLandPixelY } from "../board/geometry";
+import { loadTexture } from "../assets/load-texture";
+import { createActiveFall } from "../piece/active-fall";
 
 const landYFor = (item: PIXI.Sprite): number =>
   activeLandPixelY("item", getStackHeight(item), 0, app.renderer.height);
+
+const startItemFall = (
+  item: PIXI.Sprite,
+  onLand: (sprite: PIXI.Sprite) => void,
+) => {
+  // Items always soft-drop (4×) with instant land lock, no move SFX.
+  const fall = createActiveFall(item, SPEED, {
+    softDropMult: 4,
+    moveSfx: false,
+    landSfx: true,
+    landLockMs: 0,
+  });
+  fall.softDrop();
+  fall.start(
+    () => landYFor(item),
+    () => landYFor(item),
+    () => onLand(item),
+  );
+};
 
 export const fallItem = (
   item: PIXI.Sprite,
   onFall?: (sprite: PIXI.Sprite) => void,
 ) => {
-  const cleanup = () => {
-    gameTicker.remove(checkOffset);
-    onFall && onFall(item);
-  };
-
-  const checkOffset = (delta: number) => {
-    const dropHeight = landYFor(item);
-    if (item.y < dropHeight) {
-      item.y += SPEED * 4 * delta;
-    } else {
-      app.loader.resources.land.sound.play({ volume: sfxVol(SFX_LAND_BASE) });
-      item.y = landYFor(item);
-      cleanup();
-    }
-  };
-
-  gameTicker.add(checkOffset);
+  startItemFall(item, (s) => onFall?.(s));
 };
 
 export const createItem = async (
@@ -40,14 +44,7 @@ export const createItem = async (
   index: number,
   onDropped: (sprite: PIXI.Sprite) => void,
 ) => {
-  const texture =
-    app.loader.resources[file]?.texture ??
-    (await new Promise((resolve) => {
-      app.loader
-        .add(file)
-        .load((_, resources) => resolve(resources[file]!.texture!));
-    }));
-
+  const texture = await loadTexture(file);
   const item = new PIXI.Sprite(texture);
 
   item.x = LEFT_BORDER + index * BOX_SIZE + BOX_SIZE / 2;
@@ -59,22 +56,7 @@ export const createItem = async (
   item.rotation = 0;
 
   app.stage.addChild(item);
-
-  const cleanup = () => {
-    gameTicker.remove(checkOffset);
-    onDropped(item);
-  };
-  const checkOffset = (delta: number) => {
-    const dropHeight = landYFor(item);
-    if (item.y < dropHeight) {
-      item.y += SPEED * 4 * delta;
-    } else {
-      app.loader.resources.land.sound.play({ volume: sfxVol(SFX_LAND_BASE) });
-      item.y = landYFor(item);
-      cleanup();
-    }
-  };
-  gameTicker.add(checkOffset);
+  startItemFall(item, onDropped);
 
   return item;
 };

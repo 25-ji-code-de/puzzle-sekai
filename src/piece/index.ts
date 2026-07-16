@@ -36,10 +36,13 @@ import {
   getMizukiLockColumns,
   getCarrotHazardColumns,
 } from "../board/contact";
+import { asOrientation, activeLandPixelY } from "../board/geometry";
 import {
-  asOrientation,
-  activeLandPixelY,
-} from "../board/geometry";
+  CHAR,
+  fileIsBig2x2,
+  fileIsCharacter,
+  isAllergyAvoiderFile,
+} from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
 import { loadTexture } from "./load-texture";
@@ -109,17 +112,15 @@ export const createPiece = async (
   file: string,
   onDropped: (sprite: PIXI.Sprite) => void,
 ) => {
-  if (file.includes("nenerobo") || file.includes("mikudayo")) {
+  if (fileIsBig2x2(file)) {
     return await createNeneRobo(file, onDropped);
   }
 
   const texture = await loadTexture(file);
   const piece = new PIXI.Sprite(texture);
 
-  const isMizuki = file.toLowerCase().includes("mizuki");
-  const isAllergyAvoider =
-    file.toLowerCase().includes("ena") ||
-    file.toLowerCase().includes("akito");
+  const isMizuki = fileIsCharacter(file, CHAR.Mizuki);
+  const isAllergyAvoider = isAllergyAvoiderFile(file);
   const mizukiLockCols = isMizuki ? getMizukiLockColumns() : [];
   const mizukiLocked = mizukiLockCols.length > 0;
   const carrotHazards = isAllergyAvoider ? getCarrotHazardColumns() : [];
@@ -152,7 +153,7 @@ export const createPiece = async (
 
   const settings = getCurrentSettings();
   const speedMultiplier = getSpeedMultiplier(settings);
-  const isKanade = file.toLowerCase().includes("kanade");
+  const isKanade = fileIsCharacter(file, CHAR.Kanade);
   const funSpeedMult =
     consumeKanadeSlowForSpawn() * (isKanade ? getKanadeSelfSpeedMult() : 1);
   const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
@@ -221,7 +222,7 @@ export const createPiece = async (
     }
   };
 
-  const canLift = file.toLowerCase().includes("emu");
+  const canLift = fileIsCharacter(file, CHAR.Emu);
 
   const rotateCW = () => {
     const { x, y } = getCoordinates(piece, "ceil");
@@ -268,7 +269,7 @@ export const createPiece = async (
     const dropScore = activeFall.getDropScore();
     if (dropScore > 0) addDropScore(dropScore);
 
-    if (file.toLowerCase().includes("shiho")) {
+    if (fileIsCharacter(file, CHAR.Shiho)) {
       onShihoLanded();
     }
     if (isKanade) {

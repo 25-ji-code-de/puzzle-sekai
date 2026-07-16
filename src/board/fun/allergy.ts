@@ -2,30 +2,29 @@
  * にんじん嫌い — carrot allergy fun mode.
  * Ena/Akito touching a carrot are silently cleared.
  */
-import { app } from "../../index";
 import {
   SpriteData,
   sprites,
   pieces,
 } from "../../game/board-state";
-import { isFunModeOn } from "../../fun/effects";
+import { isFunModeOn, onKanadeCleared, onShizukuCleared } from "../../fun/effects";
 import { isCarrotItem } from "../../items";
-import { voiceVol } from "../../settings";
 import { DIRS_SELF_ORTHO, cellKey, parseCellKey } from "../grid";
 import { playClearAnimation } from "../clear-vfx";
 import { spritesInChunk } from "../mutate";
 import { addScore } from "../../score";
-import {
-  onKanadeCleared,
-  onShizukuCleared,
-} from "../../fun/effects";
+import { CHAR, isAllergyAvoiderName } from "../../characters/ids";
+import { playLoadedSfx } from "../../audio/sfx";
 
 const playCarrotAllergySfx = (name?: string) => {
   const key =
-    name === "Akito" ? "carrotAkito" : name === "Ena" ? "carrotEna" : null;
+    name === CHAR.Akito
+      ? "carrotAkito"
+      : name === CHAR.Ena
+        ? "carrotEna"
+        : null;
   if (!key) return;
-  const sfx = app.loader.resources[key]?.sound;
-  if (sfx) sfx.play({ volume: voiceVol(0.5) });
+  playLoadedSfx(key, "voice", 0.5);
 };
 
 /** Silent clear of allergy victims (no group voice / wonder blast). */
@@ -56,7 +55,7 @@ const clearAllergyCells = async (
   for (const sp of sprites) {
     if (!sp.coordinates?.length) continue;
     if (sp.isItem) continue;
-    if (sp.character?.name !== "Ena" && sp.character?.name !== "Akito") continue;
+    if (!isAllergyAvoiderName(sp.character?.name)) continue;
     const hit = sp.coordinates.some(([cx, cy]) =>
       allergyCells.has(cellKey(cx, cy)),
     );
@@ -106,7 +105,7 @@ export const applyCarrotAllergy = async (
         continue;
       }
       const name = pieces[ny][nx];
-      if (name === "Ena" || name === "Akito") {
+      if (isAllergyAvoiderName(name)) {
         allergyCells.add(cellKey(nx, ny));
       }
     }
@@ -126,7 +125,7 @@ export const applyCarrotAllergyOnCharacter = async (
   if (!isFunModeOn("itemAllergy")) return false;
   const sp = sprites[characterIndex];
   if (!sp?.coordinates?.length) return false;
-  if (sp.character?.name !== "Ena" && sp.character?.name !== "Akito") {
+  if (!isAllergyAvoiderName(sp.character?.name)) {
     return false;
   }
 
@@ -163,7 +162,7 @@ export const recheckCarrotAllergy = async (): Promise<boolean> => {
 
   const allergyCells = new Set<string>();
   for (const sp of sprites) {
-    if (sp.character?.name !== "Ena" && sp.character?.name !== "Akito") continue;
+    if (!isAllergyAvoiderName(sp.character?.name)) continue;
     if (!sp.coordinates?.length) continue;
     for (const [cx, cy] of sp.coordinates) {
       for (const [dx, dy] of DIRS_SELF_ORTHO) {
