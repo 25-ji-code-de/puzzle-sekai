@@ -25,13 +25,10 @@ import { createItem, getRandomItem } from "../items";
 import {
   resetScore,
   initScoreDisplay,
-  resetCombo,
   setTimeRemaining,
   decrementTime,
 } from "../score";
 import {
-  updateCoordinates,
-  settleBoard,
 } from "../board";
 import {
   getCurrentGameMode,
@@ -44,9 +41,9 @@ import {
   isPausedPhase,
 } from "../application/play-session/phase";
 import {
-  runItemLandEffects,
-  runCharacterLandEffects,
-} from "../application/fun-effects";
+  handleItemLand,
+  handleCharacterLand,
+} from "../application/play-session/land";
 import { enterMenu } from "../ui/welcome";
 import {
   disposePauseMenu,
@@ -171,14 +168,10 @@ const create = async () => {
     let dropped = [false, false];
     const onDropped = (id: number) => async (sprite: PIXI.Sprite) => {
       const { x, y } = getCoordinates(sprite);
-      if (y < 0) {
+      const outcome = await handleItemLand(sprite, index + id, itemFile, x, y);
+      if (outcome.topOut) {
         setState(end);
       } else {
-        updateCoordinates(sprite, index + id, undefined, true);
-        const landFx = await runItemLandEffects({ itemFile, x, y });
-        // Gravity + tips + fun contacts + clears until the board is quiet.
-        const { cleared: settledCleared } = await settleBoard();
-        if (!landFx.scored && !settledCleared) resetCombo();
         dropped[id] = true;
         if (dropped.every((e) => e)) {
           setState(create);
@@ -216,19 +209,10 @@ const create = async () => {
   } else {
     const character = randomCharacter();
     const onDropped = async (sprite: PIXI.Sprite) => {
-      const { y } = getCoordinates(sprite);
-      const orientation = (Math.fround(sprite.rotation / Math.PI) * 2 + 2) % 4;
-      if (y < 0 || (orientation === 0 && y <= 0)) {
+      const outcome = await handleCharacterLand(sprite, index, character);
+      if (outcome.topOut) {
         setState(end);
       } else {
-        updateCoordinates(sprite, index, character);
-        const landFx = await runCharacterLandEffects({
-          spriteIndex: index,
-          name: character.name,
-        });
-        // Gravity + tips + fun contacts + clears until the board is quiet.
-        const { cleared: settledCleared } = await settleBoard();
-        if (!landFx.scored && !settledCleared) resetCombo();
         setState(create);
         created = false;
       }

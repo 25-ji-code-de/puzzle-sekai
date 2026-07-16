@@ -39,6 +39,7 @@ const kindOf = (entry: {
 /**
  * Land a sprite into the board grid from its current pixel pose.
  * Builds footprint via geometry atoms, then writes grid + coordinates.
+ * Snaps sprite pixels to settled placement (removes active OFFSET_BOTTOM gap).
  * big2x2 uses bottom-right primaryFromSprite; cell2 uses cell-center coords.
  */
 export const updateCoordinates = (
@@ -72,6 +73,10 @@ export const updateCoordinates = (
 
   getBoardModel().write(cells, name);
   sprites[idx].coordinates = cells.map(([x, y]) => [x, y] as Cell);
+
+  // Snap to settled pixel pose so active land Y (OFFSET_BOTTOM) matches gravity/tip placement.
+  const anchor = anchorFromFootprint(cells, kind, orient);
+  placeSpriteAtAnchor(sprite, kind, anchor.x, anchor.y);
 };
 
 type FallEntry = SpriteData & { index: number };
