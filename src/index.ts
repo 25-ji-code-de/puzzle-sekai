@@ -4,11 +4,6 @@ import sound from "pixi-sound";
 import "./style.scss";
 import land from "./assets/sounds/land.mp3";
 import move from "./assets/sounds/move.mp3";
-import bgm038 from "./assets/sounds/038.mp3";
-import bgm168 from "./assets/sounds/168.mp3";
-import bgm161 from "./assets/sounds/161.mp3";
-import bgm182_1 from "./assets/sounds/182.1.mp3";
-import bgm182_2 from "./assets/sounds/182.2.mp3";
 import emuShrinkSfx from "./assets/sounds/effects/47_004_007.mp3";
 import carrotAkitoSfx from "./assets/sounds/effects/2509_004_002.mp3";
 import carrotEnaSfx from "./assets/sounds/effects/2509_004_003.mp3";
@@ -21,9 +16,14 @@ import welcomeImg from "./assets/welcome.png";
 import barrelTexture from "./assets/objects/barrel.png";
 import { start, welcome } from "./states";
 import { items } from "./items";
-import { t, onLocaleChange } from "./i18n";
-import { initializeFontSystem, resolveFontScheme } from "./fonts";
+import { initializeFontSystem } from "./fonts";
 import { togglePauseMenu } from "./pause-menu";
+import {
+  showBootWelcome,
+  setWelcomeLoadProgress,
+  markWelcomeReady,
+} from "./welcome";
+import { prefetchMenuBgm } from "./bgm";
 
 // The application will create a renderer using WebGL, if possible,
 // with a fallback to a canvas render. It will also setup the ticker
@@ -89,34 +89,14 @@ avatarTextures.forEach((t) => app.loader.add(t));
 app.stage.sortableChildren = true;
 
 const fontsReady = initializeFontSystem();
-const loadingFont = resolveFontScheme("heading");
-const loading = new PIXI.Text(t("loading"), {
-  fontSize: 64,
-  fontFamily: loadingFont.fontFamily,
-  fontWeight: loadingFont.fontWeight,
-  fill: 0xffffff,
-  align: "center",
+
+// Paint the welcome shell immediately; load progress lives in its click prompt.
+showBootWelcome();
+app.loader.onProgress.add(() => {
+  setWelcomeLoadProgress(app.loader.progress);
 });
 
-const updateLoadingText = () => {
-  const scheme = resolveFontScheme("heading");
-  loading.style.fontFamily = scheme.fontFamily;
-  loading.style.fontWeight = scheme.fontWeight;
-  loading.text = t("loading") + " " + Math.floor(app.loader.progress) + "%";
-  loading.updateText(false);
-};
-
-const updatePercent = () => {
-  updateLoadingText();
-};
-loading.anchor.x = 0.5;
-loading.anchor.y = 0.5;
-loading.x = app.renderer.width / 2;
-loading.y = app.renderer.height / 2;
-app.stage.addChild(loading);
-app.loader.onProgress.add(updatePercent);
-fontsReady.then(updateLoadingText);
-onLocaleChange(updateLoadingText);
+// BGM is lazy-loaded by scene via src/bgm.ts — not part of the boot loader.
 app.loader
   .add(avatar)
   .add("background", bg)
@@ -126,16 +106,10 @@ app.loader
   .add("emuShrink", emuShrinkSfx)
   .add("carrotAkito", carrotAkitoSfx)
   .add("carrotEna", carrotEnaSfx)
-  .add("bgm038", bgm038)
-  .add("bgm168", bgm168)
-  .add("bgm161", bgm161)
-  .add("bgm182_1", bgm182_1)
-  .add("bgm182_2", bgm182_2)
   .add("gameOver", gameOver)
   .add("welcome", welcomeImg)
-  .load(async (_loader, resources) => {
-    await fontsReady;
-    updateLoadingText();
+  .load((_loader, resources) => {
+    setWelcomeLoadProgress(100);
 
     const bg = new PIXI.Sprite(resources.background?.texture);
 
@@ -156,6 +130,14 @@ app.loader
         togglePauseMenu();
       }
     });
+
+    // Don't block on fontsReady — metric-matched local fallbacks paint
+    // immediately (font-display: swap), and the web faces swap in later.
+    void fontsReady;
+    markWelcomeReady();
+    // Start pulling menu BGM now so click-to-continue usually plays instantly.
+    // Play / game-over tracks wait until the player is on the menu.
+    prefetchMenuBgm();
 
     app.ticker.add((delta) => {
       state(delta);

@@ -43,6 +43,15 @@ import { resetFunEffects } from "./fun-effects";
 import { enterMenu } from "./welcome";
 import { disposePauseMenu, showPauseButton, hidePauseButton } from "./pause-menu";
 import { disposeGameOverMenu, showGameOverMenu } from "./game-over-menu";
+import {
+  ensureBgm,
+  getBgm,
+  peekBgm,
+  prefetchPlayBgm,
+  stopAllBgmAliases,
+  unlockAudio,
+  type BgmKey,
+} from "./bgm";
 
 export { welcome } from "./welcome";
 export { addDropScore } from "./score";
@@ -100,42 +109,53 @@ export const stopBgm = () => {
       /* ignore */
     }
   }
-  // Also hard-stop known game-over tracks (may not be in bgmPlaying yet)
-  const g1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
-  const g2 = app.loader.resources["bgm182_2"]?.sound as PIXI.sound.Sound | undefined;
-  try {
-    g1?.stop();
-  } catch {
-    /* ignore */
-  }
-  try {
-    g2?.stop();
-  } catch {
-    /* ignore */
-  }
+  // Hard-stop every known BGM alias (lazy-loaded tracks may not be in bgmPlaying).
+  stopAllBgmAliases();
 };
 
-export const playBgm = (sound: PIXI.sound.Sound, options: { loop: boolean; volume: number }) => {
-  bgmPlaying = sound;
+export const playBgm = (
+  s: PIXI.sound.Sound,
+  options: { loop: boolean; volume: number },
+) => {
+  bgmPlaying = s;
   bgmPlaying.play(options);
 };
 
-const playGameOverBgm = () => {
+/**
+ * Play menu BGM (bgm161). Loads on demand if the idle prefetch hasn't finished.
+ * Call from a user-gesture handler when possible so unlockAudio() sticks.
+ * Resolves after playback is requested (or silently if load fails).
+ */
+export const playMenuBgm = async () => {
+  // Resume AudioContext while we still may be on a gesture stack.
+  unlockAudio();
   stopBgm();
-  const bgm182_1 = app.loader.resources["bgm182_1"]?.sound as PIXI.sound.Sound | undefined;
-  const bgm182_2 = app.loader.resources["bgm182_2"]?.sound;
-  if (!bgm182_1 || !bgm182_2) return;
+  const s = await getBgm("bgm161");
+  if (!s) return;
+  playBgm(s, { loop: true, volume: 0.3 });
+  // Warm play + game-over tracks while the player sits on the menu.
+  prefetchPlayBgm();
+};
 
-  bgmPlaying = bgm182_1;
+const playGameOverBgm = async () => {
+  stopBgm();
+  // Ensure both stinger halves are ready; menu idle-prefetch usually has them.
+  const [intro, loop] = await ensureBgm("bgm182_1", "bgm182_2");
+  if (!intro) return;
+
+  bgmPlaying = intro;
   const onEnd = () => {
     gameOverIntroInst = null;
     gameOverIntroOnEnd = null;
-    playBgm(bgm182_2 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
+    if (loop) playBgm(loop, { loop: true, volume: 0.3 });
   };
   gameOverIntroOnEnd = onEnd;
 
-  const result = bgm182_1.play({ loop: false, volume: 0.3 });
-  const attach = (inst: { on: (e: string, fn: () => void) => void; stop?: () => void }) => {
+  const result = intro.play({ loop: false, volume: 0.3 });
+  const attach = (inst: {
+    on: (e: string, fn: () => void) => void;
+    stop?: () => void;
+  }) => {
     gameOverIntroInst = inst;
     inst.on("end", onEnd);
   };
@@ -147,16 +167,26 @@ const playGameOverBgm = () => {
 };
 
 let created = false;
+/** True while playNextBGM is awaiting a lazy download — blocks checkBGM re-entry. */
+let bgmSwitching = false;
 
-// BGM polling
-const playNextBGM = () => {
-  if (!bgmActive) return;
-  const rand = Math.random();
-  const bgmKey = rand < 0.7 ? "bgm038" : "bgm168";
-  const sound = app.loader.resources[bgmKey]?.sound;
-  if (sound) {
-    bgmPlaying = sound as PIXI.sound.Sound;
+// BGM polling — picks a play track; loads just-in-time if prefetch is still warm.
+const playNextBGM = async () => {
+  if (!bgmActive || bgmSwitching) return;
+  bgmSwitching = true;
+  try {
+    const pick: BgmKey = Math.random() < 0.7 ? "bgm038" : "bgm168";
+    // Prefer a track that's already loaded so we don't stall mid-match.
+    const ready =
+      peekBgm(pick) ?? peekBgm(pick === "bgm038" ? "bgm168" : "bgm038");
+    const s = ready ?? (await getBgm(pick));
+    if (!bgmActive || !s) return;
+    bgmPlaying = s;
     bgmPlaying.play({ loop: false, volume: 0.3 });
+    // Keep the other play track warm for the next rotation.
+    prefetchPlayBgm();
+  } finally {
+    bgmSwitching = false;
   }
 };
 
@@ -167,9 +197,9 @@ const checkBGM = () => {
   }
   // While paused the current track is intentionally stopped (isPlaying=false).
   // Don't treat that as "track finished" or we'll start a brand-new song on resume.
-  if (playPaused) return;
+  if (playPaused || bgmSwitching) return;
   if (bgmPlaying && !bgmPlaying.isPlaying) {
-    playNextBGM();
+    void playNextBGM();
   }
 };
 

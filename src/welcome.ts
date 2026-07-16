@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js-legacy";
 import { app, bgSprite, setState } from ".";
-import { start, stopBgm, playBgm, pausePlay, resumePlay } from "./states";
+import { start, playMenuBgm, pausePlay, resumePlay } from "./states";
 import { setCurrentGameMode } from "./settings";
 import { t, onLocaleChange } from "./i18n";
 import { domFontStyle } from "./fonts";
@@ -22,30 +22,47 @@ import {
   type OrientationGate,
 } from "./display";
 import { isPauseMenuOpen } from "./pause-menu";
+import { unlockAudio } from "./bgm";
+// Direct asset URL so the boot shell can paint before the PIXI loader finishes.
+import welcomeImg from "./assets/welcome.png";
 
 let welcomeSprite: PIXI.Sprite;
-let welcomeInitialized = false;
 let modalEl: HTMLDivElement | null = null;
+let clickPromptEl: HTMLDivElement | null = null;
+let dimOverlayEl: HTMLDivElement | null = null;
 let orientationGate: OrientationGate | null = null;
+/** True once all boot assets are ready and the shell accepts a click/key. */
+let welcomeReady = false;
+let bootShellShown = false;
+let lastLoadProgress = 0;
+
+const formatLoadingPrompt = (pct: number): string =>
+  `${t("loading")} ${Math.floor(pct)}%`;
+
+const refreshBootPromptText = () => {
+  if (!clickPromptEl || welcomeReady) return;
+  clickPromptEl.textContent = formatLoadingPrompt(lastLoadProgress);
+};
 
 // ============== 第一个页面：游戏概述（解决音频限制） ==============
 
-export const welcome = () => {
-  if (welcomeInitialized) return;
-  welcomeInitialized = true;
-
-  const welcomeUrl =
-    (app.loader.resources["welcome"]?.texture as any)?.baseTexture?.resource
-      ?.url || "";
+/**
+ * Paint the welcome shell immediately (before asset load finishes).
+ * The bottom prompt shows load progress until {@link markWelcomeReady}.
+ */
+export const showBootWelcome = () => {
+  if (bootShellShown) return;
+  bootShellShown = true;
 
   modalEl = document.createElement("div");
   modalEl.style.cssText = `
-    position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;cursor:pointer;
+    position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;cursor:default;
     display:flex;align-items:center;justify-content:center;
-    background: url(${welcomeUrl}) center/cover no-repeat;
+    background: url(${welcomeImg}) center/cover no-repeat;
   `;
 
   const overlay = document.createElement("div");
+  dimOverlayEl = overlay;
   overlay.style.cssText = `
     position:absolute;top:0;left:0;width:100%;height:100%;
     background:rgba(0,0,0,0.55);
@@ -78,13 +95,17 @@ export const welcome = () => {
     )}">
       ${t("welcome.desc")}
     </div>
-    <div class="welcome-click" style="font-size:20px;color:rgba(255,255,255,0.85);
-      letter-spacing:0.14em;margin-top:24px;animation:promptPulse 1.8s ease-in-out infinite;${domFontStyle(
-        "action",
-      )}">
-      ${t("welcome.click")}
-    </div>
   `;
+
+  const clickPrompt = document.createElement("div");
+  clickPrompt.className = "welcome-click";
+  clickPrompt.style.cssText = `
+    font-size:20px;color:rgba(255,255,255,0.85);
+    letter-spacing:0.14em;margin-top:24px;${domFontStyle("action")}
+  `;
+  clickPrompt.textContent = formatLoadingPrompt(0);
+  clickPromptEl = clickPrompt;
+  content.appendChild(clickPrompt);
 
   const style = document.createElement("style");
   style.textContent = `
@@ -106,28 +127,79 @@ export const welcome = () => {
   modalEl.appendChild(content);
   document.body.appendChild(modalEl);
 
+  // Locale can change mid-load (rare, but keep prompt text in sync).
+  onLocaleChange(() => {
+    if (!modalEl) return;
+    const title = modalEl.querySelector(".welcome-title");
+    const subtitle = modalEl.querySelector(".welcome-subtitle");
+    const desc = modalEl.querySelector(".welcome-desc");
+    if (title) title.innerHTML = t("welcome.title");
+    if (subtitle) subtitle.innerHTML = t("welcome.subtitle");
+    if (desc) desc.innerHTML = t("welcome.desc");
+    if (welcomeReady && clickPromptEl) {
+      clickPromptEl.textContent = t("welcome.click");
+    } else {
+      refreshBootPromptText();
+    }
+  });
+};
+
+/** Update the boot-shell prompt with loader progress (0–100). */
+export const setWelcomeLoadProgress = (pct: number) => {
+  lastLoadProgress = Math.max(0, Math.min(100, pct));
+  refreshBootPromptText();
+};
+
+/**
+ * Assets are ready — swap the loading prompt for "click to continue" and
+ * arm the click/key handlers that unlock audio and open the main menu.
+ */
+export const markWelcomeReady = () => {
+  if (welcomeReady) return;
+  if (!bootShellShown) showBootWelcome();
+  welcomeReady = true;
+
+  if (clickPromptEl) {
+    clickPromptEl.textContent = t("welcome.click");
+    clickPromptEl.style.animation = "promptPulse 1.8s ease-in-out infinite";
+  }
+  if (modalEl) {
+    modalEl.style.cursor = "pointer";
+  }
+
   const onModalClick = () => {
-    overlay.style.opacity = "0";
-    modalEl!.style.opacity = "0";
-    modalEl!.style.transition = "opacity 0.4s ease";
+    if (!welcomeReady || !modalEl) return;
+
+    // Unlock AudioContext on the gesture stack before any await in playMenuBgm.
+    unlockAudio();
+
+    if (dimOverlayEl) dimOverlayEl.style.opacity = "0";
+    modalEl.style.opacity = "0";
+    modalEl.style.transition = "opacity 0.4s ease";
 
     setTimeout(() => {
       modalEl?.remove();
       modalEl = null;
+      clickPromptEl = null;
+      dimOverlayEl = null;
     }, 400);
 
-    stopBgm();
-    const bgm161 = app.loader.resources["bgm161"]?.sound;
-    if (bgm161) {
-      playBgm(bgm161 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
-    }
+    void playMenuBgm();
 
     window.removeEventListener("keydown", onModalClick);
     setTimeout(() => showWelcomePage(), 400);
   };
 
   window.addEventListener("keydown", onModalClick, { once: true });
-  modalEl.addEventListener("click", onModalClick, { once: true });
+  modalEl?.addEventListener("click", onModalClick, { once: true });
+};
+
+/**
+ * Game-state entry used by the ticker. The real shell is shown earlier via
+ * {@link showBootWelcome}; this is a no-op once that has run.
+ */
+export const welcome = () => {
+  showBootWelcome();
 };
 
 // ============== 第二个页面：游戏欢迎页（H5 风格） ==============
@@ -176,12 +248,9 @@ const showWelcomePage = () => {
  */
 export const enterMenu = () => {
   showWelcomePage();
-  // Menu BGM: stop any leftover game/game-over BGM, then loop bgm161.
-  stopBgm();
-  const bgm161 = app.loader.resources["bgm161"]?.sound;
-  if (bgm161) {
-    playBgm(bgm161 as PIXI.sound.Sound, { loop: true, volume: 0.3 });
-  }
+  // Menu BGM: stop any leftover game/game-over BGM, then lazy-load & loop bgm161.
+  // Also idle-prefetches play + game-over tracks once the menu track is warm.
+  void playMenuBgm();
 };
 
 /** Build (or rebuild) the menu DOM overlay. Sprites are kept across locale changes. */
