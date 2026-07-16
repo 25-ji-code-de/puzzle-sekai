@@ -9,7 +9,7 @@ import { gameTicker } from "../index";
 import { getCoordinates, getOffset } from "../utils/coords";
 import type { CharacterData } from "../characters/data";
 import { FALL_SPEED } from "../config";
-import { SpriteData, sprites, pieces } from "../game/board-state";
+import { SpriteData, sprites, pieces, getBoardModel } from "../game/board-state";
 import { isFunModeOn } from "../fun/effects";
 import {
   type Cell,
@@ -22,12 +22,7 @@ import {
   placeSpriteAtAnchor,
   writeFootprint,
   clearFootprint,
-  maxDropDistance,
   isUnsupported,
-  dropFootprint,
-  cloneGrid,
-  copyGridInto,
-  maxFootprintY,
 } from "./geometry";
 import { ITEM_TOKEN, type CellToken } from "../domain/types";
 
@@ -96,55 +91,51 @@ type FallPlan = {
 };
 
 /**
- * Simulate gravity for all currently unsupported pieces.
- * Pure coordinate math — never re-derives footprint from sprite rotation.
- * Process lowest pieces first so upper pieces stack on them correctly.
+ * Simulate gravity for all currently unsupported pieces via BoardModel.
+ * Pure coordinate math on the grid — never re-derives footprint from rotation.
  */
 const planFalls = (canFall: FallEntry[]): FallPlan[] => {
-  const backup = cloneGrid(pieces);
+  const model = getBoardModel();
+
+  const tagged = canFall
+    .map((entry) => {
+      const token = cellName(entry);
+      const coords = (entry.coordinates ?? []) as Cell[];
+      if (!token || !coords.length) return null;
+      return { entry, token, coords, id: entry.index };
+    })
+    .filter(
+      (x): x is {
+        entry: FallEntry;
+        token: CellToken;
+        coords: Cell[];
+        id: number;
+      } => !!x,
+    );
+
+  const byId = new Map(tagged.map((t) => [t.id, t.entry]));
+
+  const domainPlans = model.planGravity(
+    tagged.map(({ token, coords, id }) => ({ token, coords, id })),
+  );
+
   const plans: FallPlan[] = [];
-
-  // Lowest first so they claim landing spots before pieces above them
-  const ordered = [...canFall].sort((a, b) => {
-    const ay = maxFootprintY((a.coordinates ?? []) as Cell[]);
-    const by = maxFootprintY((b.coordinates ?? []) as Cell[]);
-    return by - ay;
-  });
-
-  // Clear all falling pieces first so they don't block each other mid-plan
-  for (const entry of ordered) {
-    if (entry.coordinates?.length) {
-      clearFootprint(pieces, entry.coordinates as Cell[]);
-    }
-  }
-
-  for (const entry of ordered) {
-    const coords = (entry.coordinates ?? []) as Cell[];
-    if (!coords.length) continue;
-
+  for (const gp of domainPlans) {
+    const entry = gp.id !== undefined ? byId.get(gp.id) : undefined;
+    if (!entry) continue;
     const kind = kindOf(entry);
-    const dy = maxDropDistance(pieces, coords);
-    const dest = dropFootprint(coords, dy);
-    const token = cellName(entry);
-    if (token) writeFootprint(pieces, dest, token);
-
     const orient = asOrientation(getOffset(entry.sprite));
-    const endAnchor = anchorFromFootprint(dest, kind, orient);
-
+    const endAnchor = anchorFromFootprint(gp.to, kind, orient);
     plans.push({
       entry,
       kind,
-      dy,
-      dest,
+      dy: gp.dy,
+      dest: gp.to,
       startPixelY: entry.sprite.y,
       endPixelY: anchorPixelY(kind, endAnchor.y),
     });
   }
-
-  // Restore real grid — applyFalls will commit for real
-  copyGridInto(pieces, backup);
-
-  return plans.filter((p) => p.dy > 0);
+  return plans;
 };
 
 /** Sync live sprites[] entry coordinates after a planned fall. */
