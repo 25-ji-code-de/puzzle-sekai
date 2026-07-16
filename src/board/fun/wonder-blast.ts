@@ -8,6 +8,7 @@ import { onKanadeCleared } from "../../fun/effects";
 import { createParticles } from "../particles";
 import { removeSpritesFromBoard } from "../mutate";
 import { anyPairAdjacent, shuffleInPlace } from "../grid";
+import { CHAR } from "../../characters/ids";
 
 /** Pick sprites until `blastTarget` cells are covered. */
 const pickBlastTargets = (
@@ -29,9 +30,9 @@ const pickBlastTargets = (
  * randomly blast extra pieces.
  */
 export const applyWonderBlast = (cleared: SpriteData[]) => {
-  const ruiSprites = cleared.filter((sp) => sp.character?.name === "Rui");
+  const ruiSprites = cleared.filter((sp) => sp.character?.name === CHAR.Rui);
   const neneRoboSprites = cleared.filter(
-    (sp) => sp.character?.name === "NeneRobo",
+    (sp) => sp.character?.name === CHAR.NeneRobo,
   );
   if (ruiSprites.length === 0 || neneRoboSprites.length === 0) return;
   if (!anyPairAdjacent(ruiSprites, neneRoboSprites)) return;
@@ -47,7 +48,7 @@ export const applyWonderBlast = (cleared: SpriteData[]) => {
   const { remove, cellsCleared } = pickBlastTargets(candidates, blastTarget);
   if (remove.length === 0) return;
 
-  if (remove.some((sp) => sp.character?.name === "Kanade")) {
+  if (remove.some((sp) => sp.character?.name === CHAR.Kanade)) {
     onKanadeCleared();
   }
 

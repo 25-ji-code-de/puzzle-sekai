@@ -32,13 +32,13 @@ const silentClearChunk = async (chunk: [number, number][]): Promise<void> => {
   const toRemove = spritesInChunk(chunk);
   if (toRemove.length === 0) return;
 
-  if (toRemove.some((sp) => sp.character?.name === "Kanade")) {
+  if (toRemove.some((sp) => sp.character?.name === CHAR.Kanade)) {
     onKanadeCleared();
   }
-  if (toRemove.some((sp) => sp.character?.name === "Shizuku")) {
+  if (toRemove.some((sp) => sp.character?.name === CHAR.Shizuku)) {
     const shihoOnBoard = sprites.some(
       (sp) =>
-        sp.character?.name === "Shiho" &&
+        sp.character?.name === CHAR.Shiho &&
         !toRemove.find((r) => r.sprite === sp.sprite),
     );
     onShizukuCleared(shihoOnBoard);

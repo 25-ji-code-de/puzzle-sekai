@@ -17,6 +17,7 @@ import {
   footprintFromPrimary,
   clearFootprint,
 } from "../geometry";
+import { CHAR } from "../../characters/ids";
 
 /** 2-cell footprint for primary (ax,ay) if every cell is on-board; else null. */
 const cellsFor = (
@@ -45,7 +46,7 @@ export const applyMizukiShift = async (
   let best: Cand | null = null;
   for (let i = 0; i < sprites.length; i++) {
     const sp = sprites[i];
-    if (sp.character?.name !== "Mizuki" || !sp.coordinates?.length) continue;
+    if (sp.character?.name !== CHAR.Mizuki || !sp.coordinates?.length) continue;
     const dist = Math.min(
       ...sp.coordinates.map(
         ([x, y]) => Math.abs(x - itemX) + Math.abs(y - itemY),
@@ -115,7 +116,7 @@ export const tryMizukiEatFries = async (): Promise<boolean> => {
   while (true) {
     const mizukiCells: [number, number][] = [];
     for (const sp of sprites) {
-      if (sp.character?.name !== "Mizuki" || !sp.coordinates?.length) continue;
+      if (sp.character?.name !== CHAR.Mizuki || !sp.coordinates?.length) continue;
       for (const c of sp.coordinates) mizukiCells.push(c);
     }
     if (mizukiCells.length === 0) break;

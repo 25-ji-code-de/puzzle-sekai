@@ -43,6 +43,7 @@ import {
   voiceVol,
 } from "../settings";
 import { resetFunEffects } from "../fun/effects";
+import { CHAR } from "../characters/ids";
 import { enterMenu } from "../ui/welcome";
 import {
   disposePauseMenu,
@@ -241,7 +242,7 @@ const create = async () => {
         updateCoordinates(sprite, index, character);
         // にんじん嫌い: Ena/Akito landing next to carrot → clear character
         let allergyCleared = false;
-        if (character.name === "Ena" || character.name === "Akito") {
+        if (character.name === CHAR.Ena || character.name === CHAR.Akito) {
           allergyCleared = await applyCarrotAllergyOnCharacter(index);
         }
         // Gravity + tips + fun contacts + clears until the board is quiet.

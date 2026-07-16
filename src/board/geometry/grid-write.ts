@@ -4,16 +4,18 @@
  */
 
 import { ROWS } from "../../config";
+import type { BoardCell, BoardGrid as DomainBoardGrid } from "../../domain/types";
 import type { Cell } from "./cells";
 import { bottomCells, translateCells } from "./cells";
 
-export type BoardGrid = (string | null)[][];
+/** Prefer domain BoardGrid; keep alias for geometry callers. */
+export type BoardGrid = DomainBoardGrid;
 
-/** Write name into each footprint cell (in-bounds only). */
+/** Write token into each footprint cell (in-bounds only). */
 export const writeFootprint = (
   grid: BoardGrid,
   coords: Cell[],
-  name: string,
+  name: BoardCell & string,
 ): void => {
   for (const [x, y] of coords) {
     if (y >= 0 && y < grid.length && x >= 0 && x < (grid[y]?.length ?? 0)) {

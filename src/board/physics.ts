@@ -24,6 +24,7 @@ import {
   placeSpriteAtAnchor,
   writeFootprint,
 } from "./geometry";
+import { ITEM_TOKEN } from "../domain/types";
 
 /** Slightly slower than a snap so the pry-up arc reads clearly. */
 const TIP_ROTATE_FRAMES = 18;
@@ -294,7 +295,7 @@ const findTipPlan = (list: SpriteData[]): TipPlan | null => {
 
 /** Write footprint directly — never re-derive cells from sprite math after a tip. */
 const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
-  const name = sp.isItem ? "Item" : sp.character?.name;
+  const name = sp.isItem ? ITEM_TOKEN : sp.character?.name;
   if (!name || !newCells.length) {
     sp.coordinates = newCells;
     return;

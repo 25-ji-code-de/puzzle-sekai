@@ -3,54 +3,59 @@
  */
 import { ROWS, COLUMNS } from "../config";
 import { characterData } from "../characters/data";
+import { CHAR, type CharacterName } from "../characters/ids";
+import type { GroupName } from "../settings/types";
+import { ITEM_TOKEN, type BoardCell } from "../domain/types";
 import { DIRS_ORTHO, cellKey, inBounds } from "./grid";
 
 /** name → group */
-const groupMap: Record<string, string> = Object.fromEntries(
-  characterData.map((c) => [c.name, c.group]),
-);
+const groupMap: Partial<Record<CharacterName, GroupName | "Special">> =
+  Object.fromEntries(characterData.map((c) => [c.name, c.group]));
 
 /** Wildcard that counts as any group's special and bridges adjacent groups */
-const MIKUDAYO = "Mikudayo";
+const MIKUDAYO = CHAR.Mikudayo;
 
 /**
  * Clear rules per group:
  * - required: all must be present
  * - specials: need any one (Mikudayo also counts)
  */
-const GROUP_RULES: Record<string, { required: string[]; specials: string[] }> = {
+const GROUP_RULES: Record<
+  GroupName,
+  { required: CharacterName[]; specials: CharacterName[] }
+> = {
   "Leo/need": {
-    required: ["Ichika", "Saki", "Honami", "Shiho"],
-    specials: ["MikuLeo"],
+    required: [CHAR.Ichika, CHAR.Saki, CHAR.Honami, CHAR.Shiho],
+    specials: [CHAR.MikuLeo],
   },
   "MORE MORE JUMP!": {
-    required: ["Minori", "Haruka", "Airi", "Shizuku"],
-    specials: ["MikuMMJ"],
+    required: [CHAR.Minori, CHAR.Haruka, CHAR.Airi, CHAR.Shizuku],
+    specials: [CHAR.MikuMMJ],
   },
   "Vivid BAD SQUAD": {
-    required: ["Kohane", "An", "Akito", "Toya"],
-    specials: ["MikuVBS"],
+    required: [CHAR.Kohane, CHAR.An, CHAR.Akito, CHAR.Toya],
+    specials: [CHAR.MikuVBS],
   },
   "Wonderlands×Showtime": {
-    required: ["Tsukasa", "Emu", "Nene", "Rui"],
-    specials: ["NeneRobo", "MikuWxS"],
+    required: [CHAR.Tsukasa, CHAR.Emu, CHAR.Nene, CHAR.Rui],
+    specials: [CHAR.NeneRobo, CHAR.MikuWxS],
   },
   "25時、ナイトコードで。": {
-    required: ["Kanade", "Mafuyu", "Ena", "Mizuki"],
-    specials: ["Miku25ji"],
+    required: [CHAR.Kanade, CHAR.Mafuyu, CHAR.Ena, CHAR.Mizuki],
+    specials: [CHAR.Miku25ji],
   },
 };
 
 /** Same group, or either side is Mikudayo. Item never bridges. */
-const isConnected = (a: string | null, b: string | null): boolean => {
+const isConnected = (a: BoardCell, b: BoardCell): boolean => {
   if (a == null || b == null) return false;
-  if (a === "Item" || b === "Item") return false;
+  if (a === ITEM_TOKEN || b === ITEM_TOKEN) return false;
   if (a === MIKUDAYO || b === MIKUDAYO) return true;
   return !!groupMap[a] && groupMap[a] === groupMap[b];
 };
 
 const isGroupComplete = (
-  group: string,
+  group: GroupName,
   names: Set<string>,
   hasMikudayo: boolean,
 ): boolean => {
@@ -63,7 +68,7 @@ const isGroupComplete = (
 };
 
 /** Collect undirected connected components (Mikudayo bridges groups). */
-const findComponents = (pieces: (string | null)[][]): [number, number][][] => {
+const findComponents = (pieces: BoardCell[][]): [number, number][][] => {
   const visited = Array.from({ length: ROWS }, () =>
     Array<boolean>(COLUMNS).fill(false),
   );
@@ -72,7 +77,7 @@ const findComponents = (pieces: (string | null)[][]): [number, number][][] => {
   for (let y = 0; y < pieces.length; y++) {
     for (let x = 0; x < pieces[y].length; x++) {
       const seed = pieces[y][x];
-      if (seed == null || seed === "Item" || visited[y][x]) continue;
+      if (seed == null || seed === ITEM_TOKEN || visited[y][x]) continue;
 
       const queue: [number, number][] = [[x, y]];
       const component: [number, number][] = [];
@@ -103,13 +108,15 @@ const findComponents = (pieces: (string | null)[][]): [number, number][][] => {
 };
 
 export const findClearPieces = (
-  pieces: (string | null)[][],
+  pieces: BoardCell[][],
 ): [number, number][] | undefined => {
   const cleared = new Set<string>();
 
   for (const component of findComponents(pieces)) {
     const names = new Set(
-      component.map(([x, y]) => pieces[y][x]!).filter((n) => n !== "Item"),
+      component
+        .map(([x, y]) => pieces[y][x]!)
+        .filter((n) => n !== ITEM_TOKEN),
     );
     if (names.size === 0) continue;
 
@@ -117,11 +124,11 @@ export const findClearPieces = (
     const groups = new Set(
       [...names]
         .filter((n) => n !== MIKUDAYO)
-        .map((n) => groupMap[n])
-        .filter(Boolean),
+        .map((n) => groupMap[n as CharacterName])
+        .filter((g): g is GroupName => !!g && g !== "Special"),
     );
 
-    const completed = new Set<string>();
+    const completed = new Set<GroupName>();
     for (const group of groups) {
       if (isGroupComplete(group, names, hasMikudayo)) {
         completed.add(group);
@@ -132,7 +139,12 @@ export const findClearPieces = (
     // Clear only completed groups + shared Mikudayo
     for (const [x, y] of component) {
       const name = pieces[y][x]!;
-      if (name === MIKUDAYO || completed.has(groupMap[name])) {
+      if (name === MIKUDAYO) {
+        cleared.add(cellKey(x, y));
+        continue;
+      }
+      const g = groupMap[name as CharacterName];
+      if (g && g !== "Special" && completed.has(g)) {
         cleared.add(cellKey(x, y));
       }
     }

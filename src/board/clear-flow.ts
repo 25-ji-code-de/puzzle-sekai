@@ -22,6 +22,7 @@ import { findClearPieces } from "./clear-rules";
 import { playClearAnimation } from "./clear-vfx";
 import { spritesInChunk } from "./mutate";
 import { voiceVol } from "../settings";
+import { CHAR } from "../characters/ids";
 
 /**
  * After gravity + cantilever tips settle: re-check fun contacts.
@@ -35,7 +36,7 @@ const runPostGravityEffects = async (): Promise<boolean> => {
   if (await tryMizukiEatFries()) changed = true;
   if (await tryEmuShrink()) changed = true;
   cancelShizukuSwapIfShihoPresent(
-    sprites.some((sp) => sp.character?.name === "Shiho"),
+    sprites.some((sp) => sp.character?.name === CHAR.Shiho),
   );
   return changed;
 };
@@ -65,7 +66,7 @@ export const settleBoard = async (): Promise<{ cleared: boolean }> => {
       changed = true;
     }
     cancelShizukuSwapIfShihoPresent(
-      sprites.some((sp) => sp.character?.name === "Shiho"),
+      sprites.some((sp) => sp.character?.name === CHAR.Shiho),
     );
 
     let chunk = findClearPieces(pieces);
@@ -90,13 +91,13 @@ export const clearChunk = async (
 
   if (toRemove.length === 0) return;
 
-  if (toRemove.some((sp) => sp.character?.name === "Kanade")) {
+  if (toRemove.some((sp) => sp.character?.name === CHAR.Kanade)) {
     onKanadeCleared();
   }
-  if (toRemove.some((sp) => sp.character?.name === "Shizuku")) {
+  if (toRemove.some((sp) => sp.character?.name === CHAR.Shizuku)) {
     const shihoOnBoard = sprites.some(
       (sp) =>
-        sp.character?.name === "Shiho" &&
+        sp.character?.name === CHAR.Shiho &&
         !toRemove.find((r) => r.sprite === sp.sprite),
     );
     onShizukuCleared(shihoOnBoard);

@@ -2,10 +2,12 @@
  * Atomic piece-kind classification (pure).
  */
 
+import { CHAR } from "../../characters/ids";
+
 export type PieceKind = "cell2" | "big2x2" | "item" | "shrunk";
 
 export const isBig2x2Name = (name?: string | null): boolean =>
-  name === "NeneRobo" || name === "Mikudayo";
+  name === CHAR.NeneRobo || name === CHAR.Mikudayo;
 
 export const pieceKindFrom = (opts: {
   characterName?: string | null;

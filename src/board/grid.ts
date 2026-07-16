@@ -27,7 +27,7 @@ export const parseCellKey = (key: string): [number, number] => {
 };
 
 export const inBounds = (
-  pieces: (string | null)[][],
+  pieces: readonly (readonly unknown[])[],
   x: number,
   y: number,
 ): boolean => y >= 0 && x >= 0 && y < pieces.length && x < (pieces[y]?.length ?? 0);

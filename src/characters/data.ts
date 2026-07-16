@@ -83,10 +83,13 @@ export const groupSounds: { [group: string]: string } = {
   "25時、ナイトコードで。": nightSound,
 };
 
+import type { CharacterName } from "./ids";
+import type { GroupName } from "../settings/types";
+
 export interface CharacterData {
-  name: string;
+  name: CharacterName;
   file: string;
-  group: string;
+  group: GroupName | "Special";
   preview?: string;
   sounds?: {
     fall?: string[];

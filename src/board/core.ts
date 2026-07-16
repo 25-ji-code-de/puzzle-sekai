@@ -29,6 +29,7 @@ import {
   copyGridInto,
   maxFootprintY,
 } from "./geometry";
+import { ITEM_TOKEN, type CellToken } from "../domain/types";
 
 const kindOf = (entry: {
   character?: Pick<CharacterData, "name"> | SpriteData["character"];
@@ -65,8 +66,10 @@ export const updateCoordinates = (
   });
 
   const cells = footprintFromPrimary(primary, orient, kind);
-  const name =
-    kind === "item" ? "Item" : (character?.name ?? sprites[idx].character?.name);
+  const name: CellToken | undefined =
+    kind === "item"
+      ? ITEM_TOKEN
+      : (character?.name ?? sprites[idx].character?.name);
   if (!name) return;
 
   writeFootprint(pieces, cells, name);
@@ -75,9 +78,9 @@ export const updateCoordinates = (
 
 type FallEntry = SpriteData & { index: number };
 
-const cellName = (entry: FallEntry): string => {
-  if (entry.isItem) return "Item";
-  return entry.character?.name ?? "Piece";
+const cellName = (entry: FallEntry): CellToken | null => {
+  if (entry.isItem) return ITEM_TOKEN;
+  return entry.character?.name ?? null;
 };
 
 type FallPlan = {
@@ -122,7 +125,8 @@ const planFalls = (canFall: FallEntry[]): FallPlan[] => {
     const kind = kindOf(entry);
     const dy = maxDropDistance(pieces, coords);
     const dest = dropFootprint(coords, dy);
-    writeFootprint(pieces, dest, cellName(entry));
+    const token = cellName(entry);
+    if (token) writeFootprint(pieces, dest, token);
 
     const orient = asOrientation(getOffset(entry.sprite));
     const endAnchor = anchorFromFootprint(dest, kind, orient);
@@ -164,7 +168,8 @@ const commitFall = (plan: FallPlan) => {
   // Write coordinates / grid directly — do NOT call updateCoordinates
   // (it re-derives footprint from rotation and can desync after a tip).
   syncLiveCoordinates(entry, dest);
-  writeFootprint(pieces, dest, cellName(entry));
+  const token = cellName(entry);
+  if (token) writeFootprint(pieces, dest, token);
 };
 
 /** Animate planned falls, then write footprints + coordinates. */
