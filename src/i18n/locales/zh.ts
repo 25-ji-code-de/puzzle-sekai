@@ -61,6 +61,13 @@ export const zh = {
       none: "无",
       tooltip: "得分倍率 ×{factor}",
     },
+    orientation: {
+      label: "下落姿态",
+      inverted: "头朝下",
+      upright: "头朝上",
+      invertedHelp: "角色倒置下落（默认）。辨认稍难，得分倍率标准。",
+      uprightHelp: "角色正向下落。更容易辨认，得分倍率略低。",
+    },
     fun: {
       label: "娱乐模式（开启任一即生效）",
       help: "选择标签查看说明",
@@ -74,6 +81,7 @@ export const zh = {
       total: "合计",
       diffLine: "难度 {difficulty}（速度{speed} · {groups}个组合）",
       itemLine: "道具掉落 {rate}",
+      orientLine: "下落姿态 · {orient}",
       funLineItemLinked: "{name}（道具率联动）",
     },
     lang: {

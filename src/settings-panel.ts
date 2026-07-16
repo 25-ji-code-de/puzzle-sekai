@@ -2,6 +2,7 @@ import {
   SpeedLevel,
   TimeAttackDuration,
   ItemDropRate,
+  SpawnOrientation,
   GAME_GROUPS,
   GROUP_LABELS,
   getSpeedLabel,
@@ -9,6 +10,8 @@ import {
   ITEM_DROP_RATES,
   getItemDropLabel,
   ITEM_DROP_SCORE_FACTORS,
+  SPAWN_ORIENTATIONS,
+  SPAWN_ORIENTATION_SCORE_FACTORS,
   getCurrentSettings,
   updateCurrentSettings,
   getDifficultyLevel,
@@ -301,6 +304,40 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
   });
   itemGroup.appendChild(itemOptions);
   settingsPanel.appendChild(itemGroup);
+
+  // Spawn orientation (head-down / head-up while falling)
+  const orientGroup = document.createElement("div");
+  orientGroup.className = "setting-group";
+  orientGroup.innerHTML = `<div class="setting-label">${t(
+    "settings.orientation.label",
+  )}</div>`;
+  const orientOptions = document.createElement("div");
+  orientOptions.className = "setting-options";
+  const currentOrient = (settings.spawnOrientation ??
+    "inverted") as SpawnOrientation;
+  SPAWN_ORIENTATIONS.forEach((orient) => {
+    const opt = document.createElement("div");
+    opt.className = `setting-opt ${orient === currentOrient ? "active" : ""}`;
+    opt.title = t(`settings.orientation.${orient}Help`);
+    opt.innerHTML = `<div>${t(`settings.orientation.${orient}`)}</div>
+      <div style="font-size:12px;opacity:0.65;margin-top:2px;">×${SPAWN_ORIENTATION_SCORE_FACTORS[
+        orient
+      ].toFixed(2)}</div>`;
+    opt.onclick = () => {
+      settings.spawnOrientation = orient;
+      updateCurrentSettings(settings);
+      refreshSettingsPanel();
+    };
+    orientOptions.appendChild(opt);
+  });
+  orientGroup.appendChild(orientOptions);
+  const orientHelp = document.createElement("div");
+  orientHelp.style.cssText = `
+    margin-top:8px;font-size:13px;line-height:1.5;color:rgba(255,255,255,0.55);
+  `;
+  orientHelp.textContent = t(`settings.orientation.${currentOrient}Help`);
+  orientGroup.appendChild(orientHelp);
+  settingsPanel.appendChild(orientGroup);
 
   // Fun modes
   if (!settings.funModes) {

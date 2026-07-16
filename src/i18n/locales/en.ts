@@ -61,6 +61,15 @@ export const en = {
       none: "None",
       tooltip: "Score multiplier ×{factor}",
     },
+    orientation: {
+      label: "Falling Orientation",
+      inverted: "Inverted",
+      upright: "Normal",
+      invertedHelp:
+        "Characters fall inverted (default). Harder to read; standard score mult.",
+      uprightHelp:
+        "Characters fall right-side up. Easier to recognize; slightly lower score mult.",
+    },
     fun: {
       label: "Fun Modes (any ON enables Fun Mode)",
       help: "Select a chip to view its description",
@@ -74,6 +83,7 @@ export const en = {
       total: "Total",
       diffLine: "Difficulty {difficulty} (Speed {speed} · {groups} units)",
       itemLine: "Item Drop {rate}",
+      orientLine: "Falling Orientation · {orient}",
       funLineItemLinked: "{name} (item-linked)",
     },
     lang: {

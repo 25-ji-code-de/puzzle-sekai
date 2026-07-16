@@ -15,6 +15,12 @@ export type SpeedLevel = 1 | 2 | 3 | 4 | 5;
 export type TimeAttackDuration = 60 | 90 | 120 | 180;
 /** Item spawn chance when stack is low enough (percent 0–30) */
 export type ItemDropRate = 0 | 5 | 10 | 15 | 20 | 30;
+/**
+ * Character spawn facing while falling.
+ * - inverted (default): head-down — harder spatial read, ×1.00
+ * - upright: head-up — easier, slightly lower score mult
+ */
+export type SpawnOrientation = "inverted" | "upright";
 
 // Available groups
 export const GAME_GROUPS = [
@@ -34,6 +40,8 @@ export interface GameSettings {
   funModes: FunModeFlags;
   /** Percent chance to spawn items when max stack height < 5 */
   itemDropRate: ItemDropRate;
+  /** Head-down (default) vs head-up spawn while falling */
+  spawnOrientation: SpawnOrientation;
 }
 
 // Speed multipliers for each level
@@ -73,6 +81,29 @@ export const ITEM_DROP_SCORE_FACTORS: Record<ItemDropRate, number> = {
   30: 1.22,
 };
 
+export const SPAWN_ORIENTATIONS: SpawnOrientation[] = ["inverted", "upright"];
+
+/**
+ * Score factor for spawn facing.
+ * Upright is easier to read → lower mult. Inverted (classic) = ×1.00.
+ */
+export const SPAWN_ORIENTATION_SCORE_FACTORS: Record<
+  SpawnOrientation,
+  number
+> = {
+  inverted: 1.0,
+  upright: 0.9,
+};
+
+export const isSpawnOrientation = (v: unknown): v is SpawnOrientation =>
+  v === "inverted" || v === "upright";
+
+/** Initial sprite.rotation for character pieces under current setting. */
+export function getSpawnRotation(settings?: GameSettings): number {
+  const s = settings ?? getCurrentSettings();
+  return s.spawnOrientation === "upright" ? 0 : Math.PI;
+}
+
 // Group display names (Japanese)
 export const GROUP_LABELS: Record<GroupName, string> = {
   "Leo/need": "Leo/need",
@@ -82,13 +113,14 @@ export const GROUP_LABELS: Record<GroupName, string> = {
   "25時、ナイトコードで。": "25時、ナイトコードで。",
 };
 
-// Default settings (all 5 groups selected, fun modes off, 10% items)
+// Default settings (all 5 groups selected, fun modes off, 10% items, inverted)
 const DEFAULT_SETTINGS: GameSettings = {
   speedLevel: 2,
   timeAttackDuration: 90,
   selectedGroups: [...GAME_GROUPS],
   funModes: { ...DEFAULT_FUN_MODES },
   itemDropRate: 10,
+  spawnOrientation: "inverted",
 };
 
 const isItemDropRate = (v: unknown): v is ItemDropRate =>
@@ -123,6 +155,9 @@ export function loadSettings(): GameSettings {
         itemDropRate: isItemDropRate(parsed.itemDropRate)
           ? parsed.itemDropRate
           : DEFAULT_SETTINGS.itemDropRate,
+        spawnOrientation: isSpawnOrientation(parsed.spawnOrientation)
+          ? parsed.spawnOrientation
+          : DEFAULT_SETTINGS.spawnOrientation,
       };
     }
   } catch (e) {
@@ -230,9 +265,11 @@ export type ScoreMultBreakdown = {
   base: number;
   fun: number;
   item: number;
+  orientation: number;
   final: number;
   difficultyLabel: string;
   itemDropRate: ItemDropRate;
+  spawnOrientation: SpawnOrientation;
   lines: ScoreMultLine[];
 };
 
@@ -244,10 +281,14 @@ export function getScoreMultiplierBreakdown(
   const rate = isItemDropRate(settings.itemDropRate)
     ? settings.itemDropRate
     : DEFAULT_SETTINGS.itemDropRate;
+  const orientation = isSpawnOrientation(settings.spawnOrientation)
+    ? settings.spawnOrientation
+    : DEFAULT_SETTINGS.spawnOrientation;
   const flags = settings.funModes ?? DEFAULT_FUN_MODES;
   const fun = getFunModeMultiplier(flags, rate);
   const item = ITEM_DROP_SCORE_FACTORS[rate];
-  const final = Math.min(4, Math.max(0.3, base * fun * item));
+  const orient = SPAWN_ORIENTATION_SCORE_FACTORS[orientation];
+  const final = Math.min(4, Math.max(0.3, base * fun * item * orient));
 
   const lines: ScoreMultLine[] = [
     {
@@ -261,6 +302,12 @@ export function getScoreMultiplierBreakdown(
     {
       label: t("settings.difficulty.itemLine", { rate: getItemDropLabel(rate) }),
       factor: item,
+    },
+    {
+      label: t("settings.difficulty.orientLine", {
+        orient: t(`settings.orientation.${orientation}`),
+      }),
+      factor: orient,
     },
   ];
 
@@ -282,9 +329,11 @@ export function getScoreMultiplierBreakdown(
     base,
     fun,
     item,
+    orientation: orient,
     final,
     difficultyLabel: getDifficultyLabel(settings),
     itemDropRate: rate,
+    spawnOrientation: orientation,
     lines,
   };
 }
@@ -392,6 +441,9 @@ export function updateCurrentSettings(settings: GameSettings): void {
     itemDropRate: isItemDropRate(settings.itemDropRate)
       ? settings.itemDropRate
       : DEFAULT_SETTINGS.itemDropRate,
+    spawnOrientation: isSpawnOrientation(settings.spawnOrientation)
+      ? settings.spawnOrientation
+      : DEFAULT_SETTINGS.spawnOrientation,
   };
   saveSettings(currentSettings);
 }

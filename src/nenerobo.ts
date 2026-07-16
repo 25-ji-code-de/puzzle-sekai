@@ -13,7 +13,11 @@ import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
 import { pieces } from "./states";
 import { addDropScore } from "./score";
-import { getCurrentSettings, getSpeedMultiplier } from "./settings";
+import {
+  getCurrentSettings,
+  getSpeedMultiplier,
+  getSpawnRotation,
+} from "./settings";
 import { isControlsSwapped, consumeKanadeSlowForSpawn } from "./fun-effects";
 
 export const createNeneRobo = async (
@@ -37,7 +41,8 @@ export const createNeneRobo = async (
   nenerobo.anchor.x = 0.5;
   nenerobo.anchor.y = 0.5;
 
-  nenerobo.rotation = Math.PI;
+  // inverted (default, head-down) or upright — see settings.spawnOrientation
+  nenerobo.rotation = getSpawnRotation();
   // app.stage.addChild(bunny);
 
   let dropped: number | undefined = undefined;

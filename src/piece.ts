@@ -22,7 +22,11 @@ import {
 import { characterData, CharacterData } from "./character-data";
 import { createNeneRobo } from "./nenerobo";
 import { addDropScore } from "./score";
-import { getCurrentSettings, getSpeedMultiplier } from "./settings";
+import {
+  getCurrentSettings,
+  getSpeedMultiplier,
+  getSpawnRotation,
+} from "./settings";
 import {
   isControlsSwapped,
   onShihoLanded,
@@ -217,7 +221,8 @@ export const createPiece = async (
   kasumi.anchor.x = 0.5;
   kasumi.anchor.y = 0.25;
 
-  kasumi.rotation = Math.PI;
+  // inverted (default, head-down) or upright — see settings.spawnOrientation
+  kasumi.rotation = getSpawnRotation();
   // app.stage.addChild(bunny);
 
   let dropped: number | undefined = undefined;

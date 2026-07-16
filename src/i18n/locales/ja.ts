@@ -61,6 +61,15 @@ export const ja = {
       none: "なし",
       tooltip: "スコア倍率 ×{factor}",
     },
+    orientation: {
+      label: "落下の向き",
+      inverted: "頭下がり",
+      upright: "頭上向き",
+      invertedHelp:
+        "キャラクターが逆さま（頭を下）で落下します（デフォルト）。判別はやや難しく、スコア倍率は標準です。",
+      uprightHelp:
+        "キャラクターが正位置（頭を上）で落下します。判別しやすく、スコア倍率はやや下がります。",
+    },
     fun: {
       label: "お楽しみモード（1つでもONで有効）",
       help: "チップを選ぶと説明が表示されます",
@@ -74,6 +83,7 @@ export const ja = {
       total: "合計",
       diffLine: "難易度 {difficulty}（速度{speed} · {groups}ユニット）",
       itemLine: "アイテムドロップ {rate}",
+      orientLine: "落下の向き · {orient}",
       funLineItemLinked: "{name}（アイテム率連動）",
     },
     lang: {
