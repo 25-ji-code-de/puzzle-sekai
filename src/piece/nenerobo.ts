@@ -33,7 +33,7 @@ import {
 import { fileIsBig2x2 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
-import { loadTexture } from "./load-texture";
+import { loadTexture } from "../assets/load-texture";
 
 const KIND = "big2x2" as const;
 /** 2×2 footprint is orientation-independent for collision / stack. */

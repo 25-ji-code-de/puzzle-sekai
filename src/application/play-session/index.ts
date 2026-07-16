@@ -1,20 +1,19 @@
 /**
- * Play-session control surface for UI.
- * Re-exports game control API so menus do not import game/states internals.
+ * Play-session control surface for UI and boot.
+ * Phase lives here; control functions are implemented in game/states.
  */
 export {
   getPlayPhase,
   setPlayPhase,
+  isPlayActive,
   isPlayingPhase,
   isPausedPhase,
   type PlayPhase,
 } from "./phase";
 
-// Control API implemented in game/states — single facade for UI
 export {
   start,
   pausePlay,
   resumePlay,
   returnToMenu,
-  isPlayActive,
 } from "../../game/states";

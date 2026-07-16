@@ -45,7 +45,7 @@ import {
 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
-import { loadTexture } from "./load-texture";
+import { loadTexture } from "../assets/load-texture";
 
 export { nextCharacter, initRNG, randomCharacter } from "./rng";
 export { fly, showNextPiece } from "./preview";

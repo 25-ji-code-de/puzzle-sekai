@@ -39,7 +39,10 @@ import {
   getItemDropChance,
 } from "../settings";
 import { resetFunEffects } from "../fun/effects";
-import { setPlayPhase } from "../application/play-session/phase";
+import {
+  setPlayPhase,
+  isPausedPhase,
+} from "../application/play-session/phase";
 import {
   runItemLandEffects,
   runCharacterLandEffects,
@@ -62,44 +65,43 @@ import {
 import { sprites, clearSpritesList, resetPieces } from "./board-state";
 
 export { welcome } from "../ui/welcome";
+
+export { isPlayActive } from "../application/play-session/phase";
+
 export { addDropScore } from "../score";
+
 export {
   type SpriteData,
   sprites,
   setSprites,
   pieces,
 } from "./board-state";
-export { playMenuBgm, stopBgm } from "../audio/session";
 
+export { playMenuBgm, stopBgm } from "../audio/session";
 let endAnimation: number | undefined;
 let avatarStab: PIXI.AnimatedSprite;
 let nextPiece: PIXI.Sprite;
 
 // Time attack timer
 let timeAttackInterval: number | undefined;
-/** True while gameplay is frozen for a portrait pause; the timer skips
- * decrementing so portrait time never counts against the player. */
-let playPaused = false;
-
 let created = false;
-
 // Stop time attack timer
+
 const stopTimeAttackTimer = () => {
   if (timeAttackInterval) {
     clearInterval(timeAttackInterval);
     timeAttackInterval = undefined;
   }
 };
-
 // Start time attack timer
+
 const startTimeAttackTimer = () => {
   stopTimeAttackTimer();
   const settings = getCurrentSettings();
   setTimeRemaining(settings.timeAttackDuration);
-
   // Don't decrement while paused (portrait): just re-arm for the next tick.
   timeAttackInterval = window.setInterval(() => {
-    if (playPaused) return;
+    if (isPausedPhase()) return;
     const isTimeUp = decrementTime();
     if (isTimeUp) {
       stopTimeAttackTimer();
@@ -108,16 +110,9 @@ const startTimeAttackTimer = () => {
   }, 1000);
 };
 
-// True while a match is running (between `start` and game-over / menu return).
-// The pause menu and pause button only respond while this is true.
-let playActive = false;
-export const isPlayActive = () => playActive;
-const setPlayActive = (v: boolean) => {
-  playActive = v;
-};
-
 /** Remove every gameplay-owned sprite + stop timers. Shared by `start`
  * (before re-seeding) and `returnToMenu` (leaving the match). */
+
 const clearStage = () => {
   sprites.forEach((sp) => app.stage.removeChild(sp.sprite));
   clearSpritesList();
@@ -139,7 +134,6 @@ const clearStage = () => {
 
 const start = () => {
   clearStage();
-  playPaused = false;
   setBgmSessionPaused(false);
   disposePauseMenu(); // drop any stale pause overlay (e.g. "r" restart from pause)
   disposeGameOverMenu(); // drop game-over choice if "r" / restart was pressed
@@ -156,18 +150,16 @@ const start = () => {
       (s) => (nextPiece = s),
     );
   }
-
   startPlayBgm();
-
   // Start timer for time attack mode
   const mode = getCurrentGameMode();
   if (mode === "timeAttack") {
     startTimeAttackTimer();
   }
-  setPlayActive(true);
   setPlayPhase({ type: "playing", mode });
   showPauseButton();
 };
+
 export { start };
 
 const create = async () => {
@@ -197,7 +189,6 @@ const create = async () => {
     const positions = Array(COLUMNS)
       .fill(0)
       .map((_, i) => i);
-
     const itemSprites = await Promise.all([
       createItem(
         itemFile,
@@ -227,7 +218,6 @@ const create = async () => {
     const onDropped = async (sprite: PIXI.Sprite) => {
       const { y } = getCoordinates(sprite);
       const orientation = (Math.fround(sprite.rotation / Math.PI) * 2 + 2) % 4;
-
       if (y < 0 || (orientation === 0 && y <= 0)) {
         setState(end);
       } else {
@@ -239,12 +229,10 @@ const create = async () => {
         // Gravity + tips + fun contacts + clears until the board is quiet.
         const { cleared: settledCleared } = await settleBoard();
         if (!landFx.scored && !settledCleared) resetCombo();
-
         setState(create);
         created = false;
       }
     };
-
     if (nextPiece) {
       avatarStab.play();
       fly(nextPiece, async (s) => {
@@ -255,29 +243,25 @@ const create = async () => {
             nextCharacter.preview ?? nextCharacter.file,
           );
         }
-
         const piece = await createPiece(character.file, onDropped);
-
         sprites.push({ sprite: piece, character });
       });
     }
-
     if (character.sounds?.fall) {
       const fallSounds = character.sounds.fall;
       const key = fallSounds[Math.floor(Math.random() * fallSounds.length)];
       playLoadedSfx(key, "voice", 0.5);
     }
   }
-
   setState(falling);
 };
 
 const falling = () => {};
 
 /** Pause gameplay: freeze the falling ticker and stop ticking the timer. */
+
 export const pausePlay = () => {
   gameTicker.stop();
-  playPaused = true;
   setBgmSessionPaused(true);
   pauseBgmPlayback();
   const mode = getCurrentGameMode();
@@ -285,11 +269,11 @@ export const pausePlay = () => {
 };
 
 /** Resume gameplay after a pause (caller ensures ticker is restarted). */
+
 export const resumePlay = () => {
-  // Resume BGM before clearing playPaused so a same-tick checkBGM can't
+  // Resume BGM before clearing paused phase so a same-tick checkBGM can't
   // mis-detect the still-paused track as finished and start a new song.
   resumeBgmPlayback();
-  playPaused = false;
   setBgmSessionPaused(false);
   // pausePlay stopped the ticker; start it again so pieces resume falling.
   if (!gameTicker.started) gameTicker.start();
@@ -302,13 +286,12 @@ export const resumePlay = () => {
  * board, stops timers/BGM, drops the pause overlay, and shows the menu. The
  * match state is fully cleared �?calling `start` again later re-seeds it.
  */
+
 export const returnToMenu = () => {
   clearStage();
   resetScore();
   resetFunEffects();
-  playPaused = false;
   setBgmSessionPaused(false);
-  setPlayActive(false);
   setPlayPhase({ type: "menu" });
   disposePauseMenu();
   disposeGameOverMenu();
@@ -321,7 +304,6 @@ const end = async () => {
   if (!endAnimation) {
     // Stop time attack timer if running
     stopTimeAttackTimer();
-    setPlayActive(false);
     setPlayPhase({
       type: "gameOver",
       cause: "topOut",
@@ -329,10 +311,8 @@ const end = async () => {
     });
     hidePauseButton();
     disposePauseMenu();
-
     // Play game over BGM: 182.1 once, then loop 182.2
     void playGameOverBgm();
-
     if (nextCharacter?.file) {
       app.stage.removeChild(avatarStab);
       if (nextPiece) {
@@ -341,10 +321,8 @@ const end = async () => {
       createBarrel();
       await createFlyingavatar();
       const avatarFlyDown = createFallingavatar();
-
       const lastPieceOff = getOffset(sprites[sprites.length - 1].sprite);
       const lastPieceCoor = getCoordinates(sprites[sprites.length - 1].sprite);
-
       const overflow =
         lastPieceOff === 0 ? lastPieceCoor.y - 1 : lastPieceCoor.y;
       avatarFlyDown.x = LEFT_BORDER + BOX_SIZE / 2 + BOX_SIZE * lastPieceCoor.x;
@@ -356,7 +334,6 @@ const end = async () => {
       };
       const dur = overflow === -2 ? 2000 : 2000;
       app.ticker.add(moveDown);
-
       endAnimation = setTimeout(() => {
         app.ticker.remove(moveDown);
         gameOverCurtain(() => {
@@ -368,10 +345,10 @@ const end = async () => {
 };
 
 // Time attack end - time ran out
+
 const endTimeAttack = async () => {
   if (!endAnimation) {
     stopTimeAttackTimer();
-    setPlayActive(false);
     setPlayPhase({
       type: "gameOver",
       cause: "timeUp",
@@ -379,10 +356,8 @@ const endTimeAttack = async () => {
     });
     hidePauseButton();
     disposePauseMenu();
-
     // Play game over BGM
     void playGameOverBgm();
-
     // Show game over curtain
     if (nextPiece) {
       app.stage.removeChild(nextPiece);
