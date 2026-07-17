@@ -23,7 +23,14 @@
     />
     <meta
       property="og:image"
-      content="https://pico.nightcord.de5.net/android-chrome-512x512.png"
+      content="https://pico.nightcord.de5.net/og-image.jpg"
+    />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="パズル⭐︎セカ | Puzzle × SEKAI — free Project SEKAI fan group-clear puzzle"
     />
     <meta property="og:locale" content="zh_CN" />
     <meta property="og:locale:alternate" content="ja_JP" />
@@ -36,7 +43,7 @@
     />
     <meta
       name="twitter:image"
-      content="https://pico.nightcord.de5.net/android-chrome-512x512.png"
+      content="https://pico.nightcord.de5.net/og-image.jpg"
     />
     <script type="application/ld+json">
             {
@@ -90,6 +97,13 @@
               "@id": "https://pico.nightcord.de5.net/#game"
             },
             "description": "少年少女们忽然发现，熟悉的「世界」变成了由多彩方块堆叠的消消乐世界——集结同组合成员完成消除，挑战最高分！（Project SEKAI 同人作品）",
+            "primaryImageOfPage": {
+              "@type": "ImageObject",
+              "url": "https://pico.nightcord.de5.net/og-image.jpg",
+              "width": 1200,
+              "height": 630
+            },
+            "dateModified": "2026-07-17",
             "inLanguage": [
               "zh-CN",
               "ja",
@@ -110,7 +124,19 @@
             "url": "https://pico.nightcord.de5.net/",
             "description": "A Puyo-style group-clear puzzle with Project SEKAI characters. Drop pieces, form connected unit groups, clear chains, and chase high scores. Modes: Endless and Time Attack. Unofficial free browser fan game; not affiliated with SEGA, Colorful Palette, Crypton Future Media, or Project SEKAI COLORFUL STAGE!",
             "disambiguatingDescription": "Unofficial non-commercial fan game. Not an official Project SEKAI product.",
-            "image": "https://pico.nightcord.de5.net/android-chrome-512x512.png",
+            "image": {
+              "@type": "ImageObject",
+              "url": "https://pico.nightcord.de5.net/og-image.jpg",
+              "width": 1200,
+              "height": 630
+            },
+            "screenshot": {
+              "@type": "ImageObject",
+              "url": "https://pico.nightcord.de5.net/og-image.jpg",
+              "width": 1200,
+              "height": 630,
+              "caption": "パズル⭐︎セカ gameplay / title art"
+            },
             "applicationCategory": "GameApplication",
             "applicationSubCategory": "PuzzleGame",
             "genre": [
@@ -124,6 +150,17 @@
             "operatingSystem": "Any (modern browser with WebGL)",
             "browserRequirements": "Requires JavaScript and WebGL.",
             "softwareVersion": "1.1.0",
+            "dateModified": "2026-07-17",
+            "featureList": [
+              "Endless mode",
+              "Time Attack mode",
+              "Unit group-clear (Puyo-style)",
+              "Keyboard and touch controls",
+              "Optional entertainment modes",
+              "PWA install",
+              "Chinese, Japanese, and English UI",
+              "Local high scores (no account)"
+            ],
             "isAccessibleForFree": true,
             "inLanguage": [
               "zh-CN",
@@ -158,10 +195,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!--
       Critical boot-shell styles: paint the LCP title before the game bundle runs.
       JS (src/welcome.ts) adopts #boot-welcome and only upgrades bg image / fonts.
@@ -310,11 +344,11 @@
         font-weight: 400;
       }
       #boot-welcome .welcome-disclaimer {
-        margin: 18px auto 0;
-        max-width: 28em;
-        font-size: 12px;
+        margin: 14px auto 0;
+        max-width: 30em;
+        font-size: 13px;
         line-height: 1.55;
-        color: rgba(255, 255, 255, 0.45);
+        color: rgba(255, 255, 255, 0.62);
         letter-spacing: 0.02em;
         font-family:
           "MaokenAssortedSans", "Microsoft YaHei", "PingFang SC", "Noto Sans SC",
@@ -322,21 +356,63 @@
         font-weight: 400;
       }
       #boot-welcome .welcome-disclaimer__link {
-        color: rgba(180, 220, 255, 0.75);
+        color: rgba(180, 220, 255, 0.9);
         text-decoration: underline;
         text-underline-offset: 2px;
       }
       #boot-welcome .welcome-disclaimer__link:hover {
         color: rgba(210, 235, 255, 0.95);
       }
+      #boot-welcome .welcome-actions {
+        margin-top: 18px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      #boot-welcome .welcome-howto-btn {
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        margin: 0;
+        padding: 8px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(180, 220, 255, 0.45);
+        background: rgba(0, 0, 0, 0.35);
+        color: rgba(210, 235, 255, 0.95);
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        font-family:
+          "MaokenAssortedSans", "Microsoft YaHei", "PingFang SC", "Noto Sans SC",
+          sans-serif;
+        line-height: 1.3;
+      }
+      #boot-welcome .welcome-howto-btn:hover,
+      #boot-welcome .welcome-howto-btn:focus-visible {
+        border-color: rgba(210, 235, 255, 0.85);
+        color: #fff;
+        background: rgba(40, 70, 100, 0.45);
+        outline: none;
+      }
       @media (orientation: portrait) and (max-width: 900px) {
         #boot-welcome .welcome-disclaimer {
-          font-size: 11px;
+          font-size: 12px;
+          margin-top: 10px;
+        }
+        #boot-welcome .welcome-actions {
           margin-top: 12px;
+        }
+        #boot-welcome .welcome-howto-btn {
+          font-size: 13px;
+          padding: 7px 14px;
         }
       }
 
-      /* Crawlable how-to-play for bots — off-screen for human UI */
+      /*
+        Crawlable how-to for bots stays in the DOM. Visually off-screen so the
+        game shell stays clean; humans open the same facts via #boot-howto-btn.
+        Not display:none — text remains in the accessibility/DOM tree for crawlers.
+      */
       .seo-only {
         position: absolute !important;
         width: 1px !important;
@@ -348,6 +424,92 @@
         clip-path: inset(50%) !important;
         white-space: nowrap !important;
         border: 0 !important;
+      }
+
+      /* Human-visible how-to panel (opened from boot shell) */
+      #boot-howto-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.72);
+      }
+      #boot-howto-panel.is-open {
+        display: flex;
+      }
+      #boot-howto-panel .boot-howto__card {
+        width: min(520px, 100%);
+        max-height: min(82vh, 720px);
+        overflow: auto;
+        box-sizing: border-box;
+        padding: 22px 22px 18px;
+        border-radius: 14px;
+        background: rgba(12, 14, 22, 0.94);
+        border: 1px solid rgba(180, 220, 255, 0.35);
+        color: #fff;
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.55);
+        font-family:
+          "MaokenAssortedSans", "Microsoft YaHei", "PingFang SC", "Noto Sans SC",
+          "Yu Gothic", sans-serif;
+      }
+      #boot-howto-panel .boot-howto__title {
+        margin: 0 0 12px;
+        font-size: 20px;
+        font-weight: 400;
+        letter-spacing: 0.06em;
+        text-align: center;
+        color: rgba(210, 235, 255, 0.95);
+      }
+      #boot-howto-panel .boot-howto__body {
+        font-size: 14px;
+        line-height: 1.7;
+        color: rgba(255, 255, 255, 0.82);
+      }
+      #boot-howto-panel .boot-howto__body h2,
+      #boot-howto-panel .boot-howto__body h3 {
+        margin: 14px 0 6px;
+        font-size: 15px;
+        font-weight: 400;
+        letter-spacing: 0.04em;
+        color: rgba(180, 220, 255, 0.95);
+      }
+      #boot-howto-panel .boot-howto__body h2 {
+        font-size: 16px;
+        margin-top: 0;
+      }
+      #boot-howto-panel .boot-howto__body p {
+        margin: 0 0 10px;
+      }
+      #boot-howto-panel .boot-howto__body a {
+        color: rgba(180, 220, 255, 0.95);
+      }
+      #boot-howto-panel .boot-howto__close {
+        appearance: none;
+        -webkit-appearance: none;
+        display: block;
+        width: 100%;
+        margin-top: 14px;
+        padding: 11px 14px;
+        border-radius: 10px;
+        border: 1px solid rgba(180, 220, 255, 0.4);
+        background: rgba(40, 70, 100, 0.35);
+        color: #fff;
+        font-size: 15px;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      #boot-howto-panel .boot-howto__close:hover,
+      #boot-howto-panel .boot-howto__close:focus-visible {
+        background: rgba(60, 100, 140, 0.5);
+        outline: none;
       }
     </style>
     <script>
@@ -409,6 +571,15 @@
           收集 Project SEKAI 的成员<br />消除方块，达成最高分！
         </div>
         <div id="boot-welcome-click" class="welcome-click">加载中 0%</div>
+        <div class="welcome-actions">
+          <button
+            type="button"
+            id="boot-howto-btn"
+            class="welcome-howto-btn"
+          >
+            怎么玩
+          </button>
+        </div>
         <p id="boot-welcome-disclaimer" class="welcome-disclaimer">
           非官方同人作品，与 SEGA / Colorful Palette / Crypton 无关 ·
           <a
@@ -419,6 +590,27 @@
             >GitHub</a
           >
         </p>
+      </div>
+    </div>
+
+    <!-- Human-visible how-to panel; body filled from #seo-howto by boot JS -->
+    <div
+      id="boot-howto-panel"
+      class="boot-howto"
+      hidden
+      aria-hidden="true"
+    >
+      <div
+        class="boot-howto__card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="boot-howto-title"
+      >
+        <h2 id="boot-howto-title" class="boot-howto__title">怎么玩</h2>
+        <div id="boot-howto-body" class="boot-howto__body"></div>
+        <button type="button" id="boot-howto-close" class="boot-howto__close">
+          关闭
+        </button>
       </div>
     </div>
     <script>
@@ -432,21 +624,30 @@
             subtitle: "～ Puzzle × SEKAI ～",
             desc: "收集 Project SEKAI 的成员<br>消除方块，达成最高分！",
             loading: "加载中",
-            disclaimer: "非官方同人作品，与 SEGA / Colorful Palette / Crypton 无关 · 免费浏览器游戏",
+            disclaimer:
+              "非官方同人作品，与 SEGA / Colorful Palette / Crypton 无关 · 免费浏览器游戏",
+            howto: "怎么玩",
+            howtoClose: "关闭",
           },
           ja: {
             title: "パズル⭐︎セカ",
             subtitle: "～ Puzzle × SEKAI ～",
             desc: "Project SEKAIのメンバーを集めて<br>ブロックを消し、ハイスコアを目指そう！",
             loading: "読み込み中",
-            disclaimer: "非公式のファン作品です。SEGA / Colorful Palette / Crypton とは無関係。無料のブラウザゲーム。",
+            disclaimer:
+              "非公式のファン作品です。SEGA / Colorful Palette / Crypton とは無関係。無料のブラウザゲーム。",
+            howto: "遊び方",
+            howtoClose: "閉じる",
           },
           en: {
             title: "パズル⭐︎セカ",
             subtitle: "～ Puzzle × SEKAI ～",
             desc: "Gather the members of Project SEKAI,<br>clear the blocks, and chase the high score!",
             loading: "Loading",
-            disclaimer: "Unofficial fan work — not affiliated with SEGA, Colorful Palette, or Crypton. Free in-browser game.",
+            disclaimer:
+              "Unofficial fan work — not affiliated with SEGA, Colorful Palette, or Crypton. Free in-browser game.",
+            howto: "How to play",
+            howtoClose: "Close",
           },
         };
         var copy = boot[locale] || boot.zh;
@@ -455,6 +656,9 @@
         var descEl = document.getElementById("boot-welcome-desc");
         var clickEl = document.getElementById("boot-welcome-click");
         var discEl = document.getElementById("boot-welcome-disclaimer");
+        var howtoBtn = document.getElementById("boot-howto-btn");
+        var howtoTitle = document.getElementById("boot-howto-title");
+        var howtoClose = document.getElementById("boot-howto-close");
         if (titleEl) titleEl.textContent = copy.title;
         if (subtitleEl) subtitleEl.textContent = copy.subtitle;
         if (descEl) descEl.innerHTML = copy.desc;
@@ -464,6 +668,9 @@
             copy.disclaimer +
             ' · <a class="welcome-disclaimer__link" href="https://github.com/25-ji-code-de/puzzle-sekai" target="_blank" rel="noopener noreferrer">GitHub</a>';
         }
+        if (howtoBtn) howtoBtn.textContent = copy.howto;
+        if (howtoTitle) howtoTitle.textContent = copy.howto;
+        if (howtoClose) howtoClose.textContent = copy.howtoClose;
       })();
     </script>
 
@@ -473,7 +680,7 @@
       in the accessibility/DOM tree for search engines and AI crawlers.
       Three locales shipped so bots need not execute locale JS.
     -->
-    <section id="seo-howto" class="seo-only" aria-hidden="true">
+    <section id="seo-howto" class="seo-only">
       <h2>What is Puzzle SEKAI / パズル⭐︎セカ？</h2>
       <div lang="zh-CN">
         <h3>这是什么游戏</h3>

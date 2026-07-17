@@ -12,7 +12,10 @@ export const zh = {
     subtitle: "～ Puzzle × SEKAI ～",
     desc: "收集 Project SEKAI 的成员<br>消除方块，达成最高分！",
     click: "点击继续",
-    disclaimer: "非官方同人作品，与 SEGA / Colorful Palette / Crypton 无关 · 免费浏览器游戏 · 源码见 GitHub",
+    disclaimer:
+      "非官方同人作品，与 SEGA / Colorful Palette / Crypton 无关 · 免费浏览器游戏 · 源码见 GitHub",
+    howto: "怎么玩",
+    howtoClose: "关闭",
   },
   menu: {
     title: "パズル⭐︎セカ",
