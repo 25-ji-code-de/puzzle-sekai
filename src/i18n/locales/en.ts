@@ -101,6 +101,14 @@ export const en = {
       sfx: "SFX",
       voice: "Voice",
     },
+    performance: {
+      label: "Performance",
+      normal: "Normal",
+      low: "Low",
+      normalHelp: "Full render resolution (sharpest).",
+      lowHelp:
+        "Half render resolution — fewer pixels, smoother on weak devices. Stage layout stays the same.",
+    },
     data: {
       label: "Data / Cache",
       clearCache: "Clear cache",

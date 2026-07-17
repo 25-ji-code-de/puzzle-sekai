@@ -101,6 +101,14 @@ export const ja = {
       sfx: "効果音",
       voice: "ボイス",
     },
+    performance: {
+      label: "パフォーマンス",
+      normal: "標準",
+      low: "低負荷",
+      normalHelp: "フル解像度で描画します（最も鮮明）。",
+      lowHelp:
+        "描画解像度を半分にします。画素が減り、弱い端末でも動きやすくなります。ステージ座標は変わりません。",
+    },
     data: {
       label: "データ / キャッシュ",
       clearCache: "キャッシュを削除",

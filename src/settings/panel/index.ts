@@ -7,6 +7,7 @@ import { t } from "../../i18n";
 import type { SettingsSectionCtx } from "./widgets";
 import { appendLanguageSection } from "./sections/language";
 import { appendAudioSection } from "./sections/audio";
+import { appendPerformanceSection } from "./sections/performance";
 import {
   appendSpeedSection,
   appendTimeAttackSection,
@@ -103,6 +104,7 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
 
   appendLanguageSection(settingsPanel, ctx);
   appendAudioSection(settingsPanel, ctx);
+  appendPerformanceSection(settingsPanel, ctx);
   appendSpeedSection(settingsPanel, ctx);
   appendTimeAttackSection(settingsPanel, ctx);
   appendGroupsSection(settingsPanel, ctx);

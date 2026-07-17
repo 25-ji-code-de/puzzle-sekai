@@ -99,6 +99,14 @@ export const zh = {
       sfx: "音效",
       voice: "语音",
     },
+    performance: {
+      label: "性能",
+      normal: "标准",
+      low: "低性能",
+      normalHelp: "完整渲染分辨率（最清晰）。",
+      lowHelp:
+        "渲染分辨率减半，像素更少，弱机更流畅。舞台布局坐标不变。",
+    },
     data: {
       label: "数据 / 缓存",
       clearCache: "清除缓存",

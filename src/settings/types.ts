@@ -42,6 +42,11 @@ export interface GameSettings {
   sfxVolume: number;
   /** Character / unit voice loudness 0–100 */
   voiceVolume: number;
+  /**
+   * Low-performance mode: render the 1920×1080 stage into a half-resolution
+   * canvas buffer (~960×540). Stage coordinates stay the same; pixels cost less.
+   */
+  lowPerformance: boolean;
 }
 
 export const SPEED_MULTIPLIERS: Record<SpeedLevel, number> = {
@@ -109,6 +114,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   bgmVolume: 100,
   sfxVolume: 100,
   voiceVolume: 100,
+  lowPerformance: false,
 };
 
 export type GameMode = "endless" | "timeAttack";

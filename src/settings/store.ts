@@ -64,6 +64,7 @@ export function loadSettings(): GameSettings {
           parsed.voiceVolume,
           DEFAULT_SETTINGS.voiceVolume,
         ),
+        lowPerformance: parsed.lowPerformance === true,
       };
     }
   } catch (e) {
@@ -112,8 +113,13 @@ export function updateCurrentSettings(settings: GameSettings): void {
       settings.voiceVolume,
       DEFAULT_SETTINGS.voiceVolume,
     ),
+    lowPerformance: settings.lowPerformance === true,
   };
   saveSettings(currentSettings);
+  // Keep renderer buffer resolution in sync with the toggle.
+  void import("../runtime").then(({ applyPerformanceMode }) => {
+    applyPerformanceMode(currentSettings.lowPerformance);
+  });
 }
 
 /** Reset in-memory settings to defaults (after wiping storage). */
@@ -123,6 +129,9 @@ export function resetCurrentSettingsToDefaults(): void {
     selectedGroups: [...GAME_GROUPS],
     funModes: { ...DEFAULT_FUN_MODES },
   };
+  void import("../runtime").then(({ applyPerformanceMode }) => {
+    applyPerformanceMode(currentSettings.lowPerformance);
+  });
 }
 
 let currentGameMode: GameMode = "endless";
