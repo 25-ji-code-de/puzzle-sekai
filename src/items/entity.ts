@@ -4,7 +4,7 @@
 import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
 import { app } from "../runtime";
-import { LEFT_BORDER, BOX_SIZE, SPEED } from "../config";
+import { LEFT_BORDER, BOX_SIZE, SPEED, STAGE_HEIGHT } from "../config";
 import { activeLandPixelY, stackHeightForPrimary } from "../domain/piece";
 import { primaryFromSprite } from "../presentation/placement";
 import { getGrid } from "../game/board-state";
@@ -17,7 +17,7 @@ const landYFor = (item: PIXI.Sprite): number => {
     "item",
     stackHeightForPrimary(getGrid(), primary, 0, "item"),
     0,
-    app.renderer.height,
+    STAGE_HEIGHT,
   );
 };
 

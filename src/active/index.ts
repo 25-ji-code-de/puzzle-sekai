@@ -12,6 +12,7 @@ import {
   SPEED,
   FALL_DELAY,
   FALL_SPEED,
+  STAGE_HEIGHT,
 } from "../config";
 import { getGrid } from "../game/board-state";
 import {
@@ -67,11 +68,13 @@ const nearestIndex = (list: number[], target: number): number => {
 const landYFor = (sprite: PIXI.Sprite): number => {
   const orient = asOrientation(rotationToOrientation(sprite.rotation));
   const primary = primaryFromSprite(sprite, "cell2", "floor");
+  // Always use logical STAGE_HEIGHT — app.renderer.height is buffer pixels
+  // (stage × resolution) and breaks land Y under low-performance mode.
   return activeLandPixelY(
     "cell2",
     stackHeightForPrimary(getGrid(), primary, orient, "cell2"),
     orient,
-    app.renderer.height,
+    STAGE_HEIGHT,
   );
 };
 

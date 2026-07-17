@@ -67,6 +67,19 @@ if (initialLowPerf) {
 }
 
 /**
+ * Logical stage size for gameplay / UI layout.
+ *
+ * NEVER use `app.renderer.height` / `.width` for game math: those return the
+ * **buffer** pixel size (`stage × resolution`). Under low-performance mode
+ * that is ~960×540, which cuts land Y / curtain / welcome placement in half.
+ * Prefer STAGE_WIDTH / STAGE_HEIGHT from config, or this helper.
+ */
+export const stageSize = () => ({
+  width: STAGE_WIDTH,
+  height: STAGE_HEIGHT,
+});
+
+/**
  * Switch renderer buffer resolution at runtime.
  * - Logical stage stays STAGE_WIDTH × STAGE_HEIGHT (game math unchanged).
  * - Back-buffer becomes stage × resolution (0.5 → ~960×540).

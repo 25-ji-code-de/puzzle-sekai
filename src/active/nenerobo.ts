@@ -14,6 +14,7 @@ import {
   SPEED,
   FALL_DELAY,
   FALL_SPEED,
+  STAGE_HEIGHT,
 } from "../config";
 import { getGrid } from "../game/board-state";
 import { addDropScore } from "../score";
@@ -44,7 +45,7 @@ const landYFor = (sprite: PIXI.Sprite): number => {
     KIND,
     stackHeightForPrimary(getGrid(), primary, ORIENT, KIND),
     ORIENT,
-    app.renderer.height,
+    STAGE_HEIGHT,
   );
 };
 

@@ -4,6 +4,7 @@
  */
 import * as PIXI from "pixi.js-legacy";
 import { app, bgSprite } from "../../runtime";
+import { STAGE_WIDTH, STAGE_HEIGHT } from "../../config";
 import { playMenuBgm } from "../../audio/session";
 import { clearAppCaches } from "../../settings";
 import { t, onLocaleChange } from "../../i18n";
@@ -153,8 +154,8 @@ export const showWelcomePage = () => {
     if (!texture) return;
     welcomeSprite = new PIXI.Sprite(texture);
     welcomeSprite.anchor.set(0.5);
-    welcomeSprite.x = app.renderer.width / 2;
-    welcomeSprite.y = app.renderer.height / 2;
+    welcomeSprite.x = STAGE_WIDTH / 2;
+    welcomeSprite.y = STAGE_HEIGHT / 2;
   }
   if (!welcomeSprite.parent) {
     app.stage.addChild(welcomeSprite);
