@@ -4,12 +4,10 @@
  */
 import type { CharacterName } from "../../characters/ids";
 import type { GroupName } from "../../settings/types";
-import type { Cell } from "../piece/cells";
-import type { Orientation } from "../piece/footprint";
-import type { EntityId } from "../types/entity";
-import { createEntityId } from "../types/entity";
+import type { Cell, Orientation, EntityId } from "../types";
+import { createEntityId } from "../types";
 
-export type { EntityId };
+export type { EntityId, Cell, Orientation };
 export { createEntityId };
 
 export type BoardEntity =

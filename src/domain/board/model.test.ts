@@ -10,7 +10,7 @@ import {
   willCollidePrimary,
 } from "../piece";
 import { CHAR } from "../../characters/ids";
-import { ITEM_TOKEN } from "../types";
+import { ITEM_TOKEN, cell } from "../types";
 
 describe("footprint anchors", () => {
   it("orient 0 primary is lower cell; anchor recovers primary", () => {
@@ -46,7 +46,7 @@ describe("big2x2 primary (bottom-right)", () => {
 
   it("willCollidePrimary sees the left column under a 2x2", () => {
     const board = new BoardModel(6, 8);
-    board.write([[2, 5]], CHAR.Ichika);
+    board.write([cell(2, 5)], CHAR.Ichika);
     expect(willCollidePrimary(board.grid, { x: 3, y: 5 }, 0, "big2x2")).toBe(
       true,
     );
@@ -64,31 +64,31 @@ describe("BoardModel.planGravity", () => {
   });
 
   it("drops an unsupported footprint onto the floor", () => {
-    board.write([[3, 2]], CHAR.Ichika);
+    board.write([cell(3, 2)], CHAR.Ichika);
     const plans = board.planGravity([
-      { coords: [[3, 2]], token: CHAR.Ichika, id: 1 },
+      { coords: [cell(3, 2)], token: CHAR.Ichika, id: 1 },
     ]);
     expect(plans).toHaveLength(1);
     expect(plans[0].dy).toBe(5);
-    expect(plans[0].to).toEqual([[3, 7]]);
+    expect(plans[0].to).toEqual([cell(3, 7)]);
     expect(board.grid[2][3]).toBe(CHAR.Ichika);
     expect(board.grid[7][3]).toBeNull();
   });
 
   it("stacks on top of a lower piece", () => {
-    board.write([[1, 7]], ITEM_TOKEN);
-    board.write([[1, 3]], CHAR.Saki);
+    board.write([cell(1, 7)], ITEM_TOKEN);
+    board.write([cell(1, 3)], CHAR.Saki);
     const plans = board.planGravity([
-      { coords: [[1, 3]], token: CHAR.Saki, id: 0 },
+      { coords: [cell(1, 3)], token: CHAR.Saki, id: 0 },
     ]);
     expect(plans).toHaveLength(1);
-    expect(plans[0].to).toEqual([[1, 6]]);
+    expect(plans[0].to).toEqual([cell(1, 6)]);
   });
 
   it("applyGravityPlans commits dest footprints", () => {
-    board.write([[0, 1]], CHAR.Emu);
+    board.write([cell(0, 1)], CHAR.Emu);
     const plans = board.planGravity([
-      { coords: [[0, 1]], token: CHAR.Emu, id: 0 },
+      { coords: [cell(0, 1)], token: CHAR.Emu, id: 0 },
     ]);
     board.applyGravityPlans(plans);
     expect(board.grid[1][0]).toBeNull();

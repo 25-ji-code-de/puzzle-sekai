@@ -4,12 +4,12 @@
  */
 
 import { ROWS } from "../../config";
-import type { BoardCell, BoardGrid as DomainBoardGrid } from "../types";
-import type { Cell } from "./cells";
+import type { BoardCell, BoardGrid as DomainBoardGrid, Cell } from "../types";
 import { bottomCells, translateCells } from "./cells";
 
 /** Prefer domain BoardGrid; keep alias for geometry callers. */
 export type BoardGrid = DomainBoardGrid;
+export type { Cell };
 
 /** Write token into each footprint cell (in-bounds only). */
 export const writeFootprint = (

@@ -4,7 +4,7 @@
  * - truePhysics: registered only (not implemented yet)
  *
  * 2脳2 pieces (NeneRobo / Mikudayo) tip the same way as horizontal 2-cell pieces:
- * only one bottom column supported 鈫?rotate 90掳 over the support edge.
+ * only one bottom column supported - rotate 90deg over the support edge.
  */
 
 import { gameTicker } from "../runtime";
@@ -24,6 +24,7 @@ import {
   placeSpriteAtAnchor,
   cellTopLeftX,
   cellTopLeftY,
+  asCell,
 } from "./geometry";
 import { ITEM_TOKEN } from "../domain/types";
 
@@ -79,7 +80,7 @@ const supportCells = (
 };
 
 const bottomCells = (sp: SpriteData): Cell[] =>
-  bottomCellsOf((sp.coordinates ?? []) as Cell[]);
+  bottomCellsOf((sp.coordinates ?? []).map((c) => asCell(c)));
 
 /**
  * Roots must span 鈮? columns so there is a hang side vs support side.
@@ -278,7 +279,7 @@ const findTipPlan = (list: SpriteData[]): TipPlan | null => {
   const order = list
     .map((sp, index) => ({
       index,
-      maxY: maxFootprintY((sp.coordinates ?? []) as Cell[]),
+      maxY: maxFootprintY((sp.coordinates ?? []).map((c) => asCell(c))),
       // Prefer wider / bigger roots first (2脳2 before a 2-cell sitting on it)
       area: sp.coordinates?.length ?? 0,
     }))
@@ -314,7 +315,7 @@ const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
   }
 
   placeSpriteAtAnchor(sp.sprite, kind, anchor.x, anchor.y);
-  sp.coordinates = newCells.map(([x, y]) => [x, y] as Cell);
+  sp.coordinates = newCells.map(([x, y]) => asCell([x, y]));
   getBoardModel().write(newCells, name);
 };
 
@@ -352,7 +353,7 @@ const animateTip = (plan: TipPlan): Promise<void> => {
   // Clear grid occupancy during the arc
   for (const { sp } of members) {
     if (sp.coordinates?.length) {
-      getBoardModel().clear(sp.coordinates as Cell[]);
+      getBoardModel().clear((sp.coordinates ?? []).map((c) => asCell(c)));
     }
     sp.coordinates = undefined;
   }
@@ -382,7 +383,7 @@ const animateTip = (plan: TipPlan): Promise<void> => {
           sp.sprite.rotation = p.startRot + angleEnd;
           sp.sprite.zIndex = Math.max(0, (sp.sprite.zIndex || 0) - 100);
           // Commit cells by tip geometry 鈥?never via getCoordinates
-          commitTipLanding(sp, p.newCells);
+          commitTipLanding(sp, p.newCells.map(([x, y]) => asCell([x, y])));
         });
         resolve();
       }

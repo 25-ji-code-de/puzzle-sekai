@@ -1,18 +1,27 @@
 /**
  * Footprint ↔ primary-cell ↔ orientation (pure geometry).
  *
- * Conventions match updateCoordinates / getCoordinates:
- * - primary (x,y) is the sprite-derived cell center for standard pieces
+ * Orientation is domain/types only — do not redeclare here.
+ *
+ * Conventions:
+ * - primary (x,y) is the sprite-derived cell for standard pieces
  * - big2x2 primary is bottom-right of the four cells
  * - orient 0 head-down vertical: cells (x,y)+(x,y-1), primary = lower
  * - orient 1 horizontal:        cells (x,y)+(x+1,y), primary = left
  * - orient 2 head-up vertical:  cells (x,y)+(x,y+1), primary = upper
  * - orient 3 horizontal:        cells (x,y)+(x-1,y), primary = right
  */
-
-import type { PieceKind } from "./kinds";
+import type { PieceKind } from "../types/piece-kind";
 import {
   type Cell,
+  type Orientation,
+  type Primary,
+  type LoosePrimary,
+  asOrientation,
+  cell,
+  asPrimary,
+} from "../types/cell";
+import {
   cellToXY,
   pickMaxX,
   pickMaxY,
@@ -20,84 +29,73 @@ import {
   pickMinY,
 } from "./cells";
 
-export type Orientation = 0 | 1 | 2 | 3;
-
-export const asOrientation = (n: number): Orientation =>
-  (((n % 4) + 4) % 4) as Orientation;
+export type { Orientation, Primary, LoosePrimary };
+export { asOrientation };
 
 /**
  * Build occupied cells from the primary cell + orientation + kind.
- * This is the single source of truth for "what does this piece cover?"
+ * Single source of truth for "what does this piece cover?"
  */
 export const footprintFromPrimary = (
-  primary: { x: number; y: number },
+  primaryIn: LoosePrimary | Primary,
   orient: Orientation,
   kind: PieceKind,
 ): Cell[] => {
-  const { x, y } = primary;
+  const { x, y } = primaryIn;
   if (kind === "item" || kind === "shrunk") {
-    return [[x, y]];
+    return [cell(x, y)];
   }
   if (kind === "big2x2") {
     return [
-      [x, y],
-      [x - 1, y],
-      [x, y - 1],
-      [x - 1, y - 1],
+      cell(x, y),
+      cell(x - 1, y),
+      cell(x, y - 1),
+      cell(x - 1, y - 1),
     ];
   }
   switch (orient) {
     case 0:
-      return [
-        [x, y],
-        [x, y - 1],
-      ];
+      return [cell(x, y), cell(x, y - 1)];
     case 1:
-      return [
-        [x, y],
-        [x + 1, y],
-      ];
+      return [cell(x, y), cell(x + 1, y)];
     case 2:
-      return [
-        [x, y],
-        [x, y + 1],
-      ];
+      return [cell(x, y), cell(x, y + 1)];
     case 3:
-      return [
-        [x, y],
-        [x - 1, y],
-      ];
+      return [cell(x, y), cell(x - 1, y)];
+    default: {
+      const _exhaustive: never = orient;
+      return _exhaustive;
+    }
   }
 };
 
 /**
  * Primary / sprite-anchor cell for a footprint.
- * MUST respect orientation for 2-cell pieces — picking lower/left always
- * sinks orient 2 / 3 by one full cell visually while grid stays correct.
+ * MUST respect orientation for 2-cell pieces.
  */
 export const anchorFromFootprint = (
   cells: Cell[],
   kind: PieceKind,
   orient: Orientation = 0,
-): { x: number; y: number } => {
-  if (!cells.length) return { x: 0, y: 0 };
+): Primary => {
+  if (!cells.length) return asPrimary({ x: 0, y: 0 });
   if (kind !== "cell2" || cells.length === 1) {
-    return {
+    return asPrimary({
       x: Math.max(...cells.map(([cx]) => cx)),
       y: Math.max(...cells.map(([, cy]) => cy)),
-    };
+    });
   }
   switch (orient) {
     case 0:
-      return cellToXY(pickMaxY(cells));
+      return asPrimary(cellToXY(pickMaxY(cells)));
     case 1:
-      return cellToXY(pickMinX(cells));
+      return asPrimary(cellToXY(pickMinX(cells)));
     case 2:
-      return cellToXY(pickMinY(cells));
+      return asPrimary(cellToXY(pickMinY(cells)));
     case 3:
-      return cellToXY(pickMaxX(cells));
+      return asPrimary(cellToXY(pickMaxX(cells)));
     default:
-      return cellToXY(pickMaxY(cells));
+      return asPrimary(cellToXY(pickMaxY(cells)));
   }
 };
 

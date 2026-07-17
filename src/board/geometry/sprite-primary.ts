@@ -1,14 +1,16 @@
 /**
  * Sprite ↔ primary cell (medium layer, PIXI-aware).
  * Inverse of primaryToPixel / placeSpriteAtAnchor (unified BOARD_ORIGIN).
+ * RoundMethod is defined only in domain/types.
  */
 import type * as PIXI from "pixi.js-legacy";
 import { BOX_SIZE, LEFT_BORDER, STAGE_HEIGHT } from "../../config";
-import type { PieceKind } from "../../domain/piece/kinds";
+import type { PieceKind } from "../../domain/types";
+import type { RoundMethod } from "../../domain/types";
 import { boardOriginY } from "../../domain/piece/pixel";
 import { placeSpriteAtAnchor } from "./placement";
 
-export type RoundMethod = "floor" | "ceil" | "round";
+export type { RoundMethod };
 
 /**
  * Primary grid cell from a live sprite pose.

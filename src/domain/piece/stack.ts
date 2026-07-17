@@ -4,8 +4,7 @@
  */
 
 import type { BoardGrid } from "./grid-write";
-import type { Orientation } from "./footprint";
-import type { PieceKind } from "./kinds";
+import type { Orientation, PieceKind } from "../types";
 
 /**
  * Columns occupied by a piece at primary column `primaryX`.

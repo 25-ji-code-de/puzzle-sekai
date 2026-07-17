@@ -16,8 +16,7 @@ import {
   ROWS,
   STAGE_HEIGHT,
 } from "../../config";
-import type { PieceKind } from "./kinds";
-import type { Orientation } from "./footprint";
+import type { Orientation, PieceKind } from "../types";
 
 /** Playfield origin Y for a given stage height (default = config STAGE_HEIGHT). */
 export const boardOriginY = (stageHeight: number = STAGE_HEIGHT): number =>

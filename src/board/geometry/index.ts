@@ -1,11 +1,34 @@
 /**
  * Board geometry barrel.
- * Pure math re-exported from domain/piece; PIXI placement stays local.
+ * Pure math from domain/piece; types from domain/types (no re-declaration).
+ * PIXI placement stays local.
  */
-export type { PieceKind, Cell, Orientation, BoardGrid } from "../../domain/piece";
+export type {
+  PieceKind,
+  Cell,
+  ReadonlyCell,
+  Orientation,
+  Primary,
+  Col,
+  Row,
+  RoundMethod,
+  BoardGrid,
+} from "../../domain/types";
+
+// BoardGrid also from piece grid-write for historical import paths
+export type { BoardGrid as GeometryBoardGrid } from "../../domain/piece";
+
 export {
   isBig2x2Name,
   pieceKindFrom,
+  PIECE_KINDS,
+  col,
+  row,
+  cell,
+  asCell,
+  asOrientation,
+  asPrimary,
+  primary,
   cellToXY,
   pickMaxY,
   pickMinY,
@@ -14,7 +37,6 @@ export {
   bottomCells,
   maxFootprintY,
   translateCells,
-  asOrientation,
   footprintFromPrimary,
   anchorFromFootprint,
   orientFromFootprint,
@@ -41,9 +63,10 @@ export {
   dropFootprint,
   cloneGrid,
   copyGridInto,
+  rotationToOrientation,
+  orientationToRotation,
 } from "../../domain/piece";
 
-export type { RoundMethod } from "./sprite-primary";
 export { primaryFromSprite, placeSpritePrimary } from "./sprite-primary";
 export {
   anchorPixelX,

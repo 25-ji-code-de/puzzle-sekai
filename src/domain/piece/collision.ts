@@ -5,9 +5,7 @@
 
 import { COLUMNS, ROWS } from "../../config";
 import type { BoardGrid } from "./grid-write";
-import type { Cell } from "./cells";
-import type { Orientation } from "./footprint";
-import type { PieceKind } from "./kinds";
+import type { Cell, Orientation, PieceKind } from "../types";
 import { footprintFromPrimary } from "./footprint";
 
 /**

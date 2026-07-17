@@ -1,11 +1,46 @@
 /**
  * Domain pure piece math (no PIXI).
- * Presentation helpers stay in board/geometry (placement / sprite-primary).
+ * Brands Col/Row/Cell/Orientation/PieceKind: domain/types only.
  */
-export type { PieceKind } from "./kinds";
-export { isBig2x2Name, pieceKindFrom } from "./kinds";
+export type {
+  PieceKind,
+  Big2x2Name,
+  Cell,
+  ReadonlyCell,
+  Orientation,
+  Primary,
+  LooseCell,
+  LoosePrimary,
+  Col,
+  Row,
+  RoundMethod,
+  EntityId,
+} from "../types";
+export {
+  PIECE_KINDS,
+  isPieceKind,
+  isBig2x2Name,
+  pieceKindFrom,
+  ORIENTATIONS,
+  col,
+  row,
+  cell,
+  cellX,
+  cellY,
+  asCell,
+  asLoose,
+  cellsEqual,
+  asOrientation,
+  isOrientation,
+  primary,
+  asPrimary,
+  ROUND_METHODS,
+  isRoundMethod,
+  rotationToOrientation,
+  orientationToRotation,
+  createEntityId,
+} from "../types";
 
-export type { Cell } from "./cells";
 export {
   cellToXY,
   pickMaxY,
@@ -17,9 +52,7 @@ export {
   translateCells,
 } from "./cells";
 
-export type { Orientation } from "./footprint";
 export {
-  asOrientation,
   footprintFromPrimary,
   anchorFromFootprint,
   orientFromFootprint,

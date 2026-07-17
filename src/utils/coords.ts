@@ -1,3 +1,8 @@
+/**
+ * Active-piece sprite ↔ grid helpers (presentation edge).
+ * Brands and rotation math come from domain/types — do not redeclare here.
+ */
+import type * as PIXI from "pixi.js-legacy";
 import { STAGE_HEIGHT } from "../config";
 import { pieces } from "../game/board-state";
 import {
@@ -8,12 +13,18 @@ import {
   cellCenterX,
   cellCenterY,
 } from "../board/geometry";
+import {
+  rotationToOrientation,
+  type RoundMethod,
+} from "../domain/types";
+
+export type { Orientation, RoundMethod } from "../domain/types";
+export { rotationToOrientation, asOrientation } from "../domain/types";
 
 export const getCoordinates = (
   sprite: PIXI.Sprite,
-  method: "floor" | "ceil" | "round" = "ceil",
-): { x: number; y: number } =>
-  primaryFromSprite(sprite, "cell2", method);
+  method: RoundMethod = "ceil",
+): { x: number; y: number } => primaryFromSprite(sprite, "cell2", method);
 
 export const moveToCoordinate = (
   sprite: PIXI.Sprite,
@@ -25,10 +36,6 @@ export const moveToCoordinate = (
   sprite.y = cellCenterY(y, stageHeight);
 };
 
-/** Normalize sprite rotation into 0–3 orientation slots. */
-export const rotationToOrientation = (rotation: number): number =>
-  (Math.fround(rotation / Math.PI) * 2 + 2) % 4;
-
 /**
  * Collision for an active standard piece at primary (x,y) with the given
  * rotation. Uses geometry footprint — same cells as land / updateCoordinates.
@@ -38,7 +45,12 @@ export const willCollide = (
   y: number,
   rotation: number,
 ): boolean => {
-  if (x === undefined || y === undefined || Number.isNaN(x) || Number.isNaN(y)) {
+  if (
+    x === undefined ||
+    y === undefined ||
+    Number.isNaN(x) ||
+    Number.isNaN(y)
+  ) {
     return true;
   }
   const orient = asOrientation(rotationToOrientation(rotation));
@@ -65,4 +77,3 @@ export const getMaxStackHeight = () => {
       return row.some((e) => e !== null) ? index + 1 : acc;
     }, 0);
 };
-
