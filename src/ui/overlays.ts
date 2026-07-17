@@ -178,9 +178,11 @@ export const showAboutOverlay = () => {
 
   const legal = document.createElement("div");
   legal.className = "about-legal font-caption";
-  const strong = document.createElement("p");
-  strong.innerHTML = `<strong>${t("about.disclaimerTitle")}</strong>`;
-  legal.appendChild(strong);
+  const legalTitle = document.createElement("p");
+  legalTitle.className = "about-legal__title font-heading";
+  // textContent only — never wrap i18n in raw HTML tags (shows as literal <strong>)
+  legalTitle.textContent = t("about.disclaimerTitle");
+  legal.appendChild(legalTitle);
   for (const key of [
     "about.disclaimerP1",
     "about.disclaimerP2",
