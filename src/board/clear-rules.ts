@@ -5,7 +5,7 @@ import { ROWS, COLUMNS } from "../config";
 import { characterData } from "../characters/data";
 import { CHAR, type CharacterName } from "../characters/ids";
 import type { GroupName } from "../settings/types";
-import { ITEM_TOKEN, type BoardCell } from "../domain/types";
+import { ITEM_TOKEN, type BoardCell, type BoardGrid } from "../domain/types";
 import { DIRS_ORTHO, cellKey, inBounds } from "./grid";
 
 /** name → group */
@@ -68,15 +68,15 @@ const isGroupComplete = (
 };
 
 /** Collect undirected connected components (Mikudayo bridges groups). */
-const findComponents = (pieces: BoardCell[][]): [number, number][][] => {
+const findComponents = (grid: BoardGrid): [number, number][][] => {
   const visited = Array.from({ length: ROWS }, () =>
     Array<boolean>(COLUMNS).fill(false),
   );
   const components: [number, number][][] = [];
 
-  for (let y = 0; y < pieces.length; y++) {
-    for (let x = 0; x < pieces[y].length; x++) {
-      const seed = pieces[y][x];
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[y].length; x++) {
+      const seed = grid[y][x];
       if (seed == null || seed === ITEM_TOKEN || visited[y][x]) continue;
 
       const queue: [number, number][] = [[x, y]];
@@ -85,16 +85,16 @@ const findComponents = (pieces: BoardCell[][]): [number, number][][] => {
 
       while (queue.length > 0) {
         const [cx, cy] = queue.pop()!;
-        if (!inBounds(pieces, cx, cy)) continue;
+        if (!inBounds(grid, cx, cy)) continue;
 
         component.push([cx, cy]);
-        const current = pieces[cy][cx];
+        const current = grid[cy][cx];
 
         for (const [dx, dy] of DIRS_ORTHO) {
           const nx = cx + dx;
           const ny = cy + dy;
-          if (!inBounds(pieces, nx, ny) || visited[ny][nx]) continue;
-          if (!isConnected(current, pieces[ny][nx])) continue;
+          if (!inBounds(grid, nx, ny) || visited[ny][nx]) continue;
+          if (!isConnected(current, grid[ny][nx])) continue;
           visited[ny][nx] = true;
           queue.push([nx, ny]);
         }
@@ -107,15 +107,15 @@ const findComponents = (pieces: BoardCell[][]): [number, number][][] => {
   return components;
 };
 
-export const findClearPieces = (
-  pieces: BoardCell[][],
+export const findClearChunk = (
+  grid: BoardGrid,
 ): [number, number][] | undefined => {
   const cleared = new Set<string>();
 
-  for (const component of findComponents(pieces)) {
+  for (const component of findComponents(grid)) {
     const names = new Set(
       component
-        .map(([x, y]) => pieces[y][x]!)
+        .map(([x, y]) => grid[y][x]!)
         .filter((n) => n !== ITEM_TOKEN),
     );
     if (names.size === 0) continue;
@@ -138,7 +138,7 @@ export const findClearPieces = (
 
     // Clear only completed groups + shared Mikudayo
     for (const [x, y] of component) {
-      const name = pieces[y][x]!;
+      const name = grid[y][x]!;
       if (name === MIKUDAYO) {
         cleared.add(cellKey(x, y));
         continue;

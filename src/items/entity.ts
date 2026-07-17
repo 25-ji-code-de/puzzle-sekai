@@ -5,13 +5,21 @@ import * as PIXI from "pixi.js-legacy";
 import "pixi-sound";
 import { app } from "../runtime";
 import { LEFT_BORDER, BOX_SIZE, SPEED } from "../config";
-import { getStackHeight } from "../utils/coords";
-import { activeLandPixelY } from "../board/geometry";
+import { activeLandPixelY, stackHeightForPrimary } from "../domain/piece";
+import { primaryFromSprite } from "../presentation/placement";
+import { getGrid } from "../game/board-state";
 import { loadTexture } from "../assets/load-texture";
-import { createActiveFall } from "../piece/active-fall";
+import { createActiveFall } from "../active/active-fall";
 
-const landYFor = (item: PIXI.Sprite): number =>
-  activeLandPixelY("item", getStackHeight(item), 0, app.renderer.height);
+const landYFor = (item: PIXI.Sprite): number => {
+  const primary = primaryFromSprite(item, "item", "floor");
+  return activeLandPixelY(
+    "item",
+    stackHeightForPrimary(getGrid(), primary, 0, "item"),
+    0,
+    app.renderer.height,
+  );
+};
 
 const startItemFall = (
   item: PIXI.Sprite,

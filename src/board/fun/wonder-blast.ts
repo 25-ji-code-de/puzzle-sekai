@@ -20,7 +20,7 @@ const pickBlastTargets = (
   for (const sp of candidates) {
     if (cellsCleared >= blastTarget) break;
     remove.push(sp);
-    cellsCleared += sp.coordinates?.length ?? 1;
+    cellsCleared += sp.cells?.length ?? 1;
   }
   return { remove, cellsCleared };
 };
@@ -43,7 +43,7 @@ export const applyWonderBlast = (cleared: SpriteData[]) => {
   if (blastTarget <= 0) return;
 
   const candidates = shuffleInPlace(
-    sprites.filter((sp) => sp.coordinates && sp.coordinates.length > 0).slice(),
+    sprites.filter((sp) => sp.cells && sp.cells.length > 0).slice(),
   );
   const { remove, cellsCleared } = pickBlastTargets(candidates, blastTarget);
   if (remove.length === 0) return;

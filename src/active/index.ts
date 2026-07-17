@@ -13,12 +13,14 @@ import {
   FALL_DELAY,
   FALL_SPEED,
 } from "../config";
+import { getGrid } from "../game/board-state";
 import {
-  getCoordinates,
-  willCollide,
-  getStackHeight,
-  getOffset,
-} from "../utils/coords";
+  activeLandPixelY,
+  stackHeightForPrimary,
+  willCollidePrimary,
+} from "../domain/piece";
+import { asOrientation, rotationToOrientation } from "../domain/types";
+import { primaryFromSprite } from "../presentation/placement";
 import { createNeneRobo } from "./nenerobo";
 import { addDropScore } from "../score";
 import {
@@ -36,7 +38,6 @@ import {
   getMizukiLockColumns,
   getCarrotHazardColumns,
 } from "../board/contact";
-import { asOrientation, activeLandPixelY } from "../board/geometry";
 import {
   CHAR,
   fileIsBig2x2,
@@ -49,12 +50,7 @@ import { loadTexture } from "../assets/load-texture";
 
 export { nextCharacter, initRNG, randomCharacter } from "./rng";
 export { fly, showNextPiece } from "./preview";
-export {
-  createNeneRobo,
-  neneRoboFall,
-  getNeneRoboCoordinates,
-  getNeneRoboStackHeight,
-} from "./nenerobo";
+export { createNeneRobo, neneRoboFall } from "./nenerobo";
 
 /** Index of the value in `list` nearest to `target`. Assumes list is non-empty. */
 const nearestIndex = (list: number[], target: number): number => {
@@ -70,12 +66,13 @@ const nearestIndex = (list: number[], target: number): number => {
   return idx;
 };
 
-/** Land / drop pixel Y for a live standard piece (geometry active-land). */
+/** Land / drop pixel Y for a live standard piece. */
 const landYFor = (sprite: PIXI.Sprite): number => {
-  const orient = asOrientation(getOffset(sprite));
+  const orient = asOrientation(rotationToOrientation(sprite.rotation));
+  const primary = primaryFromSprite(sprite, "cell2", "floor");
   return activeLandPixelY(
     "cell2",
-    getStackHeight(sprite),
+    stackHeightForPrimary(getGrid(), primary, orient, "cell2"),
     orient,
     app.renderer.height,
   );
@@ -169,7 +166,16 @@ export const createPiece = async (
 
   const tryShiftToCol = (fromCol: number, targetCol: number, y: number) => {
     if (targetCol < 0 || targetCol >= COLUMNS || targetCol === fromCol) return;
-    if (willCollide(targetCol, y, piece.rotation)) return;
+    if (
+      willCollidePrimary(
+        getGrid(),
+        { x: targetCol, y },
+        asOrientation(rotationToOrientation(piece.rotation)),
+        "cell2",
+      )
+    ) {
+      return;
+    }
     piece.x += (targetCol - fromCol) * BOX_SIZE;
     activeFall.onMoved();
   };
@@ -215,8 +221,16 @@ export const createPiece = async (
   };
 
   const moveUp = () => {
-    const { x, y } = getCoordinates(piece, "ceil");
-    if (y >= 0 && !willCollide(x, y - 1, piece.rotation)) {
+    const { x, y } = primaryFromSprite(piece, "cell2", "ceil");
+    if (
+      y >= 0 &&
+      !willCollidePrimary(
+        getGrid(),
+        { x, y: y - 1 },
+        asOrientation(rotationToOrientation(piece.rotation)),
+        "cell2",
+      )
+    ) {
       piece.y -= BOX_SIZE;
       activeFall.onMoved();
     }
@@ -225,18 +239,32 @@ export const createPiece = async (
   const canLift = fileIsCharacter(file, CHAR.Emu);
 
   const rotateCW = () => {
-    const { x, y } = getCoordinates(piece, "ceil");
-    if (!willCollide(x, y, piece.rotation + Math.PI / 2)) {
-      const offset = (getOffset(piece) - 1) / 2;
+    const { x, y } = primaryFromSprite(piece, "cell2", "ceil");
+    if (
+      !willCollidePrimary(
+        getGrid(),
+        { x, y },
+        asOrientation(rotationToOrientation(piece.rotation + Math.PI / 2)),
+        "cell2",
+      )
+    ) {
+      const offset = (rotationToOrientation(piece.rotation) - 1) / 2;
       piece.rotation = offset * Math.PI;
       activeFall.onMoved();
     }
   };
 
   const rotateCCW = () => {
-    const { x, y } = getCoordinates(piece, "ceil");
-    if (!willCollide(x, y, piece.rotation - Math.PI / 2)) {
-      const offset = (getOffset(piece) + 1) / 2;
+    const { x, y } = primaryFromSprite(piece, "cell2", "ceil");
+    if (
+      !willCollidePrimary(
+        getGrid(),
+        { x, y },
+        asOrientation(rotationToOrientation(piece.rotation - Math.PI / 2)),
+        "cell2",
+      )
+    ) {
+      const offset = (rotationToOrientation(piece.rotation) + 1) / 2;
       piece.rotation = offset * Math.PI;
       activeFall.onMoved();
     }

@@ -1,17 +1,13 @@
 /**
  * Pure cell-list pickers — no sprites, no grid mutation.
- * Cell / Col / Row brands: domain/types only.
+ * Brands (Cell / Col / Row) live in domain/types — import there.
  */
 import {
   type Cell,
   type ReadonlyCell,
   cell,
   asCell,
-  type LooseCell,
 } from "../types/cell";
-
-export type { Cell, ReadonlyCell, LooseCell };
-export { cell, asCell };
 
 export const cellToXY = (c: ReadonlyCell): { x: number; y: number } => ({
   x: c[0],

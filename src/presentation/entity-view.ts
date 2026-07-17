@@ -1,7 +1,8 @@
 /**
- * Presentation layer: EntityId → PIXI.Sprite registry.
- * Domain logic uses entity ids; rendering looks up sprites here.
- * SpriteData still holds a back-reference for gradual migration.
+ * Presentation layer: EntityId → PIXI.Sprite index.
+ * Dual ownership is intentional:
+ * - game/board-state `sprites[]` = ordered settled set (PIXI ownership + iteration)
+ * - this Map = EntityId lookup for domain/application hooks
  */
 import type * as PIXI from "pixi.js-legacy";
 import type { EntityId } from "../domain/types";

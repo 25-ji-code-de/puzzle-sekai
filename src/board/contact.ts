@@ -1,9 +1,9 @@
 import { ROWS, COLUMNS } from "../config";
-import { sprites, pieces } from "../game/board-state";
+import { sprites, getGrid } from "../game/board-state";
 import { isFunModeOn } from "../fun/effects";
 import { isCarrotItem, isFriesItem } from "../items";
 import { manhattan } from "./grid";
-import { footprintFromPrimary } from "./geometry";
+import { footprintFromPrimary } from "../domain/piece";
 
 /** Same cell or orthogonal neighbor */
 const cellsTouch = (ax: number, ay: number, bx: number, by: number) =>
@@ -16,8 +16,9 @@ const cellsTouch = (ax: number, ay: number, bx: number, by: number) =>
  */
 const landYInColumn = (col: number): number => {
   if (col < 0 || col >= COLUMNS) return -1;
+  const grid = getGrid();
   for (let y = 0; y < ROWS; y++) {
-    if (pieces[y][col] != null) {
+    if (grid[y][col] != null) {
       return y - 1;
     }
   }
@@ -50,9 +51,9 @@ export const getItemContactColumns = (
 ): number[] => {
   const cols = new Set<number>();
   for (const sp of sprites) {
-    if (!sp.isItem || !sp.itemFile || !sp.coordinates?.length) continue;
+    if (!sp.isItem || !sp.itemFile || !sp.cells?.length) continue;
     if (!itemPred(sp.itemFile)) continue;
-    const [ix, iy] = sp.coordinates[0];
+    const [ix, iy] = sp.cells[0];
     for (const c of contactColumnsForItem(ix, iy)) {
       cols.add(c);
     }

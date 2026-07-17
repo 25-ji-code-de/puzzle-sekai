@@ -38,8 +38,6 @@ export type LooseCell = readonly [number, number] | [number, number];
 
 export const asCell = (c: LooseCell): Cell => cell(c[0], c[1]);
 
-export const asLoose = (c: ReadonlyCell): [number, number] => [c[0], c[1]];
-
 export const cellsEqual = (a: ReadonlyCell, b: ReadonlyCell): boolean =>
   a[0] === b[0] && a[1] === b[1];
 

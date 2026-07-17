@@ -1,35 +1,43 @@
 /**
- * Board gravity + coordinate write.
+ * Board gravity + land commit.
  *
- * Orchestrates geometry atoms (footprint / anchor / grid-write / placement).
+ * Orchestrates domain piece math + presentation placement.
  * No local re-derivation of anchor or footprint rules.
  */
 import type * as PIXI from "pixi.js-legacy";
 import { gameTicker } from "../runtime";
-import { getCoordinates, getOffset } from "../utils/coords";
 import type { CharacterData } from "../characters/data";
 import { FALL_SPEED } from "../config";
-import { SpriteData, sprites, pieces, getBoardModel } from "../game/board-state";
-import { isFunModeOn } from "../fun/effects";
 import {
-  type Cell,
-  type PieceKind,
-  pieceKindFrom,
+  SpriteData,
+  sprites,
+  getGrid,
+  getBoardModel,
+} from "../game/board-state";
+import { isFunModeOn } from "../fun/effects";
+import type { Cell, CellToken, PieceKind } from "../domain/types";
+import {
+  ITEM_TOKEN,
   asOrientation,
+  pieceKindFrom,
+  rotationToOrientation,
+} from "../domain/types";
+import {
   footprintFromPrimary,
   anchorFromFootprint,
-  anchorPixelY,
-  placeSpriteAtAnchor,
   isUnsupported,
+} from "../domain/piece";
+import {
+  placeSpriteAtAnchor,
   primaryFromSprite,
-} from "./geometry";
-import { ITEM_TOKEN, type CellToken } from "../domain/types";
+  anchorPixelY,
+} from "../presentation/placement";
 import {
   makeCell2Entity,
   makeBig2x2Entity,
   makeItemEntity,
   makeShrunkEntity,
-} from "../domain/board/entity";
+} from "../domain/board";
 import type { CharacterName } from "../characters/ids";
 import type { GroupName } from "../settings/types";
 import { registerEntitySprite } from "../presentation/entity-view";
@@ -45,12 +53,14 @@ const kindOf = (entry: {
     isShrunk: entry.isShrunk,
   });
 
+const orientOf = (sprite: PIXI.Sprite) =>
+  asOrientation(rotationToOrientation(sprite.rotation));
+
 /**
  * Land a sprite into the board grid from its current pixel pose.
- * Builds footprint, writes grid, assigns entity id, then snaps pixels via
- * placeSpriteAtAnchor (same BOARD_ORIGIN mapping as activeLandPixelY).
+ * Builds footprint, writes grid, assigns entity id, then snaps pixels.
  */
-export const updateCoordinates = (
+export const commitLandedSprite = (
   sprite: PIXI.Sprite,
   index: number,
   character?: Pick<CharacterData, "name">,
@@ -66,12 +76,8 @@ export const updateCoordinates = (
     isItem: isItem || sprites[idx].isItem,
     isShrunk: sprites[idx].isShrunk,
   });
-  // big2x2 primary is bottom-right; cell2 uses cell-center getCoordinates
-  const primary =
-    kind === "big2x2"
-      ? primaryFromSprite(sprite, "big2x2")
-      : getCoordinates(sprite);
-  const orient = asOrientation(getOffset(sprite));
+  const primary = primaryFromSprite(sprite, kind);
+  const orient = orientOf(sprite);
   const cells = footprintFromPrimary(primary, orient, kind);
   const name: CellToken | undefined =
     kind === "item"
@@ -80,7 +86,7 @@ export const updateCoordinates = (
   if (!name) return;
 
   getBoardModel().write(cells, name);
-  sprites[idx].coordinates = cells.map(([x, y]) => [x, y] as Cell);
+  sprites[idx].cells = cells;
 
   // Assign domain entity identity once on land (stable across later gravity).
   if (!sprites[idx].entityId) {
@@ -91,7 +97,7 @@ export const updateCoordinates = (
     if (kind === "item") {
       const ent = makeItemEntity({
         itemFile: sprites[idx].itemFile ?? "item",
-        cells: cells as Cell[],
+        cells,
       });
       sprites[idx].entityId = ent.id;
       registerEntitySprite(ent.id, sprite);
@@ -99,7 +105,7 @@ export const updateCoordinates = (
       const ent = makeBig2x2Entity({
         character: charName,
         group,
-        cells: cells as Cell[],
+        cells,
         orientation: orient,
       });
       sprites[idx].entityId = ent.id;
@@ -107,7 +113,7 @@ export const updateCoordinates = (
     } else if (kind === "shrunk" && charName) {
       const ent = makeShrunkEntity({
         character: charName,
-        cells: cells as Cell[],
+        cells,
       });
       sprites[idx].entityId = ent.id;
       registerEntitySprite(ent.id, sprite);
@@ -115,7 +121,7 @@ export const updateCoordinates = (
       const ent = makeCell2Entity({
         character: charName,
         group,
-        cells: cells as Cell[],
+        cells,
         orientation: orient,
       });
       sprites[idx].entityId = ent.id;
@@ -123,7 +129,6 @@ export const updateCoordinates = (
     }
   }
 
-  // Unified pixel mapping — no jump vs activeLandPixelY when origins match.
   const anchor = anchorFromFootprint(cells, kind, orient);
   placeSpriteAtAnchor(sprite, kind, anchor.x, anchor.y);
 };
@@ -148,7 +153,7 @@ type FallPlan = {
 };
 
 /**
- * Simulate gravity for all currently unsupported pieces via BoardModel.
+ * Simulate gravity for all currently unsupported footprints via BoardModel.
  * Pure coordinate math on the grid — never re-derives footprint from rotation.
  */
 const planFalls = (canFall: FallEntry[]): FallPlan[] => {
@@ -157,7 +162,7 @@ const planFalls = (canFall: FallEntry[]): FallPlan[] => {
   const tagged = canFall
     .map((entry) => {
       const token = cellName(entry);
-      const coords = (entry.coordinates ?? []) as Cell[];
+      const coords = entry.cells ?? [];
       if (!token || !coords.length) return null;
       return { entry, token, coords, id: entry.index };
     })
@@ -181,7 +186,7 @@ const planFalls = (canFall: FallEntry[]): FallPlan[] => {
     const entry = gp.id !== undefined ? byId.get(gp.id) : undefined;
     if (!entry) continue;
     const kind = kindOf(entry);
-    const orient = asOrientation(getOffset(entry.sprite));
+    const orient = orientOf(entry.sprite);
     const endAnchor = anchorFromFootprint(gp.to, kind, orient);
     plans.push({
       entry,
@@ -195,38 +200,38 @@ const planFalls = (canFall: FallEntry[]): FallPlan[] => {
   return plans;
 };
 
-/** Sync live sprites[] entry coordinates after a planned fall. */
-const syncLiveCoordinates = (entry: FallEntry, dest: Cell[]) => {
-  entry.coordinates = dest.map(([x, y]) => [x, y] as Cell);
+/** Sync live sprites[] entry cells after a planned fall. */
+const syncLiveCells = (entry: FallEntry, dest: Cell[]) => {
+  entry.cells = dest;
   const live = sprites[entry.index];
   if (live && live.sprite === entry.sprite) {
-    live.coordinates = entry.coordinates;
+    live.cells = entry.cells;
     return;
   }
   const found = sprites.find((s) => s.sprite === entry.sprite);
-  if (found) found.coordinates = entry.coordinates;
+  if (found) found.cells = entry.cells;
 };
 
-/** Commit one fall plan: place sprite, write coords + grid. */
+/** Commit one fall plan: place sprite, write cells + grid. */
 const commitFall = (plan: FallPlan) => {
   const { entry, dest, kind } = plan;
-  const orient = asOrientation(getOffset(entry.sprite));
+  const orient = orientOf(entry.sprite);
   const anchor = anchorFromFootprint(dest, kind, orient);
   placeSpriteAtAnchor(entry.sprite, kind, anchor.x, anchor.y);
-  // Write coordinates / grid directly — do NOT call updateCoordinates
+  // Write cells / grid directly — do NOT call commitLandedSprite
   // (it re-derives footprint from rotation and can desync after a tip).
-  syncLiveCoordinates(entry, dest);
+  syncLiveCells(entry, dest);
   const token = cellName(entry);
   if (token) getBoardModel().write(dest, token);
 };
 
-/** Animate planned falls, then write footprints + coordinates. */
+/** Animate planned falls, then write footprints + cells. */
 const applyFalls = async (plans: FallPlan[]) => {
   if (!plans.length) return;
 
   for (const { entry } of plans) {
-    if (entry.coordinates?.length) {
-      getBoardModel().clear(entry.coordinates as Cell[]);
+    if (entry.cells?.length) {
+      getBoardModel().clear(entry.cells);
     }
   }
 
@@ -262,8 +267,8 @@ const applyFalls = async (plans: FallPlan[]) => {
 
 /**
  * Gravity settle + optional cantilever tips.
- * Coordinate-driven: drop by footprint, never by rotation/orientation.
- * Hard-capped loop so empty-coords / desync can't freeze the tab.
+ * Cell-driven: drop by footprint, never by rotation/orientation.
+ * Hard-capped loop so empty-cells / desync can't freeze the tab.
  */
 export const fallChunk = async (spritesList: SpriteData[]) => {
   const MAX_STEPS = 48;
@@ -271,9 +276,7 @@ export const fallChunk = async (spritesList: SpriteData[]) => {
   for (let step = 0; step < MAX_STEPS; step++) {
     const canFall = spritesList
       .map((e, index) => ({ ...e, index }))
-      .filter(({ coordinates }) =>
-        isUnsupported(pieces, (coordinates ?? []) as Cell[]),
-      );
+      .filter(({ cells }) => isUnsupported(getGrid(), cells ?? []));
 
     if (canFall.length > 0) {
       const plans = planFalls(canFall);
@@ -295,5 +298,3 @@ export const fallChunk = async (spritesList: SpriteData[]) => {
     break;
   }
 };
-
-// Particle VFX lives in ./particles — re-exported from board/index.

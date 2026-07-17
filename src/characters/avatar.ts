@@ -7,7 +7,7 @@ import {
   RIGHT_BORDER,
   BOX_SIZE,
 } from "../config";
-import { fly, showNextPiece } from "../piece";
+import { fly, showNextPiece } from "../active";
 import avatar from "../assets/chara/avatar.png";
 import avatar1 from "../assets/objects/avatar-1.png";
 import avatar2 from "../assets/objects/avatar-2.png";

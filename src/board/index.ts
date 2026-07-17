@@ -1,9 +1,9 @@
 /**
  * Board public API for gameplay (orchestration only).
  * Fun modes: import application/fun-effects or board/fun/* from plugins only.
- * Geometry pure math: prefer domain/piece; PIXI placement from board/geometry.
+ * Pure piece math: domain/piece; PIXI placement: presentation/placement.
  */
-export { updateCoordinates, fallChunk } from "./core";
+export { commitLandedSprite, fallChunk } from "./core";
 export { createParticles } from "./particles";
 
 export {

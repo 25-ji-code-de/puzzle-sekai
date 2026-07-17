@@ -1,5 +1,5 @@
 /**
- * Domain board package.
+ * Domain board package: occupancy model + entity factories.
  */
 export {
   BoardModel,
@@ -11,7 +11,6 @@ export {
 
 export type { BoardEntity } from "./entity";
 export {
-  createEntityId,
   makeCell2Entity,
   makeBig2x2Entity,
   makeItemEntity,

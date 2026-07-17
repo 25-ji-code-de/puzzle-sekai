@@ -5,7 +5,7 @@
 
 import type { CharacterName } from "../../characters/ids";
 import type { GroupName } from "../../settings/types";
-import type { LooseCell } from "./cell";
+import type { ReadonlyCell } from "./cell";
 import type { EntityId } from "./entity";
 
 export type ClearReason = "clear" | "blast" | "allergy" | "eat" | "shrink";
@@ -14,7 +14,7 @@ export type GameEvent =
   | { readonly type: "entityLanded"; readonly entityId: EntityId }
   | {
       readonly type: "cellsCleared";
-      readonly cells: readonly LooseCell[];
+      readonly cells: readonly ReadonlyCell[];
       readonly groups: readonly GroupName[];
       readonly silent: boolean;
     }

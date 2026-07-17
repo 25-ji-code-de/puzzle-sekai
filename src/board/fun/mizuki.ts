@@ -1,21 +1,24 @@
 /**
  * ポテトと瑞希 — Mizuki teleports above fries; eats adjacent fries.
  */
-import { getOffset, moveToCoordinate } from "../../utils/coords";
 import { addScore } from "../../score";
 import { ROWS, COLUMNS } from "../../config";
-import { SpriteData, sprites, pieces, getBoardModel } from "../../game/board-state";
+import {
+  SpriteData,
+  sprites,
+  getGrid,
+  getBoardModel,
+} from "../../game/board-state";
 import { isFunModeOn } from "../../fun/effects";
 import { isFriesItem } from "../../items";
-import { updateCoordinates, fallChunk } from "../core";
+import { commitLandedSprite, fallChunk } from "../core";
 import { createParticles } from "../particles";
 import { removeSpritesFromBoard } from "../mutate";
 import { DIRS_ORTHO } from "../grid";
-import {
-  type Cell,
-  asOrientation,
-  footprintFromPrimary,
-} from "../geometry";
+import type { Cell } from "../../domain/types";
+import { asOrientation, rotationToOrientation } from "../../domain/types";
+import { footprintFromPrimary } from "../../domain/piece";
+import { placeSpriteAtAnchor } from "../../presentation/placement";
 import { CHAR } from "../../characters/ids";
 
 /** 2-cell footprint for primary (ax,ay) if every cell is on-board; else null. */
@@ -45,11 +48,9 @@ export const applyMizukiShift = async (
   let best: Cand | null = null;
   for (let i = 0; i < sprites.length; i++) {
     const sp = sprites[i];
-    if (sp.character?.name !== CHAR.Mizuki || !sp.coordinates?.length) continue;
+    if (sp.character?.name !== CHAR.Mizuki || !sp.cells?.length) continue;
     const dist = Math.min(
-      ...sp.coordinates.map(
-        ([x, y]) => Math.abs(x - itemX) + Math.abs(y - itemY),
-      ),
+      ...sp.cells.map(([x, y]) => Math.abs(x - itemX) + Math.abs(y - itemY)),
     );
     if (!best || dist < best.dist) best = { index: i, dist };
   }
@@ -64,22 +65,23 @@ export const applyMizukiShift = async (
     (c) => c >= 0 && c < COLUMNS,
   );
 
-  if (mizuki.coordinates?.length) {
-    getBoardModel().clear(mizuki.coordinates as Cell[]);
+  if (mizuki.cells?.length) {
+    getBoardModel().clear(mizuki.cells as Cell[]);
   }
 
+  const grid = getGrid();
   const isFree = (cells: Cell[]) =>
-    cells.every(([x, y]) => pieces[y][x] === null);
+    cells.every(([x, y]) => grid[y][x] === null);
 
-  const currentOrient = getOffset(mizuki.sprite);
+  const currentOrient = rotationToOrientation(mizuki.sprite.rotation);
   let placed = false;
 
   const tryPlace = (col: number, orientation: number, rotation: number) => {
     const cells = cellsFor(orientation, col, targetY);
     if (!cells || !isFree(cells)) return false;
     mizuki.sprite.rotation = rotation;
-    moveToCoordinate(mizuki.sprite, col, targetY);
-    updateCoordinates(mizuki.sprite, mizukiIndex, mizuki.character);
+    placeSpriteAtAnchor(mizuki.sprite, "cell2", col, targetY);
+    commitLandedSprite(mizuki.sprite, mizukiIndex, mizuki.character);
     return true;
   };
 
@@ -96,7 +98,7 @@ export const applyMizukiShift = async (
   }
 
   if (!placed) {
-    updateCoordinates(mizuki.sprite, mizukiIndex, mizuki.character);
+    commitLandedSprite(mizuki.sprite, mizukiIndex, mizuki.character);
     return;
   }
 
@@ -115,16 +117,16 @@ export const tryMizukiEatFries = async (): Promise<boolean> => {
   while (true) {
     const mizukiCells: [number, number][] = [];
     for (const sp of sprites) {
-      if (sp.character?.name !== CHAR.Mizuki || !sp.coordinates?.length) continue;
-      for (const c of sp.coordinates) mizukiCells.push(c);
+      if (sp.character?.name !== CHAR.Mizuki || !sp.cells?.length) continue;
+      for (const c of sp.cells) mizukiCells.push(c);
     }
     if (mizukiCells.length === 0) break;
 
     const toEat: SpriteData[] = [];
     for (const sp of sprites) {
-      if (!sp.isItem || !sp.itemFile || !sp.coordinates?.length) continue;
+      if (!sp.isItem || !sp.itemFile || !sp.cells?.length) continue;
       if (!isFriesItem(sp.itemFile)) continue;
-      const [fx, fy] = sp.coordinates[0];
+      const [fx, fy] = sp.cells[0];
       const touches = mizukiCells.some(([mx, my]) =>
         DIRS_ORTHO.some(([dx, dy]) => mx + dx === fx && my + dy === fy),
       );

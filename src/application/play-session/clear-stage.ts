@@ -6,7 +6,7 @@ import { app, resetGameTicker } from "../../runtime";
 import {
   sprites,
   clearSpritesList,
-  resetPieces,
+  resetGrid,
 } from "../../game/board-state";
 import { stopBgm } from "../../audio/session";
 
@@ -32,6 +32,6 @@ export const clearMatchStage = (h: StageHandles): void => {
   if (h.avatarFlyDown) app.stage.removeChild(h.avatarFlyDown);
   if (h.barrel) app.stage.removeChild(h.barrel);
   if (h.curtain) app.stage.removeChild(h.curtain);
-  resetPieces();
+  resetGrid();
   if (h.nextPiece) app.stage.removeChild(h.nextPiece);
 };

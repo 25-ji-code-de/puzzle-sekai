@@ -9,12 +9,13 @@ import {
   fly,
   createPiece,
   showNextPiece,
-} from "../../piece";
+} from "../../active";
 import { createItem, getRandomItem } from "../../items";
-import { getCoordinates, getMaxStackHeight } from "../../utils/coords";
+import { maxOccupiedHeight } from "../../domain/piece";
+import { primaryFromSprite } from "../../presentation/placement";
+import { getGrid, sprites } from "../../game/board-state";
 import { getCurrentSettings, getItemDropChance } from "../../settings";
 import { playLoadedSfx } from "../../audio/sfx";
-import { sprites } from "../../game/board-state";
 import { app } from "../../runtime";
 import {
   handleItemLand,
@@ -41,14 +42,14 @@ export type SpawnDeps = {
  */
 export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
   const index = deps.getSpriteIndexBase();
-  const maxHeight = getMaxStackHeight();
+  const maxHeight = maxOccupiedHeight(getGrid());
   const settings = getCurrentSettings();
 
   if (maxHeight < 5 && Math.random() < getItemDropChance(settings)) {
     const itemFile = getRandomItem();
     const dropped = [false, false];
     const onDropped = (id: number) => async (sprite: PIXI.Sprite) => {
-      const { x, y } = getCoordinates(sprite);
+      const { x, y } = primaryFromSprite(sprite, "item", "ceil");
       const outcome = await handleItemLand(sprite, index + id, itemFile, x, y);
       if (outcome.topOut) {
         deps.onTopOut();

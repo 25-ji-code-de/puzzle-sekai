@@ -1,14 +1,11 @@
 /**
  * Board entity model (logic identity independent of PIXI sprites).
- * Presentation may keep Map<EntityId, Sprite> separately.
+ * Presentation keeps Map<EntityId, Sprite> separately.
  */
 import type { CharacterName } from "../../characters/ids";
 import type { GroupName } from "../../settings/types";
 import type { Cell, Orientation, EntityId } from "../types";
 import { createEntityId } from "../types";
-
-export type { EntityId, Cell, Orientation };
-export { createEntityId };
 
 export type BoardEntity =
   | {

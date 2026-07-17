@@ -3,10 +3,10 @@
  * Pure types + small helpers; no PIXI / DOM.
  *
  * Rules:
- * - Col / Row / EntityId / Cell / Orientation / PieceKind defined ONLY here
- *   (or re-exported once from domain/piece without re-declaring).
+ * - Col / Row / EntityId / Cell / Orientation / PieceKind defined ONLY here.
  * - Prefer brand constructors (col, row, cell, createEntityId) over bare `as`.
  * - Use assertNever on discriminated unions.
+ * - App code imports brands from here (not via domain/piece).
  */
 
 export type {
@@ -27,7 +27,6 @@ export {
   cellX,
   cellY,
   asCell,
-  asLoose,
   cellsEqual,
   asOrientation,
   isOrientation,

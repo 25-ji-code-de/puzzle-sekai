@@ -8,15 +8,15 @@ import {
   setSprites,
   getBoardModel,
 } from "../game/board-state";
-import type { Cell } from "./geometry";
+import type { Cell } from "../domain/types";
 import { unregisterEntitySprite } from "../presentation/entity-view";
 
 /** Wipe footprint cells, remove from stage, drop sprites[], unregister entity views. */
 export const removeSpritesFromBoard = (toRemove: SpriteData[]): void => {
   const model = getBoardModel();
   toRemove.forEach((sp) => {
-    if (sp.coordinates?.length) {
-      model.clear(sp.coordinates as Cell[]);
+    if (sp.cells?.length) {
+      model.clear(sp.cells as Cell[]);
     }
     if (sp.entityId) {
       unregisterEntitySprite(sp.entityId);
@@ -28,11 +28,10 @@ export const removeSpritesFromBoard = (toRemove: SpriteData[]): void => {
   );
 };
 
-/** Sprites whose coordinates intersect any cell in `chunk`. */
+/** Sprites whose cells intersect any cell in `chunk`. */
 export const spritesInChunk = (chunk: [number, number][]): SpriteData[] => {
   const keys = new Set(chunk.map(([x, y]) => `${x},${y}`));
   return sprites.filter(
-    (sprite) =>
-      !!sprite.coordinates?.some(([x, y]) => keys.has(`${x},${y}`)),
+    (sprite) => !!sprite.cells?.some(([x, y]) => keys.has(`${x},${y}`)),
   );
 };

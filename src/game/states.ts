@@ -15,8 +15,9 @@ import {
   initRNG,
   nextCharacter,
   showNextPiece,
-} from "../piece";
-import { getOffset, getCoordinates } from "../utils/coords";
+} from "../active";
+import { rotationToOrientation } from "../domain/types";
+import { primaryFromSprite } from "../presentation/placement";
 import {
   resetScore,
   initScoreDisplay,
@@ -48,7 +49,7 @@ import {
   resumeBgmPlayback,
   setBgmSessionPaused,
 } from "../audio/session";
-import { sprites, clearSpritesList, resetPieces } from "./board-state";
+import { sprites, clearSpritesList, resetGrid } from "./board-state";
 
 export { welcome } from "../ui/welcome";
 
@@ -60,7 +61,6 @@ export {
   type SpriteData,
   sprites,
   setSprites,
-  pieces,
 } from "./board-state";
 
 export { playMenuBgm, stopBgm } from "../audio/session";
@@ -112,7 +112,7 @@ const clearStage = () => {
   app.stage.removeChild(avatarFlyDown);
   app.stage.removeChild(barrel);
   app.stage.removeChild(curtain);
-  resetPieces();
+  resetGrid();
   if (nextPiece) {
     app.stage.removeChild(nextPiece);
   }
@@ -232,8 +232,9 @@ const end = async () => {
       createBarrel();
       await createFlyingavatar();
       const avatarFlyDown = createFallingavatar();
-      const lastPieceOff = getOffset(sprites[sprites.length - 1].sprite);
-      const lastPieceCoor = getCoordinates(sprites[sprites.length - 1].sprite);
+      const lastSprite = sprites[sprites.length - 1].sprite;
+      const lastPieceOff = rotationToOrientation(lastSprite.rotation);
+      const lastPieceCoor = primaryFromSprite(lastSprite, "cell2", "ceil");
       const overflow =
         lastPieceOff === 0 ? lastPieceCoor.y - 1 : lastPieceCoor.y;
       avatarFlyDown.x = LEFT_BORDER + BOX_SIZE / 2 + BOX_SIZE * lastPieceCoor.x;

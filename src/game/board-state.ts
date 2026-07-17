@@ -1,31 +1,26 @@
 /**
- * Live board occupancy — facade over domain BoardModel + sprite list.
- * Separated from game-flow state machine so board/* can depend on occupancy
- * without importing the full play session.
+ * Live match occupancy — sprites list + BoardModel grid.
  *
- * entityId links a settled SpriteData row to a domain BoardEntity identity.
- * Full Map<EntityId, Sprite> presentation split can land later; today the
- * sprite remains on SpriteData for PIXI ownership.
+ * - `sprites[]`: ordered settled set (PIXI ownership + iteration)
+ * - presentation Map: EntityId → Sprite index (see presentation/entity-view)
+ * - grid: always BoardModel.grid via getGrid() — never a stale export alias
  */
 import type * as PIXI from "pixi.js-legacy";
 import type { CharacterName } from "../characters/ids";
 import type { GroupName } from "../settings/types";
-import type { BoardCell, BoardGrid, EntityId } from "../domain/types";
-import { ITEM_TOKEN } from "../domain/types";
+import type { BoardGrid, Cell, EntityId } from "../domain/types";
 import { getLiveBoard, resetLiveBoard } from "../domain/board";
 import { clearEntitySprites } from "../presentation/entity-view";
 
-export type { BoardCell, BoardGrid, EntityId };
-export { ITEM_TOKEN };
-
 export interface SpriteData {
   sprite: PIXI.Sprite;
-  coordinates?: [number, number][];
+  /** Settled footprint in grid space (branded cells). */
+  cells?: Cell[];
   character?: { name: CharacterName; group: GroupName | "Special" };
   isItem?: boolean;
   itemFile?: string;
   isShrunk?: boolean;
-  /** Domain entity id once settled (assigned in updateCoordinates / shrink). */
+  /** Domain entity id once settled (assigned in commitLandedSprite / shrink). */
   entityId?: EntityId;
 }
 
@@ -34,12 +29,11 @@ export const setSprites = (s: SpriteData[]) => {
   sprites = s;
 };
 
-/** Live grid — always the BoardModel singleton grid reference. */
-export let pieces: BoardGrid = getLiveBoard().grid;
+/** Live occupancy grid — always the BoardModel singleton grid reference. */
+export const getGrid = (): BoardGrid => getLiveBoard().grid;
 
-export const resetPieces = () => {
-  const model = resetLiveBoard();
-  pieces = model.grid;
+export const resetGrid = () => {
+  resetLiveBoard();
   clearEntitySprites();
 };
 
@@ -48,9 +42,5 @@ export const clearSpritesList = () => {
   clearEntitySprites();
 };
 
-/** Access the domain BoardModel; rebinds `pieces` to its grid. */
-export const getBoardModel = () => {
-  const model = getLiveBoard();
-  pieces = model.grid;
-  return model;
-};
+/** Access the domain BoardModel. */
+export const getBoardModel = () => getLiveBoard();

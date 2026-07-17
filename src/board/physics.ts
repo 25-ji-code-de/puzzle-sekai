@@ -3,30 +3,31 @@
  * - cantilever: rigid-body tip over a one-sided support (seesaw / pry-up feel)
  * - truePhysics: registered only (not implemented yet)
  *
- * 2脳2 pieces (NeneRobo / Mikudayo) tip the same way as horizontal 2-cell pieces:
+ * 2×2 pieces (NeneRobo / Mikudayo) tip the same way as horizontal 2-cell pieces:
  * only one bottom column supported - rotate 90deg over the support edge.
  */
 
 import { gameTicker } from "../runtime";
 import { COLUMNS, ROWS } from "../config";
 import { SpriteData, getBoardModel } from "../game/board-state";
-import { getOffset } from "../utils/coords";
 import { isFunModeOn } from "../fun/effects";
 import { cellKey } from "./grid";
+import type { Cell, PieceKind } from "../domain/types";
 import {
-  type Cell,
-  type PieceKind,
   pieceKindFrom,
+  asCell,
+  rotationToOrientation,
+  ITEM_TOKEN,
+} from "../domain/types";
+import {
   bottomCells as bottomCellsOf,
   maxFootprintY,
   anchorFromFootprint,
   orientFromFootprint,
-  placeSpriteAtAnchor,
   cellTopLeftX,
   cellTopLeftY,
-  asCell,
-} from "./geometry";
-import { ITEM_TOKEN } from "../domain/types";
+} from "../domain/piece";
+import { placeSpriteAtAnchor } from "../presentation/placement";
 
 /** Slightly slower than a snap so the pry-up arc reads clearly. */
 const TIP_ROTATE_FRAMES = 18;
@@ -51,7 +52,7 @@ const kindOf = (sp: SpriteData): PieceKind =>
 const buildOccupancy = (list: SpriteData[]): Map<string, number> => {
   const map = new Map<string, number>();
   list.forEach((sp, index) => {
-    sp.coordinates?.forEach(([x, y]) => {
+    sp.cells?.forEach(([x, y]) => {
       map.set(cellKey(x, y), index);
     });
   });
@@ -64,9 +65,9 @@ const supportCells = (
   occupancy: Map<string, number>,
   selfIndex: number,
 ): [number, number][] => {
-  if (!sp.coordinates?.length) return [];
+  if (!sp.cells?.length) return [];
   const supported: [number, number][] = [];
-  for (const [x, y] of sp.coordinates) {
+  for (const [x, y] of sp.cells) {
     if (y + 1 >= ROWS) {
       supported.push([x, y]);
       continue;
@@ -80,16 +81,16 @@ const supportCells = (
 };
 
 const bottomCells = (sp: SpriteData): Cell[] =>
-  bottomCellsOf((sp.coordinates ?? []).map((c) => asCell(c)));
+  bottomCellsOf((sp.cells ?? []).map((c) => asCell(c)));
 
 /**
- * Roots must span 鈮? columns so there is a hang side vs support side.
- * Covers horizontal 2-cell pieces AND 2脳2 NeneRobo/Mikudayo.
+ * Roots must span ≥2 columns so there is a hang side vs support side.
+ * Covers horizontal 2-cell pieces AND 2×2 NeneRobo/Mikudayo.
  */
 const canSpanHorizontally = (sp: SpriteData): boolean => {
   if (sp.isItem || sp.isShrunk) return false;
-  if (!sp.coordinates || sp.coordinates.length < 2) return false;
-  return new Set(sp.coordinates.map(([x]) => x)).size >= 2;
+  if (!sp.cells || sp.cells.length < 2) return false;
+  return new Set(sp.cells.map(([x]) => x)).size >= 2;
 };
 
 /**
@@ -109,11 +110,11 @@ const collectTipGroup = (
     for (let i = 0; i < list.length; i++) {
       if (group.has(i)) continue;
       const sp = list[i];
-      if (!sp.coordinates?.length) continue;
+      if (!sp.cells?.length) continue;
 
       let restsOnGroup = false;
       let hasExternalSupport = false;
-      for (const [x, y] of sp.coordinates) {
+      for (const [x, y] of sp.cells) {
         if (y + 1 >= ROWS) {
           hasExternalSupport = true;
           continue;
@@ -148,13 +149,13 @@ const fulcrumPixel = (
 };
 
 /**
- * 90掳 grid remap around the ledge corner (matches fulcrumPixel rotation).
+ * 90° grid remap around the ledge corner (matches fulcrumPixel rotation).
  *
- * tip right (dir=+1), pivot P 鈥?CW around bottom-right of P:
- *   support P      鈫?hang column, same row
- *   hang H         鈫?one row below hang column
- *   cell above P   鈫?pryed up & over to the right
- *   2脳2 top-right  鈫?swings down-right with the hang
+ * tip right (dir=+1), pivot P — CW around bottom-right of P:
+ *   support P      → hang column, same row
+ *   hang H         → one row below hang column
+ *   cell above P   → pried up & over to the right
+ *   2×2 top-right  → swings down-right with the hang
  *
  * tip left mirrored.
  */
@@ -166,14 +167,14 @@ const rotateCell = (
 ): [number, number] => {
   const { x: px, y: py } = pivot;
   if (dir === 1) {
-    // CW 90掳 around corner (px+1, py+1)
+    // CW 90° around corner (px+1, py+1)
     return [px + py - y + 1, py + x - px];
   }
-  // CCW 90掳 around corner (px, py+1)
+  // CCW 90° around corner (px, py+1)
   return [px + y - py - 1, py - x + px];
 };
 
-/** Rotate a pixel point around fulcrum by angle 胃 (y-down, +胃 = CW). */
+/** Rotate a pixel point around fulcrum by angle θ (y-down, +θ = CW). */
 const rotatePoint = (
   x: number,
   y: number,
@@ -260,7 +261,7 @@ const planTipForRoot = (
 
   const allTargets: [number, number][] = [];
   for (const gi of groupIdx) {
-    for (const [x, y] of list[gi].coordinates ?? []) {
+    for (const [x, y] of list[gi].cells ?? []) {
       allTargets.push(rotateCell(x, y, pivot, dir));
     }
   }
@@ -275,13 +276,13 @@ const planTipForRoot = (
 
 const findTipPlan = (list: SpriteData[]): TipPlan | null => {
   const occupancy = buildOccupancy(list);
-  // Lowest first 鈥?foundations tip before free-floating tops
+  // Lowest first — foundations tip before free-floating tops
   const order = list
     .map((sp, index) => ({
       index,
-      maxY: maxFootprintY((sp.coordinates ?? []).map((c) => asCell(c))),
-      // Prefer wider / bigger roots first (2脳2 before a 2-cell sitting on it)
-      area: sp.coordinates?.length ?? 0,
+      maxY: maxFootprintY((sp.cells ?? []).map((c) => asCell(c))),
+      // Prefer wider / bigger roots first (2×2 before a 2-cell sitting on it)
+      area: sp.cells?.length ?? 0,
     }))
     .filter((e) => e.maxY >= 0)
     .sort((a, b) => b.maxY - a.maxY || b.area - a.area);
@@ -293,11 +294,11 @@ const findTipPlan = (list: SpriteData[]): TipPlan | null => {
   return null;
 };
 
-/** Write footprint directly 鈥?never re-derive cells from sprite math after a tip. */
+/** Write footprint directly — never re-derive cells from sprite math after a tip. */
 const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
   const name = sp.isItem ? ITEM_TOKEN : sp.character?.name;
   if (!name || !newCells.length) {
-    sp.coordinates = newCells;
+    sp.cells = newCells;
     return;
   }
 
@@ -305,24 +306,24 @@ const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
   const orient = orientFromFootprint(newCells, kind);
   const anchor = anchorFromFootprint(newCells, kind, orient);
 
-  // Snap rotation so later gravity / updateCoordinates stay consistent
+  // Snap rotation so later gravity / commitLandedSprite stay consistent
   if (kind === "cell2") {
-    // Match piece.ts convention: spawn at 蟺, orient 0 鈫?蟺, orient 1 鈫?蟺 + 蟺/2, 鈥?
-    // getOffset: (rotation/蟺 * 2 + 2) % 4 鈥?we only need getOffset === orient.
-    const current = getOffset(sp.sprite);
+    // Match piece.ts convention: spawn at π, orient 0 → π, orient 1 → π + π/2, …
+    // rotationToOrientation: (rotation/π * 2 + 2) % 4 — we only need it === orient.
+    const current = rotationToOrientation(sp.sprite.rotation);
     const delta = ((orient - current) % 4 + 4) % 4;
     sp.sprite.rotation += (delta * Math.PI) / 2;
   }
 
   placeSpriteAtAnchor(sp.sprite, kind, anchor.x, anchor.y);
-  sp.coordinates = newCells.map(([x, y]) => asCell([x, y]));
+  sp.cells = newCells.map(([x, y]) => asCell([x, y]));
   getBoardModel().write(newCells, name);
 };
 
 /**
  * Rigid-body tip: every member orbits the shared ledge fulcrum.
- * Pieces on the support side arc upward (缈樿捣鏉?, hang side swings down.
- * 2脳2 squares rotate as a rigid body the same way.
+ * Pieces on the support side arc upward (撬起来), hang side swings down.
+ * 2×2 squares rotate as a rigid body the same way.
  */
 const animateTip = (plan: TipPlan): Promise<void> => {
   const { members, dir, pivot } = plan;
@@ -337,7 +338,7 @@ const animateTip = (plan: TipPlan): Promise<void> => {
   };
 
   const poses: Pose[] = members.map(({ sp }) => {
-    const coords = (sp.coordinates ?? []) as [number, number][];
+    const coords = (sp.cells ?? []) as [number, number][];
     return {
       startX: sp.sprite.x,
       startY: sp.sprite.y,
@@ -352,10 +353,10 @@ const animateTip = (plan: TipPlan): Promise<void> => {
 
   // Clear grid occupancy during the arc
   for (const { sp } of members) {
-    if (sp.coordinates?.length) {
-      getBoardModel().clear((sp.coordinates ?? []).map((c) => asCell(c)));
+    if (sp.cells?.length) {
+      getBoardModel().clear((sp.cells ?? []).map((c) => asCell(c)));
     }
-    sp.coordinates = undefined;
+    sp.cells = undefined;
   }
 
   return new Promise((resolve) => {
@@ -382,7 +383,7 @@ const animateTip = (plan: TipPlan): Promise<void> => {
           const p = poses[i];
           sp.sprite.rotation = p.startRot + angleEnd;
           sp.sprite.zIndex = Math.max(0, (sp.sprite.zIndex || 0) - 100);
-          // Commit cells by tip geometry 鈥?never via getCoordinates
+          // Commit cells by tip geometry — never via primaryFromSprite re-derive
           commitTipLanding(sp, p.newCells.map(([x, y]) => asCell([x, y])));
         });
         resolve();

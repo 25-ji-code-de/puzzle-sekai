@@ -1,6 +1,6 @@
 /**
  * Sprite rotation ↔ Orientation (single implementation).
- * Convention: spawn often at π; getOffset matches piece.ts / updateCoordinates.
+ * Convention: spawn often at π; active controllers use this for facing.
  */
 import { asOrientation, type Orientation } from "./cell";
 

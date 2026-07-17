@@ -1,46 +1,7 @@
 /**
  * Domain pure piece math (no PIXI).
- * Brands Col/Row/Cell/Orientation/PieceKind: domain/types only.
+ * Brands (Cell / Orientation / PieceKind / …) live in domain/types — import there.
  */
-export type {
-  PieceKind,
-  Big2x2Name,
-  Cell,
-  ReadonlyCell,
-  Orientation,
-  Primary,
-  LooseCell,
-  LoosePrimary,
-  Col,
-  Row,
-  RoundMethod,
-  EntityId,
-} from "../types";
-export {
-  PIECE_KINDS,
-  isPieceKind,
-  isBig2x2Name,
-  pieceKindFrom,
-  ORIENTATIONS,
-  col,
-  row,
-  cell,
-  cellX,
-  cellY,
-  asCell,
-  asLoose,
-  cellsEqual,
-  asOrientation,
-  isOrientation,
-  primary,
-  asPrimary,
-  ROUND_METHODS,
-  isRoundMethod,
-  rotationToOrientation,
-  orientationToRotation,
-  createEntityId,
-} from "../types";
-
 export {
   cellToXY,
   pickMaxY,
@@ -62,6 +23,7 @@ export {
   columnsForPiece,
   stackHeightBelow,
   stackHeightForPrimary,
+  maxOccupiedHeight,
 } from "./stack";
 
 export {

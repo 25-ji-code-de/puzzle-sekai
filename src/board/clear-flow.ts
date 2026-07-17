@@ -4,14 +4,14 @@
  */
 import { groupSounds } from "../characters/data";
 import { addScore } from "../score";
-import { sprites, pieces } from "../game/board-state";
+import { sprites, getGrid } from "../game/board-state";
 import {
   onKanadeCleared,
   onShizukuCleared,
   cancelShizukuSwapIfShihoPresent,
 } from "../fun/effects";
 import { fallChunk } from "./core";
-import { findClearPieces } from "./clear-rules";
+import { findClearChunk } from "./clear-rules";
 import { playClearAnimation } from "./clear-vfx";
 import { spritesInChunk } from "./mutate";
 import { playLoadedSfx } from "../audio/sfx";
@@ -52,12 +52,12 @@ export const settleBoard = async (): Promise<{ cleared: boolean }> => {
       sprites.some((sp) => sp.character?.name === CHAR.Shiho),
     );
 
-    let chunk = findClearPieces(pieces);
+    let chunk = findClearChunk(getGrid());
     while (chunk !== undefined) {
       changed = true;
       cleared = true;
       await clearChunk(chunk);
-      chunk = findClearPieces(pieces);
+      chunk = findClearChunk(getGrid());
     }
 
     if (!changed) break;

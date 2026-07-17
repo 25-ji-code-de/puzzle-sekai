@@ -3,9 +3,10 @@
  */
 import type * as PIXI from "pixi.js-legacy";
 import type { CharacterData } from "../../characters/data";
-import { updateCoordinates, settleBoard } from "../../board";
+import { commitLandedSprite, settleBoard } from "../../board";
 import { resetCombo } from "../../score";
-import { getCoordinates } from "../../utils/coords";
+import { pieceKindFrom, rotationToOrientation } from "../../domain/types";
+import { primaryFromSprite } from "../../presentation/placement";
 import {
   runItemLandEffects,
   runCharacterLandEffects,
@@ -24,7 +25,7 @@ export const handleItemLand = async (
   y: number,
 ): Promise<LandOutcome> => {
   if (y < 0) return { scored: false, topOut: true };
-  updateCoordinates(sprite, spriteIndex, undefined, true);
+  commitLandedSprite(sprite, spriteIndex, undefined, true);
   const landFx = await runItemLandEffects({ itemFile, x, y });
   const { cleared } = await settleBoard();
   const scored = !!(landFx.scored || cleared);
@@ -37,12 +38,13 @@ export const handleCharacterLand = async (
   spriteIndex: number,
   character: CharacterData,
 ): Promise<LandOutcome> => {
-  const { y } = getCoordinates(sprite);
-  const orientation = (Math.fround(sprite.rotation / Math.PI) * 2 + 2) % 4;
+  const kind = pieceKindFrom({ characterName: character.name });
+  const { y } = primaryFromSprite(sprite, kind);
+  const orientation = rotationToOrientation(sprite.rotation);
   if (y < 0 || (orientation === 0 && y <= 0)) {
     return { scored: false, topOut: true };
   }
-  updateCoordinates(sprite, spriteIndex, character);
+  commitLandedSprite(sprite, spriteIndex, character);
   const landFx = await runCharacterLandEffects({
     spriteIndex,
     name: character.name,

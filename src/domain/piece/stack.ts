@@ -62,3 +62,16 @@ export const stackHeightForPrimary = (
   const belowExclusive = kind === "big2x2" ? primary.y - 1 : primary.y;
   return stackHeightBelow(grid, cols, belowExclusive);
 };
+
+/**
+ * Highest occupied row measured from the floor (0 = empty board).
+ * Same reduce-from-bottom semantics as the historical max-stack helper.
+ */
+export const maxOccupiedHeight = (grid: BoardGrid): number => {
+  let acc = 0;
+  for (let i = 0; i < grid.length; i++) {
+    const row = grid[grid.length - 1 - i];
+    if (row.some((e) => e !== null)) acc = i + 1;
+  }
+  return acc;
+};

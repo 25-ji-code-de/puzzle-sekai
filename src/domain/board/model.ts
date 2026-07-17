@@ -17,7 +17,7 @@ import {
   maxFootprintY,
 } from "../piece";
 
-// findClearPieces stays at board/clear-rules call sites (avoids domain→board cycles).
+// findClearChunk stays at board/clear-rules call sites (avoids domain→board cycles).
 
 export type FootprintEntry = {
   /** Current cells occupied by this entity on the grid. */

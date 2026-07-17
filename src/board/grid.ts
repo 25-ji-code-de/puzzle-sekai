@@ -27,10 +27,10 @@ export const parseCellKey = (key: string): [number, number] => {
 };
 
 export const inBounds = (
-  pieces: readonly (readonly unknown[])[],
+  grid: readonly (readonly unknown[])[],
   x: number,
   y: number,
-): boolean => y >= 0 && x >= 0 && y < pieces.length && x < (pieces[y]?.length ?? 0);
+): boolean => y >= 0 && x >= 0 && y < grid.length && x < (grid[y]?.length ?? 0);
 
 export const manhattan = (
   ax: number,
@@ -52,15 +52,15 @@ export const cellsOrthogonallyAdjacent = (
   return false;
 };
 
-export const anyPairAdjacent = <T extends { coordinates?: [number, number][] }>(
+export const anyPairAdjacent = <T extends { cells?: [number, number][] }>(
   groupA: T[],
   groupB: T[],
 ): boolean => {
   for (const a of groupA) {
-    if (!a.coordinates?.length) continue;
+    if (!a.cells?.length) continue;
     for (const b of groupB) {
-      if (!b.coordinates?.length) continue;
-      if (cellsOrthogonallyAdjacent(a.coordinates, b.coordinates)) return true;
+      if (!b.cells?.length) continue;
+      if (cellsOrthogonallyAdjacent(a.cells, b.cells)) return true;
     }
   }
   return false;

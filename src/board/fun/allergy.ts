@@ -2,12 +2,12 @@
  * にんじん嫌い — carrot allergy fun mode.
  * Ena/Akito touching a carrot are silently cleared.
  */
+import { SpriteData, sprites, getGrid } from "../../game/board-state";
 import {
-  SpriteData,
-  sprites,
-  pieces,
-} from "../../game/board-state";
-import { isFunModeOn, onKanadeCleared, onShizukuCleared } from "../../fun/effects";
+  isFunModeOn,
+  onKanadeCleared,
+  onShizukuCleared,
+} from "../../fun/effects";
 import { isCarrotItem } from "../../items";
 import { DIRS_SELF_ORTHO, cellKey, parseCellKey } from "../grid";
 import { playClearAnimation } from "../clear-vfx";
@@ -53,12 +53,10 @@ const clearAllergyCells = async (
 ): Promise<boolean> => {
   const toClear: SpriteData[] = [];
   for (const sp of sprites) {
-    if (!sp.coordinates?.length) continue;
+    if (!sp.cells?.length) continue;
     if (sp.isItem) continue;
     if (!isAllergyAvoiderName(sp.character?.name)) continue;
-    const hit = sp.coordinates.some(([cx, cy]) =>
-      allergyCells.has(cellKey(cx, cy)),
-    );
+    const hit = sp.cells.some(([cx, cy]) => allergyCells.has(cellKey(cx, cy)));
     if (!hit) continue;
     toClear.push(sp);
   }
@@ -75,7 +73,7 @@ const clearAllergyCells = async (
 
   const chunkKeys = new Set<string>();
   for (const sp of toClear) {
-    for (const [cx, cy] of sp.coordinates!) {
+    for (const [cx, cy] of sp.cells!) {
       chunkKeys.add(cellKey(cx, cy));
     }
   }
@@ -91,6 +89,7 @@ export const applyCarrotAllergy = async (
   if (!isFunModeOn("itemAllergy")) return false;
 
   const allergyCells = new Set<string>();
+  const grid = getGrid();
 
   for (let y = 0; y <= landY; y++) {
     for (const [dx, dy] of DIRS_SELF_ORTHO) {
@@ -99,12 +98,12 @@ export const applyCarrotAllergy = async (
       if (
         ny < 0 ||
         nx < 0 ||
-        ny >= pieces.length ||
-        nx >= (pieces[ny]?.length ?? 0)
+        ny >= grid.length ||
+        nx >= (grid[ny]?.length ?? 0)
       ) {
         continue;
       }
-      const name = pieces[ny][nx];
+      const name = grid[ny][nx];
       if (isAllergyAvoiderName(name)) {
         allergyCells.add(cellKey(nx, ny));
       }
@@ -124,20 +123,20 @@ export const applyCarrotAllergyOnCharacter = async (
 ): Promise<boolean> => {
   if (!isFunModeOn("itemAllergy")) return false;
   const sp = sprites[characterIndex];
-  if (!sp?.coordinates?.length) return false;
+  if (!sp?.cells?.length) return false;
   if (!isAllergyAvoiderName(sp.character?.name)) {
     return false;
   }
 
   let touchesCarrot = false;
-  outer: for (const [cx, cy] of sp.coordinates) {
+  outer: for (const [cx, cy] of sp.cells) {
     for (const [dx, dy] of DIRS_SELF_ORTHO) {
       const nx = cx + dx;
       const ny = cy + dy;
       for (const itemSp of sprites) {
-        if (!itemSp.isItem || !itemSp.itemFile || !itemSp.coordinates) continue;
+        if (!itemSp.isItem || !itemSp.itemFile || !itemSp.cells) continue;
         if (!isCarrotItem(itemSp.itemFile)) continue;
-        if (itemSp.coordinates.some(([ix, iy]) => ix === nx && iy === ny)) {
+        if (itemSp.cells.some(([ix, iy]) => ix === nx && iy === ny)) {
           touchesCarrot = true;
           break outer;
         }
@@ -148,7 +147,7 @@ export const applyCarrotAllergyOnCharacter = async (
   if (!touchesCarrot) return false;
 
   playCarrotAllergySfx(sp.character?.name);
-  const chunk: [number, number][] = sp.coordinates.map(([x, y]) => [x, y]);
+  const chunk: [number, number][] = sp.cells.map(([x, y]) => [x, y]);
   await silentClearChunk(chunk);
   return true;
 };
@@ -163,15 +162,15 @@ export const recheckCarrotAllergy = async (): Promise<boolean> => {
   const allergyCells = new Set<string>();
   for (const sp of sprites) {
     if (!isAllergyAvoiderName(sp.character?.name)) continue;
-    if (!sp.coordinates?.length) continue;
-    for (const [cx, cy] of sp.coordinates) {
+    if (!sp.cells?.length) continue;
+    for (const [cx, cy] of sp.cells) {
       for (const [dx, dy] of DIRS_SELF_ORTHO) {
         const nx = cx + dx;
         const ny = cy + dy;
         for (const itemSp of sprites) {
-          if (!itemSp.isItem || !itemSp.itemFile || !itemSp.coordinates) continue;
+          if (!itemSp.isItem || !itemSp.itemFile || !itemSp.cells) continue;
           if (!isCarrotItem(itemSp.itemFile)) continue;
-          if (itemSp.coordinates.some(([ix, iy]) => ix === nx && iy === ny)) {
+          if (itemSp.cells.some(([ix, iy]) => ix === nx && iy === ny)) {
             allergyCells.add(cellKey(cx, cy));
           }
         }

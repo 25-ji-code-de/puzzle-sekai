@@ -15,7 +15,7 @@ import {
   FALL_DELAY,
   FALL_SPEED,
 } from "../config";
-import { pieces } from "../game/board-state";
+import { getGrid } from "../game/board-state";
 import { addDropScore } from "../score";
 import {
   getCurrentSettings,
@@ -25,11 +25,10 @@ import {
 import { consumeKanadeSlowForSpawn } from "../fun/effects";
 import {
   activeLandPixelY,
-  primaryFromSprite,
   stackHeightForPrimary,
   willCollidePrimary,
-  type RoundMethod,
-} from "../board/geometry";
+} from "../domain/piece";
+import { primaryFromSprite } from "../presentation/placement";
 import { fileIsBig2x2 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
@@ -39,29 +38,19 @@ const KIND = "big2x2" as const;
 /** 2×2 footprint is orientation-independent for collision / stack. */
 const ORIENT = 0 as const;
 
-/** Bottom-right primary of the live 2×2 sprite. */
-export const getNeneRoboCoordinates = (
-  sprite: PIXI.Sprite,
-  method: RoundMethod = "ceil",
-): { x: number; y: number } => primaryFromSprite(sprite, KIND, method);
-
-export const getNeneRoboStackHeight = (sprite: PIXI.Sprite): number => {
-  const primary = getNeneRoboCoordinates(sprite, "floor");
-  return stackHeightForPrimary(pieces, primary, ORIENT, KIND);
-};
-
-const landYFor = (sprite: PIXI.Sprite): number =>
-  activeLandPixelY(
+const landYFor = (sprite: PIXI.Sprite): number => {
+  const primary = primaryFromSprite(sprite, KIND, "floor");
+  return activeLandPixelY(
     KIND,
-    getNeneRoboStackHeight(sprite),
+    stackHeightForPrimary(getGrid(), primary, ORIENT, KIND),
     ORIENT,
     app.renderer.height,
   );
+};
 
 /**
  * Shift primary by (dx, dy) if the domain footprint is free.
- * Pixel step only — do not placeSpritePrimary while actively falling
- * (active land Y uses OFFSET_BOTTOM; settled placement does not).
+ * Pixel step only while actively falling (land Y uses OFFSET_BOTTOM).
  */
 const tryMovePrimary = (
   sprite: PIXI.Sprite,
@@ -69,9 +58,9 @@ const tryMovePrimary = (
   dy: number,
   onMoved: () => void,
 ): boolean => {
-  const { x, y } = getNeneRoboCoordinates(sprite, "ceil");
+  const { x, y } = primaryFromSprite(sprite, KIND, "ceil");
   const next = { x: x + dx, y: y + dy };
-  if (willCollidePrimary(pieces, next, ORIENT, KIND)) return false;
+  if (willCollidePrimary(getGrid(), next, ORIENT, KIND)) return false;
   sprite.x += dx * BOX_SIZE;
   sprite.y += dy * BOX_SIZE;
   onMoved();
