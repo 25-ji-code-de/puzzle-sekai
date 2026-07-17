@@ -34,12 +34,24 @@ export const isLeftHalfOfCanvas = (
   return clientX < rect.left + rect.width / 2;
 };
 
+/** True when focus is on a field that should keep native key behavior. */
+const isTypingTarget = (target: EventTarget | null): boolean => {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+};
+
 /** Bind controls; returns a dispose function that removes every listener. */
 export const bindPieceControls = (
   actions: PieceControlActions,
 ): (() => void) => {
   const handleKeyPress = (event: KeyboardEvent) => {
+    // Settings / dialogs: don't steal arrows/space from form fields.
+    if (isTypingTarget(event.target)) return;
+
     const swapped = isControlsSwapped();
+    let handled = true;
     switch (event.key.toLowerCase()) {
       case "arrowleft":
         swapped ? actions.moveRight() : actions.moveLeft();
@@ -67,11 +79,18 @@ export const bindPieceControls = (
       case " ":
         actions.hardDrop();
         break;
+      default:
+        handled = false;
+        break;
     }
+    // Stop browser scroll / button activation for keys we actually use.
+    if (handled) event.preventDefault();
   };
 
   const handleKeyUp = (event: KeyboardEvent) => {
+    if (isTypingTarget(event.target)) return;
     if (event.key === "ArrowDown") {
+      event.preventDefault();
       actions.normalSpeed();
     }
   };
