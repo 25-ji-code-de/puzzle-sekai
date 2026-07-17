@@ -20,6 +20,34 @@ const attachDismiss = (overlay: HTMLDivElement) => {
   };
 };
 
+/**
+ * Trusted i18n snippets that may wrap emphasis in &lt;strong&gt;…&lt;/strong&gt;.
+ * Renders as text + span.about-legal__em (no raw HTML / no real &lt;strong&gt;).
+ * Any other tags are stripped to plain text.
+ */
+const appendEmphasizedText = (parent: HTMLElement, raw: string): void => {
+  const re = /<strong>(.*?)<\/strong>/gi;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(raw))) {
+    if (match.index > last) {
+      parent.appendChild(
+        document.createTextNode(stripTags(raw.slice(last, match.index))),
+      );
+    }
+    const em = document.createElement("span");
+    em.className = "about-legal__em";
+    em.textContent = stripTags(match[1] ?? "");
+    parent.appendChild(em);
+    last = match.index + match[0].length;
+  }
+  if (last < raw.length) {
+    parent.appendChild(document.createTextNode(stripTags(raw.slice(last))));
+  }
+};
+
+const stripTags = (s: string): string => s.replace(/<[^>]*>/g, "");
+
 export const showControlsOverlay = () => {
   document.getElementById(CONTROLS_OVERLAY_ID)?.remove();
 
@@ -180,7 +208,6 @@ export const showAboutOverlay = () => {
   legal.className = "about-legal font-caption";
   const legalTitle = document.createElement("p");
   legalTitle.className = "about-legal__title font-heading";
-  // textContent only — never wrap i18n in raw HTML tags (shows as literal <strong>)
   legalTitle.textContent = t("about.disclaimerTitle");
   legal.appendChild(legalTitle);
   for (const key of [
@@ -190,7 +217,8 @@ export const showAboutOverlay = () => {
     "about.disclaimerP4",
   ] as const) {
     const p = document.createElement("p");
-    p.textContent = t(key);
+    // Locale strings may mark rights holders with <strong>; render as styled spans.
+    appendEmphasizedText(p, t(key));
     legal.appendChild(p);
   }
   const agree = document.createElement("p");

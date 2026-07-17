@@ -101,6 +101,12 @@
   font-weight: 400;
 }
 
+// Emphasis from locale <strong> markers — not real bold (CJK single-weight faces)
+.about-legal__em {
+  color: rgba(220, 235, 255, 0.95);
+  font-weight: 400;
+}
+
 .about-legal__agree {
   margin-top: 12px;
   font-size: 12px;
