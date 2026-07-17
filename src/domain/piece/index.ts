@@ -31,7 +31,19 @@ export {
   stackHeightForPrimary,
 } from "./stack";
 
-export { activeLandPixelY, activeDropPixelY } from "./active-land";
+export {
+  activeLandPixelY,
+  activeDropPixelY,
+  activeLandPrimaryRow,
+  primaryToPixel,
+  boardOriginY,
+  cellCenterX,
+  cellCenterY,
+  cellTopLeftX,
+  cellTopLeftY,
+  BOARD_ORIGIN_X,
+  BOARD_ORIGIN_Y,
+} from "./pixel";
 
 export { footprintCollides, willCollidePrimary } from "./collision";
 

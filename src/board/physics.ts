@@ -8,7 +8,7 @@
  */
 
 import { gameTicker } from "../runtime";
-import { BOX_SIZE, COLUMNS, LEFT_BORDER, ROWS } from "../config";
+import { COLUMNS, ROWS } from "../config";
 import { SpriteData, getBoardModel } from "../game/board-state";
 import { getOffset } from "../utils/coords";
 import { isFunModeOn } from "../fun/effects";
@@ -22,6 +22,8 @@ import {
   anchorFromFootprint,
   orientFromFootprint,
   placeSpriteAtAnchor,
+  cellTopLeftX,
+  cellTopLeftY,
 } from "./geometry";
 import { ITEM_TOKEN } from "../domain/types";
 
@@ -138,11 +140,9 @@ const fulcrumPixel = (
   pivot: { x: number; y: number },
   dir: 1 | -1,
 ): { x: number; y: number } => {
-  const x =
-    dir === 1
-      ? LEFT_BORDER + (pivot.x + 1) * BOX_SIZE
-      : LEFT_BORDER + pivot.x * BOX_SIZE;
-  const y = (pivot.y + 1) * BOX_SIZE;
+  // Hang-side bottom corner of pivot; same BOARD_ORIGIN as placement.
+  const x = dir === 1 ? cellTopLeftX(pivot.x + 1) : cellTopLeftX(pivot.x);
+  const y = cellTopLeftY(pivot.y + 1);
   return { x, y };
 };
 

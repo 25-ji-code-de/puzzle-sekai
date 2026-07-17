@@ -41,12 +41,14 @@ import honami_1 from "../assets/sounds/chara/honami_1.mp3";
 import honami_2 from "../assets/sounds/chara/honami_2.mp3";
 import shiho_1 from "../assets/sounds/chara/shiho_1.mp3";
 import shiho_2 from "../assets/sounds/chara/shiho_2.mp3";
+
 import minori_1 from "../assets/sounds/chara/minori_1.mp3";
 import haruka_1 from "../assets/sounds/chara/haruka_1.mp3";
 import airi_1 from "../assets/sounds/chara/airi_1.mp3";
 import airi_2 from "../assets/sounds/chara/airi_2.mp3";
 import shizuku_1 from "../assets/sounds/chara/shizuku_1.mp3";
 import shizuku_2 from "../assets/sounds/chara/shizuku_2.mp3";
+
 import kohane_1 from "../assets/sounds/chara/kohane_1.mp3";
 import kohane_2 from "../assets/sounds/chara/kohane_2.mp3";
 import an_1 from "../assets/sounds/chara/an_1.mp3";
@@ -55,6 +57,7 @@ import akito_1 from "../assets/sounds/chara/akito_1.mp3";
 import akito_2 from "../assets/sounds/chara/akito_2.mp3";
 import toya_1 from "../assets/sounds/chara/toya_1.mp3";
 import toya_2 from "../assets/sounds/chara/toya_2.mp3";
+
 import tsukasa_1 from "../assets/sounds/chara/tsukasa_1.mp3";
 import emu_1 from "../assets/sounds/chara/emu_1.mp3";
 import emu_2 from "../assets/sounds/chara/emu_2.mp3";
@@ -63,11 +66,13 @@ import nene_1 from "../assets/sounds/chara/nene_1.mp3";
 import nene_2 from "../assets/sounds/chara/nene_2.mp3";
 import rui_1 from "../assets/sounds/chara/rui_1.mp3";
 import rui_2 from "../assets/sounds/chara/rui_2.mp3";
+
 import kanade_1 from "../assets/sounds/chara/kanade_1.mp3";
 import mafuyu_1 from "../assets/sounds/chara/mafuyu_1.mp3";
 import mafuyu_2 from "../assets/sounds/chara/mafuyu_2.mp3";
 import ena_1 from "../assets/sounds/chara/ena_1.mp3";
 import mizuki_1 from "../assets/sounds/chara/mizuki_1.mp3";
+
 import miku_leo_1 from "../assets/sounds/chara/miku_leo_1.mp3";
 import miku_leo_2 from "../assets/sounds/chara/miku_leo_2.mp3";
 import miku_mmj_1 from "../assets/sounds/chara/miku_mmj_1.mp3";
@@ -75,6 +80,7 @@ import miku_mmj_2 from "../assets/sounds/chara/miku_mmj_2.mp3";
 import miku_vbs_1 from "../assets/sounds/chara/miku_vbs_1.mp3";
 import miku_wxs_1 from "../assets/sounds/chara/miku_wxs_1.mp3";
 import miku_25ji_1 from "../assets/sounds/chara/miku_25ji_1.mp3";
+
 import nenerobo_1 from "../assets/sounds/chara/nenerobo_1.mp3";
 import nenerobo_2 from "../assets/sounds/chara/nenerobo_2.mp3";
 import nenerobo_3 from "../assets/sounds/chara/nenerobo_3.mp3";

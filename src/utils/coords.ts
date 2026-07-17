@@ -1,10 +1,12 @@
-import { BOX_SIZE, LEFT_BORDER } from "../config";
+import { STAGE_HEIGHT } from "../config";
 import { pieces } from "../game/board-state";
 import {
   asOrientation,
   stackHeightForPrimary,
   willCollidePrimary,
   primaryFromSprite,
+  cellCenterX,
+  cellCenterY,
 } from "../board/geometry";
 
 export const getCoordinates = (
@@ -17,9 +19,10 @@ export const moveToCoordinate = (
   sprite: PIXI.Sprite,
   x: number,
   y: number,
+  stageHeight: number = STAGE_HEIGHT,
 ): void => {
-  sprite.x = BOX_SIZE * x + LEFT_BORDER + BOX_SIZE / 2;
-  sprite.y = BOX_SIZE * y + BOX_SIZE / 2;
+  sprite.x = cellCenterX(x);
+  sprite.y = cellCenterY(y, stageHeight);
 };
 
 /** Normalize sprite rotation into 0–3 orientation slots. */
@@ -35,6 +38,9 @@ export const willCollide = (
   y: number,
   rotation: number,
 ): boolean => {
+  if (x === undefined || y === undefined || Number.isNaN(x) || Number.isNaN(y)) {
+    return true;
+  }
   const orient = asOrientation(rotationToOrientation(rotation));
   return willCollidePrimary(pieces, { x, y }, orient, "cell2");
 };
@@ -44,7 +50,6 @@ export const getOffset = (sprite: PIXI.Sprite) =>
 
 /**
  * Stack height under an active standard piece / item (floor-primary coords).
- * Delegates to geometry so land formulas stay consistent with footprint columns.
  */
 export const getStackHeight = (sprite: PIXI.Sprite) => {
   const { x, y } = getCoordinates(sprite, "floor");
@@ -60,3 +65,4 @@ export const getMaxStackHeight = () => {
       return row.some((e) => e !== null) ? index + 1 : acc;
     }, 0);
 };
+

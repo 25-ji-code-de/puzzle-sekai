@@ -5,12 +5,13 @@
  */
 import * as PIXI from "pixi.js-legacy";
 import * as Hammer from "hammerjs";
+import { STAGE_WIDTH, STAGE_HEIGHT } from "./config";
 
 const { Application } = PIXI;
 
 export const app = new Application({
-  width: 1920,
-  height: 1080,
+  width: STAGE_WIDTH,
+  height: STAGE_HEIGHT,
 });
 
 export let bgSprite: PIXI.Sprite;
