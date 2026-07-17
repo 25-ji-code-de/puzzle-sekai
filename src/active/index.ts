@@ -45,6 +45,14 @@ import {
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
 import { loadTexture } from "../assets/load-texture";
+import {
+  canPlaceAt,
+  castDownY,
+  createActiveBody,
+  isContinuousPhysics,
+  stepShiftX,
+  tryRotate,
+} from "../board/dynamics";
 
 export { nextCharacter, initRNG, randomCharacter } from "./rng";
 export { fly, showNextPiece } from "./preview";
@@ -66,6 +74,15 @@ const nearestIndex = (list: number[], target: number): number => {
 
 /** Land / drop pixel Y for a live standard piece. */
 const landYFor = (sprite: PIXI.Sprite): number => {
+  if (isContinuousPhysics()) {
+    return castDownY(
+      "cell2",
+      sprite.x,
+      sprite.y,
+      sprite.rotation,
+      sprite,
+    );
+  }
   const orient = asOrientation(rotationToOrientation(sprite.rotation));
   const primary = primaryFromSprite(sprite, "cell2", "floor");
   // Always use logical STAGE_HEIGHT — app.renderer.height is buffer pixels
@@ -116,14 +133,19 @@ export const createPiece = async (
   const texture = await loadTexture(file);
   const piece = new PIXI.Sprite(texture);
 
+  const continuous = isContinuousPhysics();
   const isMizuki = fileIsCharacter(file, CHAR.Mizuki);
   const isAllergyAvoider = isAllergyAvoiderFile(file);
-  const mizukiLockCols = isMizuki ? getMizukiLockColumns() : [];
+  // truePhysics is continuous space — skip column lock / hazard columns
+  // (fun effects still apply via proximity after land / settle).
+  const mizukiLockCols =
+    !continuous && isMizuki ? getMizukiLockColumns() : [];
   const mizukiLocked = mizukiLockCols.length > 0;
-  const carrotHazards = isAllergyAvoider ? getCarrotHazardColumns() : [];
+  const carrotHazards =
+    !continuous && isAllergyAvoider ? getCarrotHazardColumns() : [];
   const avoidCarrotCols = carrotHazards.length > 0;
 
-  // Spawn: Mizuki prefers contact cols; Ena/Akito avoid contact cols
+  // Spawn: Mizuki prefers contact cols; Ena/Akito avoid contact cols (grid only)
   let spawnCol: number | undefined;
   if (mizukiLocked) {
     spawnCol = mizukiLockCols[Math.floor(mizukiLockCols.length / 2)];
@@ -166,6 +188,28 @@ export const createPiece = async (
 
   const tryShiftToCol = (fromCol: number, targetCol: number, y: number) => {
     if (targetCol < 0 || targetCol >= COLUMNS || targetCol === fromCol) return;
+    if (isContinuousPhysics()) {
+      // Prefer snap to the target column center; if blocked (wide hull / wall),
+      // slide as far as possible in that direction (partial cell).
+      const targetX = LEFT_BORDER + targetCol * BOX_SIZE + BOX_SIZE / 2;
+      const dir: -1 | 1 = targetX >= piece.x ? 1 : -1;
+      const desired = Math.abs(targetX - piece.x) || BOX_SIZE;
+      const nx = stepShiftX(
+        "cell2",
+        piece.x,
+        piece.y,
+        piece.rotation,
+        dir,
+        desired,
+        piece,
+      );
+      if (nx === null) return;
+      // Snap when we fully reached the column center
+      piece.x =
+        Math.abs(nx - targetX) < 0.75 ? targetX : nx;
+      activeFall.onMoved();
+      return;
+    }
     if (
       willCollidePrimary(
         getGrid(),
@@ -205,15 +249,39 @@ export const createPiece = async (
   };
 
   const moveFree = (direction: -1 | 1) => {
+    if (isContinuousPhysics()) {
+      // Full cell step, else residual slide to wall / rubble
+      const nx = stepShiftX(
+        "cell2",
+        piece.x,
+        piece.y,
+        piece.rotation,
+        direction,
+        BOX_SIZE,
+        piece,
+      );
+      if (nx === null) return;
+      // If we landed near a column center, snap for discrete feel
+      const col = Math.round((nx - LEFT_BORDER - BOX_SIZE / 2) / BOX_SIZE);
+      const centerX = LEFT_BORDER + col * BOX_SIZE + BOX_SIZE / 2;
+      piece.x =
+        Math.abs(nx - centerX) < 0.75 &&
+        canPlaceAt("cell2", centerX, piece.y, piece.rotation, piece)
+          ? centerX
+          : nx;
+      activeFall.onMoved();
+      return;
+    }
     tryShiftToCol(currentCol(), currentCol() + direction, pieceY());
   };
 
   const moveToAllowedCol = (direction: -1 | 1) => {
-    if (mizukiLocked) {
+    // Column-lock / hazard-skip only on the grid path.
+    if (!continuous && mizukiLocked) {
       moveAlongLockedCols(direction);
       return;
     }
-    if (avoidCarrotCols) {
+    if (!continuous && avoidCarrotCols) {
       moveAvoidingHazards(direction);
       return;
     }
@@ -221,6 +289,14 @@ export const createPiece = async (
   };
 
   const moveUp = () => {
+    if (isContinuousPhysics()) {
+      const ny = piece.y - BOX_SIZE;
+      if (canPlaceAt("cell2", piece.x, ny, piece.rotation, piece)) {
+        piece.y = ny;
+        activeFall.onMoved();
+      }
+      return;
+    }
     const { x, y } = primaryFromSprite(piece, "cell2", "ceil");
     if (
       y >= 0 &&
@@ -239,6 +315,15 @@ export const createPiece = async (
   const canLift = fileIsCharacter(file, CHAR.Emu);
 
   const rotateCW = () => {
+    if (isContinuousPhysics()) {
+      const res = tryRotate("cell2", piece.x, piece.y, piece.rotation, 1, piece);
+      if (!res) return;
+      piece.x = res.x;
+      piece.y = res.y;
+      piece.rotation = res.rotation;
+      activeFall.onMoved();
+      return;
+    }
     const { x, y } = primaryFromSprite(piece, "cell2", "ceil");
     if (
       !willCollidePrimary(
@@ -255,6 +340,22 @@ export const createPiece = async (
   };
 
   const rotateCCW = () => {
+    if (isContinuousPhysics()) {
+      const res = tryRotate(
+        "cell2",
+        piece.x,
+        piece.y,
+        piece.rotation,
+        -1,
+        piece,
+      );
+      if (!res) return;
+      piece.x = res.x;
+      piece.y = res.y;
+      piece.rotation = res.rotation;
+      activeFall.onMoved();
+      return;
+    }
     const { x, y } = primaryFromSprite(piece, "cell2", "ceil");
     if (
       !willCollidePrimary(
@@ -291,9 +392,19 @@ export const createPiece = async (
 
   app.stage.addChild(piece);
 
+  if (isContinuousPhysics()) {
+    createActiveBody(piece, "cell2", {
+      assetFile: file,
+    });
+  }
+
   const finish = () => {
     unbind();
     activeFall.stop();
+    if (isContinuousPhysics()) {
+      // Active body is converted to dynamic in commitLandContinuous
+      // (or removed if land path recreates). Keep reference for land.
+    }
     const dropScore = activeFall.getDropScore();
     if (dropScore > 0) addDropScore(dropScore);
 

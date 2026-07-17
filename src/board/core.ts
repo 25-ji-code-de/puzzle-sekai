@@ -41,6 +41,7 @@ import {
 import type { CharacterName } from "../characters/ids";
 import type { GroupName } from "../settings/types";
 import { registerEntitySprite } from "../presentation/entity-view";
+import { isContinuousPhysics, commitLandContinuous } from "./dynamics";
 
 const kindOf = (entry: {
   character?: Pick<CharacterData, "name"> | SpriteData["character"];
@@ -59,6 +60,7 @@ const orientOf = (sprite: PIXI.Sprite) =>
 /**
  * Land a sprite into the board grid from its current pixel pose.
  * Builds footprint, writes grid, assigns entity id, then snaps pixels.
+ * truePhysics: delegates to continuous land (no grid write).
  */
 export const commitLandedSprite = (
   sprite: PIXI.Sprite,
@@ -70,6 +72,11 @@ export const commitLandedSprite = (
   let idx = sprites.findIndex((s) => s.sprite === sprite);
   if (idx < 0) idx = index;
   if (!sprites[idx]) return;
+
+  if (isContinuousPhysics()) {
+    commitLandContinuous(sprite, idx, character, isItem);
+    return;
+  }
 
   const kind = pieceKindFrom({
     characterName: character?.name ?? sprites[idx].character?.name,
@@ -268,11 +275,18 @@ const applyFalls = async (plans: FallPlan[]) => {
 };
 
 /**
- * Gravity settle + optional cantilever tips.
+ * Gravity settle + optional cantilever tips (grid path).
+ * truePhysics: Rapier settleWorld instead.
  * Cell-driven: drop by footprint, never by rotation/orientation.
  * Hard-capped loop so empty-cells / desync can't freeze the tab.
  */
 export const fallChunk = async (spritesList: SpriteData[]) => {
+  const { isContinuousPhysics, continuousSettle } = await import("./dynamics");
+  if (isContinuousPhysics()) {
+    await continuousSettle();
+    return;
+  }
+
   const MAX_STEPS = 48;
 
   for (let step = 0; step < MAX_STEPS; step++) {

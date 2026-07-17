@@ -1,7 +1,7 @@
 /**
  * Simplified physics engines for entertainment modes.
  * - cantilever: rigid-body tip over a one-sided support (seesaw / pry-up feel)
- * - truePhysics: registered only (not implemented yet)
+ * - truePhysics: full Rapier2D path lives in board/dynamics/* (mutually exclusive)
  *
  * 2×2 pieces (NeneRobo / Mikudayo) tip the same way as horizontal 2-cell pieces:
  * only one bottom column supported - rotate 90deg over the support edge.

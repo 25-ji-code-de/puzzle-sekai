@@ -186,7 +186,7 @@ export const en = {
       name: "True Physics",
       subtitle: "Center of mass, torque, then chaos",
       description:
-        'Full rigid-body physics (in development). Stability is computed from mass, center of mass, and support surfaces, allowing stacks to topple, slide, and cascade-collapse.\nThis version only registers the mode; the simulation will land later. Mutually exclusive with Cantilever Tip.\n\n"...Sir Isaac, please be gentle with this SEKAI."',
+        'Full rigid-body physics powered by Rapier2D. Pieces fall and stack with real mass, friction, and torque; stacks can topple, slide, and cascade-collapse. Group clears use contact proximity instead of the grid.\nThe physics engine package is downloaded the first time you enable this mode. Mutually exclusive with Cantilever Tip.\n\n"...Sir Isaac, please be gentle with this SEKAI."',
     },
   },
   inGame: {

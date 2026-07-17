@@ -20,7 +20,7 @@ const MIKUDAYO = CHAR.Mikudayo;
  * - required: all must be present
  * - specials: need any one (Mikudayo also counts)
  */
-const GROUP_RULES: Record<
+export const GROUP_RULES: Record<
   GroupName,
   { required: CharacterName[]; specials: CharacterName[] }
 > = {
@@ -46,6 +46,16 @@ const GROUP_RULES: Record<
   },
 };
 
+export const characterGroupOf = (
+  name: CharacterName | string | undefined | null,
+): GroupName | "Special" | undefined => {
+  if (!name) return undefined;
+  return groupMap[name as CharacterName];
+};
+
+export const isMikudayoName = (name: string | undefined | null): boolean =>
+  name === MIKUDAYO;
+
 /** Same group, or either side is Mikudayo. Item never bridges. */
 const isConnected = (a: BoardCell, b: BoardCell): boolean => {
   if (a == null || b == null) return false;
@@ -54,7 +64,20 @@ const isConnected = (a: BoardCell, b: BoardCell): boolean => {
   return !!groupMap[a] && groupMap[a] === groupMap[b];
 };
 
-const isGroupComplete = (
+/** Name-level connection for continuous-space graphs. */
+export const namesConnected = (
+  a: string | undefined | null,
+  b: string | undefined | null,
+): boolean => {
+  if (!a || !b) return false;
+  if (a === ITEM_TOKEN || b === ITEM_TOKEN) return false;
+  if (a === MIKUDAYO || b === MIKUDAYO) return true;
+  const ga = groupMap[a as CharacterName];
+  const gb = groupMap[b as CharacterName];
+  return !!ga && ga === gb;
+};
+
+export const isGroupComplete = (
   group: GroupName,
   names: Set<string>,
   hasMikudayo: boolean,

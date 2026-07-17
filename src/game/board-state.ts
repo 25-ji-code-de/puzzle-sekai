@@ -14,7 +14,7 @@ import { clearEntitySprites } from "../presentation/entity-view";
 
 export interface SpriteData {
   sprite: PIXI.Sprite;
-  /** Settled footprint in grid space (branded cells). */
+  /** Settled footprint in grid space (branded cells). Undefined in truePhysics. */
   cells?: Cell[];
   character?: { name: CharacterName; group: GroupName | "Special" };
   isItem?: boolean;
@@ -22,6 +22,13 @@ export interface SpriteData {
   isShrunk?: boolean;
   /** Domain entity id once settled (assigned in commitLandedSprite / shrink). */
   entityId?: EntityId;
+  /**
+   * Continuous-physics soft pose (truePhysics only).
+   * Authoritative pose still lives on the Rapier body + sprite.
+   */
+  pose?: { x: number; y: number; rotation: number };
+  /** Cell-equivalent mass for continuous scoring (truePhysics). */
+  mass?: number;
 }
 
 export let sprites: SpriteData[] = [];

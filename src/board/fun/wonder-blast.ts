@@ -1,5 +1,5 @@
 /**
- * ショウタイム爆破 — Rui + NeneRobo clear adjacency blasts random cells.
+ * ショウタイム爆破 — Rui + NeneRobo clear adjacency blasts random cells/entities.
  */
 import { addScore } from "../../score";
 import { ROWS, COLUMNS } from "../../config";
@@ -9,8 +9,26 @@ import { createParticles } from "../particles";
 import { removeSpritesFromBoard } from "../mutate";
 import { anyPairAdjacent, shuffleInPlace } from "../grid";
 import { CHAR } from "../../characters/ids";
+import {
+  entitiesTouching,
+  isContinuousPhysics,
+  massOfKind,
+} from "../dynamics";
+import { pieceKindFrom } from "../../domain/types";
 
-/** Pick sprites until `blastTarget` cells are covered. */
+const scoreUnits = (sp: SpriteData): number => {
+  if (typeof sp.mass === "number") return sp.mass;
+  if (sp.cells?.length) return sp.cells.length;
+  return massOfKind(
+    pieceKindFrom({
+      characterName: sp.character?.name,
+      isItem: sp.isItem,
+      isShrunk: sp.isShrunk,
+    }),
+  );
+};
+
+/** Pick sprites until `blastTarget` mass units are covered. */
 const pickBlastTargets = (
   candidates: SpriteData[],
   blastTarget: number,
@@ -20,9 +38,50 @@ const pickBlastTargets = (
   for (const sp of candidates) {
     if (cellsCleared >= blastTarget) break;
     remove.push(sp);
-    cellsCleared += sp.cells?.length ?? 1;
+    cellsCleared += scoreUnits(sp);
   }
   return { remove, cellsCleared };
+};
+
+const continuousPairTouch = (
+  aList: SpriteData[],
+  bList: SpriteData[],
+): boolean => {
+  for (const a of aList) {
+    const aKind = pieceKindFrom({
+      characterName: a.character?.name,
+      isShrunk: a.isShrunk,
+    });
+    for (const b of bList) {
+      const bKind = pieceKindFrom({
+        characterName: b.character?.name,
+        isShrunk: b.isShrunk,
+      });
+      if (
+        entitiesTouching(
+          {
+            kind: aKind,
+            pose: {
+              x: a.sprite.x,
+              y: a.sprite.y,
+              rotation: a.sprite.rotation,
+            },
+          },
+          {
+            kind: bKind,
+            pose: {
+              x: b.sprite.x,
+              y: b.sprite.y,
+              rotation: b.sprite.rotation,
+            },
+          },
+        )
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
 };
 
 /**
@@ -36,7 +95,11 @@ export const applyWonderBlast = (cleared: SpriteData[]): boolean => {
     (sp) => sp.character?.name === CHAR.NeneRobo,
   );
   if (ruiSprites.length === 0 || neneRoboSprites.length === 0) return false;
-  if (!anyPairAdjacent(ruiSprites, neneRoboSprites)) return false;
+
+  const adjacent = isContinuousPhysics()
+    ? continuousPairTouch(ruiSprites, neneRoboSprites)
+    : anyPairAdjacent(ruiSprites, neneRoboSprites);
+  if (!adjacent) return false;
 
   const ruiNeneCount = ruiSprites.length + neneRoboSprites.length;
   const halfBoard = Math.floor((ROWS * COLUMNS) / 2);
@@ -44,7 +107,13 @@ export const applyWonderBlast = (cleared: SpriteData[]): boolean => {
   if (blastTarget <= 0) return false;
 
   const candidates = shuffleInPlace(
-    sprites.filter((sp) => sp.cells && sp.cells.length > 0).slice(),
+    sprites
+      .filter((sp) =>
+        isContinuousPhysics()
+          ? !!sp.entityId
+          : !!(sp.cells && sp.cells.length > 0),
+      )
+      .slice(),
   );
   const { remove, cellsCleared } = pickBlastTargets(candidates, blastTarget);
   if (remove.length === 0) return false;

@@ -34,12 +34,23 @@ import { fileIsBig2x2 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
 import { loadTexture } from "../assets/load-texture";
+import {
+  canPlaceAt,
+  castDownY,
+  createActiveBody,
+  isContinuousPhysics,
+  stepShiftX,
+  tryRotate,
+} from "../board/dynamics";
 
 const KIND = "big2x2" as const;
 /** 2×2 footprint is orientation-independent for collision / stack. */
 const ORIENT = 0 as const;
 
 const landYFor = (sprite: PIXI.Sprite): number => {
+  if (isContinuousPhysics()) {
+    return castDownY(KIND, sprite.x, sprite.y, sprite.rotation, sprite);
+  }
   const primary = primaryFromSprite(sprite, KIND, "floor");
   return activeLandPixelY(
     KIND,
@@ -59,6 +70,31 @@ const tryMovePrimary = (
   dy: number,
   onMoved: () => void,
 ): boolean => {
+  if (isContinuousPhysics()) {
+    if (dx !== 0 && dy === 0) {
+      const dir: -1 | 1 = dx > 0 ? 1 : -1;
+      const nx = stepShiftX(
+        KIND,
+        sprite.x,
+        sprite.y,
+        sprite.rotation,
+        dir,
+        Math.abs(dx) * BOX_SIZE,
+        sprite,
+      );
+      if (nx === null) return false;
+      sprite.x = nx;
+      onMoved();
+      return true;
+    }
+    const nx = sprite.x + dx * BOX_SIZE;
+    const ny = sprite.y + dy * BOX_SIZE;
+    if (!canPlaceAt(KIND, nx, ny, sprite.rotation, sprite)) return false;
+    sprite.x = nx;
+    sprite.y = ny;
+    onMoved();
+    return true;
+  }
   const { x, y } = primaryFromSprite(sprite, KIND, "ceil");
   const next = { x: x + dx, y: y + dy };
   if (willCollidePrimary(getGrid(), next, ORIENT, KIND)) return false;
@@ -105,11 +141,43 @@ export const createNeneRobo = async (
   };
 
   const rotateCW = () => {
+    if (isContinuousPhysics()) {
+      const res = tryRotate(
+        KIND,
+        nenerobo.x,
+        nenerobo.y,
+        nenerobo.rotation,
+        1,
+        nenerobo,
+      );
+      if (!res) return;
+      nenerobo.x = res.x;
+      nenerobo.y = res.y;
+      nenerobo.rotation = res.rotation;
+      fall.onMoved();
+      return;
+    }
     nenerobo.rotation += Math.PI / 2;
     fall.onMoved();
   };
 
   const rotateCCW = () => {
+    if (isContinuousPhysics()) {
+      const res = tryRotate(
+        KIND,
+        nenerobo.x,
+        nenerobo.y,
+        nenerobo.rotation,
+        -1,
+        nenerobo,
+      );
+      if (!res) return;
+      nenerobo.x = res.x;
+      nenerobo.y = res.y;
+      nenerobo.rotation = res.rotation;
+      fall.onMoved();
+      return;
+    }
     nenerobo.rotation -= Math.PI / 2;
     fall.onMoved();
   };
@@ -134,6 +202,12 @@ export const createNeneRobo = async (
   });
 
   app.stage.addChild(nenerobo);
+
+  if (isContinuousPhysics()) {
+    createActiveBody(nenerobo, KIND, {
+      assetFile: file,
+    });
+  }
 
   const finish = () => {
     unbind();

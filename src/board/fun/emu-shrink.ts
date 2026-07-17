@@ -1,5 +1,6 @@
 /**
  * えむちぢみ — Mafuyu adjacent to full-size Emu shrinks Emu to 1 cell.
+ * Continuous: proximity + rebuild Rapier collider.
  */
 import { BOX_SIZE } from "../../config";
 import { SpriteData, sprites, getBoardModel } from "../../game/board-state";
@@ -17,6 +18,14 @@ import {
 } from "../../presentation/entity-view";
 import { CHAR } from "../../characters/ids";
 import { playLoadedSfx } from "../../audio/sfx";
+import {
+  entitiesTouching,
+  isContinuousPhysics,
+  massOfKind,
+  commitDynamicBody,
+  continuousRemoveBody,
+} from "../dynamics";
+import { pieceKindFrom } from "../../domain/types";
 
 const collectMafuyuCells = (): Cell[] => {
   const cells: Cell[] = [];
@@ -60,6 +69,80 @@ const pickKeepCell = (emuCells: Cell[], mafuyuCells: Cell[]): Cell => {
     if (b[1] !== a[1]) return b[1] - a[1];
     return b[0] - a[0];
   })[0];
+};
+
+const shrinkEmuContinuous = (sp: SpriteData): boolean => {
+  if (sp.character?.name !== CHAR.Emu) return false;
+  if (sp.isShrunk) return false;
+  const kind = pieceKindFrom({
+    characterName: sp.character.name,
+    isShrunk: false,
+  });
+  if (kind !== "cell2") return false;
+
+  const mafuyus = sprites.filter((s) => s.character?.name === CHAR.Mafuyu);
+  const emuEnt = {
+    kind: "cell2" as const,
+    pose: {
+      x: sp.sprite.x,
+      y: sp.sprite.y,
+      rotation: sp.sprite.rotation,
+    },
+  };
+  let near = false;
+  let mafuyuX = sp.sprite.x;
+  for (const m of mafuyus) {
+    const mKind = pieceKindFrom({
+      characterName: m.character?.name,
+      isShrunk: m.isShrunk,
+    });
+    if (
+      entitiesTouching(emuEnt, {
+        kind: mKind,
+        pose: {
+          x: m.sprite.x,
+          y: m.sprite.y,
+          rotation: m.sprite.rotation,
+        },
+      })
+    ) {
+      near = true;
+      mafuyuX = m.sprite.x;
+      break;
+    }
+  }
+  if (!near) return false;
+
+  // Offset away from Mafuyu on X
+  const dir = sp.sprite.x >= mafuyuX ? 1 : -1;
+  const nx = sp.sprite.x + dir * (BOX_SIZE * 0.25);
+  const ny = sp.sprite.y;
+
+  sp.isShrunk = true;
+  sp.cells = undefined;
+  sp.mass = massOfKind("shrunk");
+
+  const sprite = sp.sprite;
+  sprite.anchor.set(0.5, 0.5);
+  sprite.width = BOX_SIZE;
+  sprite.height = BOX_SIZE;
+  sprite.x = nx;
+  sprite.y = ny;
+
+  if (sp.entityId) {
+    continuousRemoveBody(sp.entityId);
+    unregisterEntitySprite(sp.entityId);
+  }
+  const ent = makeShrunkEntity({
+    character: CHAR.Emu,
+    cells: [asCell([0, 0])],
+  });
+  sp.entityId = ent.id;
+  registerEntitySprite(ent.id, sprite);
+  commitDynamicBody(ent.id, sprite, "shrunk");
+
+  playLoadedSfx("emuShrink", "sfx", SFX_EFFECT_BASE);
+  return true;
 };
 
 /** Shrink one full-size Emu to a single cell. Returns true if shrunk. */
@@ -108,6 +191,19 @@ export const tryEmuShrink = async (): Promise<boolean> => {
   let anyShrunk = false;
 
   while (true) {
+    if (isContinuousPhysics()) {
+      let shrunkThisPass = false;
+      for (const sp of sprites) {
+        if (shrinkEmuContinuous(sp)) {
+          shrunkThisPass = true;
+          anyShrunk = true;
+        }
+      }
+      if (!shrunkThisPass) break;
+      await fallChunk(sprites);
+      continue;
+    }
+
     const mafuyuCells = collectMafuyuCells();
     if (mafuyuCells.length === 0) break;
 

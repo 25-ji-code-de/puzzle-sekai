@@ -9,6 +9,12 @@ import { pieceKindFrom, rotationToOrientation } from "../../domain/types";
 import { primaryFromSprite } from "../../presentation/placement";
 import { runItemLandEffects, runCharacterLandEffects } from "../fun-effects";
 import { isMatchOpen } from "./match-gate";
+import {
+  anyBodyAboveTopOut,
+  isContinuousPhysics,
+  projectToColumn,
+} from "../../board/dynamics";
+import { BOARD_ORIGIN_Y, BOX_SIZE } from "../../config";
 
 export type LandOutcome = {
   scored: boolean;
@@ -23,6 +29,29 @@ export const handleItemLand = async (
   y: number,
 ): Promise<LandOutcome> => {
   if (!isMatchOpen()) return { scored: false, topOut: false };
+
+  if (isContinuousPhysics()) {
+    // Pixel-space top-out: locked with center still above playfield band
+    if (sprite.y < BOARD_ORIGIN_Y - BOX_SIZE) {
+      return { scored: false, topOut: true };
+    }
+    commitLandedSprite(sprite, spriteIndex, undefined, true);
+    if (!isMatchOpen()) return { scored: false, topOut: false };
+    const col = projectToColumn(sprite.x);
+    const landFx = await runItemLandEffects({
+      itemFile,
+      x: col,
+      y: 0,
+    });
+    if (!isMatchOpen()) return { scored: false, topOut: false };
+    const { cleared } = await settleBoard();
+    if (!isMatchOpen()) return { scored: false, topOut: false };
+    if (anyBodyAboveTopOut()) return { scored: false, topOut: true };
+    const scored = !!(landFx.scored || cleared);
+    if (!scored) resetCombo();
+    return { scored, topOut: false };
+  }
+
   if (y < 0) return { scored: false, topOut: true };
   commitLandedSprite(sprite, spriteIndex, undefined, true);
   if (!isMatchOpen()) return { scored: false, topOut: false };
@@ -41,6 +70,26 @@ export const handleCharacterLand = async (
   character: CharacterData,
 ): Promise<LandOutcome> => {
   if (!isMatchOpen()) return { scored: false, topOut: false };
+
+  if (isContinuousPhysics()) {
+    if (sprite.y < BOARD_ORIGIN_Y - BOX_SIZE) {
+      return { scored: false, topOut: true };
+    }
+    commitLandedSprite(sprite, spriteIndex, character);
+    if (!isMatchOpen()) return { scored: false, topOut: false };
+    const landFx = await runCharacterLandEffects({
+      spriteIndex,
+      name: character.name,
+    });
+    if (!isMatchOpen()) return { scored: false, topOut: false };
+    const { cleared } = await settleBoard();
+    if (!isMatchOpen()) return { scored: false, topOut: false };
+    if (anyBodyAboveTopOut()) return { scored: false, topOut: true };
+    const scored = !!(landFx.scored || cleared);
+    if (!scored) resetCombo();
+    return { scored, topOut: false };
+  }
+
   const kind = pieceKindFrom({ characterName: character.name });
   const { y } = primaryFromSprite(sprite, kind);
   const orientation = rotationToOrientation(sprite.rotation);

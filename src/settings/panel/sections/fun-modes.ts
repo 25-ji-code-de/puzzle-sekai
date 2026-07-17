@@ -66,6 +66,9 @@ export const appendFunModesSection = (
           if (other !== def.id) settings.funModes[other] = false;
         }
       }
+      if (next && def.id === "truePhysics") {
+        void import("../../../board/dynamics").then((m) => m.warmRapier());
+      }
       commitAndRefresh(ctx);
     };
     chipRow.appendChild(opt);

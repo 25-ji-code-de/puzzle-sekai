@@ -1135,6 +1135,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dimforge/rapier2d-compat@npm:^0.19.3":
+  version: 0.19.3
+  resolution: "@dimforge/rapier2d-compat@npm:0.19.3"
+  checksum: 10c0/459fb25aade438544b4070404916844da6fddbb5c506ed1560d6bff2f393a00f285623b4ad7d50f6c3b30b9505d1a696a29794fb5830e772c8e551e24b5c8aae
+  languageName: node
+  linkType: hard
+
 "@emnapi/runtime@npm:^1.11.1":
   version: 1.11.2
   resolution: "@emnapi/runtime@npm:1.11.2"
@@ -4525,6 +4532,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "puzzle-sekai@workspace:."
   dependencies:
+    "@dimforge/rapier2d-compat": "npm:^0.19.3"
     "@types/hammerjs": "npm:^2.0.36"
     hammerjs: "npm:^2.0.8"
     pixi-sound: "npm:^3.0.4"

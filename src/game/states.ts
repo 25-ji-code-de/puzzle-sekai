@@ -26,7 +26,7 @@ import {
   decrementTime,
 } from "../score";
 import { getCurrentGameMode, getCurrentSettings } from "../settings";
-import { resetFunEffects } from "../fun/effects";
+import { resetFunEffects, isFunModeOn } from "../fun/effects";
 import { setPlayPhase, isPausedPhase } from "../application/play-session/phase";
 import {
   openMatch,
@@ -50,6 +50,10 @@ import {
   setBgmSessionPaused,
 } from "../audio/session";
 import { sprites, clearSpritesList, resetGrid } from "./board-state";
+import {
+  ensureContinuousReady,
+  teardownContinuous,
+} from "../board/dynamics";
 
 export { welcome } from "../ui/welcome";
 export { isPlayActive } from "../application/play-session/phase";
@@ -109,6 +113,7 @@ const clearStage = () => {
   });
   clearSpritesList();
   resetGameTicker();
+  teardownContinuous();
   if (endAnimation) {
     clearTimeout(endAnimation);
     endAnimation = undefined;
@@ -190,11 +195,22 @@ const start = () => {
   resetFunEffects();
   openMatch();
   gameTicker.start();
-  // Prefer having a preview ready; create never hard-blocks if it is missing.
-  void ensureNextPreview().finally(() => {
+
+  const boot = async () => {
+    if (isFunModeOn("truePhysics")) {
+      const ok = await ensureContinuousReady();
+      if (!ok) {
+        console.warn(
+          "[start] truePhysics unavailable; match continues on grid path",
+        );
+      }
+    }
+    await ensureNextPreview();
     if (!isMatchOpen() || ending) return;
     setState(create);
-  });
+  };
+  void boot();
+
   startPlayBgm();
   const mode = getCurrentGameMode();
   if (mode === "timeAttack") {

@@ -1,10 +1,11 @@
 /**
  * Clear cascade orchestration + group clear entry point.
  * Fun contacts after settle go through application/fun-effects registry.
+ * truePhysics: continuous contact clears instead of grid findClearChunk.
  */
 import { groupSounds } from "../characters/data";
 import { addScore } from "../score";
-import { sprites, getGrid } from "../game/board-state";
+import { sprites, getGrid, type SpriteData } from "../game/board-state";
 import {
   onKanadeCleared,
   onShizukuCleared,
@@ -20,6 +21,12 @@ import {
   runSettledEffects,
   runClearedEffects,
 } from "../application/fun-effects";
+import {
+  findClearEntities,
+  isContinuousPhysics,
+  massOfKind,
+} from "./dynamics";
+import { pieceKindFrom } from "../domain/types";
 
 /**
  * After gravity + cantilever tips settle: re-check fun contacts via plugins.
@@ -32,6 +39,40 @@ const runPostGravityEffects = async (): Promise<boolean> => {
   return changed;
 };
 
+const scoreUnitsOf = (sp: SpriteData): number => {
+  if (typeof sp.mass === "number") return sp.mass;
+  if (sp.cells?.length) return sp.cells.length;
+  return massOfKind(
+    pieceKindFrom({
+      characterName: sp.character?.name,
+      isItem: sp.isItem,
+      isShrunk: sp.isShrunk,
+    }),
+  );
+};
+
+const findContinuousClearSprites = (): SpriteData[] => {
+  const views = sprites
+    .filter((sp) => sp.entityId)
+    .map((sp) => ({
+      id: sp.entityId as string,
+      kind: pieceKindFrom({
+        characterName: sp.character?.name,
+        isItem: sp.isItem,
+        isShrunk: sp.isShrunk,
+      }),
+      pose: {
+        x: sp.sprite.x,
+        y: sp.sprite.y,
+        rotation: sp.sprite.rotation,
+      },
+      isItem: !!sp.isItem,
+      characterName: sp.character?.name,
+    }));
+  const ids = new Set(findClearEntities(views));
+  return sprites.filter((sp) => sp.entityId && ids.has(sp.entityId));
+};
+
 /**
  * Full board settle: gravity + tips → fun contacts → clears → repeat
  * until nothing moves. Call after any land / tip that may rearrange cells.
@@ -41,6 +82,8 @@ const runPostGravityEffects = async (): Promise<boolean> => {
  */
 export const settleBoard = async (): Promise<{ cleared: boolean }> => {
   let cleared = false;
+  const continuous = isContinuousPhysics();
+
   for (let guard = 0; guard < 32; guard++) {
     await fallChunk(sprites);
 
@@ -52,12 +95,22 @@ export const settleBoard = async (): Promise<{ cleared: boolean }> => {
       sprites.some((sp) => sp.character?.name === CHAR.Shiho),
     );
 
-    let chunk = findClearChunk(getGrid());
-    while (chunk !== undefined) {
-      changed = true;
-      cleared = true;
-      await clearChunk(chunk);
-      chunk = findClearChunk(getGrid());
+    if (continuous) {
+      let toRemove = findContinuousClearSprites();
+      while (toRemove.length > 0) {
+        changed = true;
+        cleared = true;
+        await clearSprites(toRemove);
+        toRemove = findContinuousClearSprites();
+      }
+    } else {
+      let chunk = findClearChunk(getGrid());
+      while (chunk !== undefined) {
+        changed = true;
+        cleared = true;
+        await clearChunk(chunk);
+        chunk = findClearChunk(getGrid());
+      }
     }
 
     if (!changed) break;
@@ -65,13 +118,12 @@ export const settleBoard = async (): Promise<{ cleared: boolean }> => {
   return { cleared };
 };
 
-export const clearChunk = async (
-  chunk: [number, number][],
+/** Shared clear path for a known sprite list (grid or continuous). */
+export const clearSprites = async (
+  toRemove: SpriteData[],
   options?: { silent?: boolean },
 ) => {
   const silent = options?.silent === true;
-  const toRemove = spritesInChunk(chunk);
-
   if (toRemove.length === 0) return;
 
   if (toRemove.some((sp) => sp.character?.name === CHAR.Kanade)) {
@@ -86,7 +138,8 @@ export const clearChunk = async (
     onShizukuCleared(shihoOnBoard);
   }
 
-  addScore(chunk.length);
+  const units = toRemove.reduce((sum, sp) => sum + scoreUnitsOf(sp), 0);
+  addScore(units);
 
   const clearedGroup = toRemove.find((sp) => sp.character?.group)?.character
     ?.group;
@@ -122,4 +175,12 @@ export const clearChunk = async (
       await new Promise((r) => setTimeout(r, remaining));
     }
   }
+};
+
+export const clearChunk = async (
+  chunk: [number, number][],
+  options?: { silent?: boolean },
+) => {
+  const toRemove = spritesInChunk(chunk);
+  await clearSprites(toRemove, options);
 };

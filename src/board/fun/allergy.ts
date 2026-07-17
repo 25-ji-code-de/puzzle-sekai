@@ -1,6 +1,7 @@
 /**
  * にんじん嫌い — carrot allergy fun mode.
  * Ena/Akito touching a carrot are silently cleared.
+ * Grid path: cell ortho. Continuous: body proximity.
  */
 import { SpriteData, sprites, getGrid } from "../../game/board-state";
 import {
@@ -15,6 +16,9 @@ import { spritesInChunk } from "../mutate";
 import { addScore } from "../../score";
 import { CHAR, isAllergyAvoiderName } from "../../characters/ids";
 import { playLoadedSfx } from "../../audio/sfx";
+import { characterTouchesItem } from "../contact";
+import { isContinuousPhysics, massOfKind } from "../dynamics";
+import { pieceKindFrom } from "../../domain/types";
 
 const playCarrotAllergySfx = (name?: string) => {
   const key =
@@ -27,9 +31,20 @@ const playCarrotAllergySfx = (name?: string) => {
   playLoadedSfx(key, "voice", 0.5);
 };
 
+const scoreUnits = (sp: SpriteData): number => {
+  if (typeof sp.mass === "number") return sp.mass;
+  if (sp.cells?.length) return sp.cells.length;
+  return massOfKind(
+    pieceKindFrom({
+      characterName: sp.character?.name,
+      isItem: sp.isItem,
+      isShrunk: sp.isShrunk,
+    }),
+  );
+};
+
 /** Silent clear of allergy victims (no group voice / wonder blast). */
-const silentClearChunk = async (chunk: [number, number][]): Promise<void> => {
-  const toRemove = spritesInChunk(chunk);
+const silentClearSprites = async (toRemove: SpriteData[]): Promise<void> => {
   if (toRemove.length === 0) return;
 
   if (toRemove.some((sp) => sp.character?.name === CHAR.Kanade)) {
@@ -44,8 +59,27 @@ const silentClearChunk = async (chunk: [number, number][]): Promise<void> => {
     onShizukuCleared(shihoOnBoard);
   }
 
-  addScore(chunk.length);
+  addScore(toRemove.reduce((s, sp) => s + scoreUnits(sp), 0));
   await playClearAnimation(toRemove);
+};
+
+const silentClearChunk = async (chunk: [number, number][]): Promise<void> => {
+  await silentClearSprites(spritesInChunk(chunk));
+};
+
+const clearAllergySprites = async (toClear: SpriteData[]): Promise<boolean> => {
+  if (toClear.length === 0) return false;
+
+  const played = new Set<string>();
+  for (const sp of toClear) {
+    const n = sp.character?.name;
+    if (n && !played.has(n)) {
+      playCarrotAllergySfx(n);
+      played.add(n);
+    }
+  }
+  await silentClearSprites(toClear);
+  return true;
 };
 
 const clearAllergyCells = async (
@@ -88,6 +122,11 @@ export const applyCarrotAllergy = async (
 ): Promise<boolean> => {
   if (!isFunModeOn("itemAllergy")) return false;
 
+  if (isContinuousPhysics()) {
+    // Continuous: recheck proximity globally (item coords are approximate)
+    return recheckCarrotAllergy();
+  }
+
   const allergyCells = new Set<string>();
   const grid = getGrid();
 
@@ -123,10 +162,19 @@ export const applyCarrotAllergyOnCharacter = async (
 ): Promise<boolean> => {
   if (!isFunModeOn("itemAllergy")) return false;
   const sp = sprites[characterIndex];
-  if (!sp?.cells?.length) return false;
+  if (!sp) return false;
   if (!isAllergyAvoiderName(sp.character?.name)) {
     return false;
   }
+
+  if (isContinuousPhysics()) {
+    if (!characterTouchesItem(sp, isCarrotItem)) return false;
+    playCarrotAllergySfx(sp.character?.name);
+    await silentClearSprites([sp]);
+    return true;
+  }
+
+  if (!sp.cells?.length) return false;
 
   let touchesCarrot = false;
   outer: for (const [cx, cy] of sp.cells) {
@@ -158,6 +206,15 @@ export const applyCarrotAllergyOnCharacter = async (
  */
 export const recheckCarrotAllergy = async (): Promise<boolean> => {
   if (!isFunModeOn("itemAllergy")) return false;
+
+  if (isContinuousPhysics()) {
+    const toClear = sprites.filter(
+      (sp) =>
+        isAllergyAvoiderName(sp.character?.name) &&
+        characterTouchesItem(sp, isCarrotItem),
+    );
+    return clearAllergySprites(toClear);
+  }
 
   const allergyCells = new Set<string>();
   for (const sp of sprites) {

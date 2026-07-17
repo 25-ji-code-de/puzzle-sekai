@@ -10,8 +10,16 @@ import { primaryFromSprite } from "../presentation/placement";
 import { getGrid } from "../game/board-state";
 import { loadTexture } from "../assets/load-texture";
 import { createActiveFall } from "../active/active-fall";
+import {
+  castDownY,
+  createActiveBody,
+  isContinuousPhysics,
+} from "../board/dynamics";
 
 const landYFor = (item: PIXI.Sprite): number => {
+  if (isContinuousPhysics()) {
+    return castDownY("item", item.x, item.y, item.rotation, item);
+  }
   const primary = primaryFromSprite(item, "item", "floor");
   return activeLandPixelY(
     "item",
@@ -64,6 +72,9 @@ export const createItem = async (
   item.rotation = 0;
 
   app.stage.addChild(item);
+  if (isContinuousPhysics()) {
+    createActiveBody(item, "item", { itemFile: file, assetFile: file });
+  }
   startItemFall(item, onDropped);
 
   return item;

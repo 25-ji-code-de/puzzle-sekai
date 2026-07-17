@@ -11,7 +11,7 @@ export const FUN_MODE_IDS = [
   "emuShrink",
   /** Simplified tip physics: one-sided support → tip toward hang → fall */
   "cantilever",
-  /** Full rigid-body physics (placeholder — not implemented yet) */
+  /** Full rigid-body physics via Rapier2D (continuous space). */
   "truePhysics",
 ] as const;
 

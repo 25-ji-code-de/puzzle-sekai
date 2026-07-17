@@ -133,6 +133,9 @@ export default defineConfig({
           if (id.includes("hammerjs")) {
             return "hammer";
           }
+          if (id.includes("@dimforge/rapier2d") || id.includes("rapier2d-compat")) {
+            return "rapier";
+          }
         },
       },
     },
@@ -187,7 +190,9 @@ export default defineConfig({
       workbox: {
         // Precache the app shell + visual assets; heavy fonts and audio are
         // cached on first use to keep the install payload small.
+        // Rapier (truePhysics) is ~1.7MB — runtime CacheFirst only, never precache.
         globPatterns: ["**/*.{js,css,html,webp,ico,png,svg}"],
+        globIgnores: ["**/rapier-*.js", "**/rapier-*.js.map"],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         runtimeCaching: [
           {
@@ -211,6 +216,18 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 * 30,
               },
               rangeRequests: true,
+            },
+          },
+          {
+            // truePhysics Rapier chunk (~1–2MB) — runtime cache, not precache
+            urlPattern: /rapier/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "rapier",
+              expiration: {
+                maxEntries: 4,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
             },
           },
         ],

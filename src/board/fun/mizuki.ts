@@ -1,8 +1,9 @@
 /**
  * ポテトと瑞希 — Mizuki teleports above fries; eats adjacent fries.
+ * Grid: cell ortho. Continuous: pose teleport + proximity eat.
  */
 import { addScore } from "../../score";
-import { ROWS, COLUMNS } from "../../config";
+import { BOX_SIZE, COLUMNS, ROWS } from "../../config";
 import {
   SpriteData,
   sprites,
@@ -20,6 +21,12 @@ import { asOrientation, rotationToOrientation } from "../../domain/types";
 import { footprintFromPrimary } from "../../domain/piece";
 import { placeSpriteAtAnchor } from "../../presentation/placement";
 import { CHAR } from "../../characters/ids";
+import { characterTouchesItem } from "../contact";
+import {
+  isContinuousPhysics,
+  setBodyPose,
+  wakeBody,
+} from "../dynamics";
 
 /** 2-cell footprint for primary (ax,ay) if every cell is on-board; else null. */
 const cellsFor = (
@@ -43,6 +50,43 @@ export const applyMizukiShift = async (
   itemY: number,
 ): Promise<void> => {
   if (!isFunModeOn("mizukiShift")) return;
+
+  if (isContinuousPhysics()) {
+    // Find nearest fries item sprite and nearest Mizuki
+    const fries = sprites.filter(
+      (sp) => sp.isItem && sp.itemFile && isFriesItem(sp.itemFile),
+    );
+    if (!fries.length) return;
+    let bestM: SpriteData | null = null;
+    let bestDist = Infinity;
+    let bestF: SpriteData | null = null;
+    for (const m of sprites) {
+      if (m.character?.name !== CHAR.Mizuki) continue;
+      for (const f of fries) {
+        const d = Math.hypot(
+          m.sprite.x - f.sprite.x,
+          m.sprite.y - f.sprite.y,
+        );
+        if (d < bestDist) {
+          bestDist = d;
+          bestM = m;
+          bestF = f;
+        }
+      }
+    }
+    if (!bestM || !bestF) return;
+    // Teleport above fries
+    const tx = bestF.sprite.x;
+    const ty = bestF.sprite.y - BOX_SIZE;
+    bestM.sprite.x = tx;
+    bestM.sprite.y = ty;
+    if (bestM.entityId) {
+      setBodyPose(bestM.entityId, tx, ty, bestM.sprite.rotation);
+      wakeBody(bestM.entityId);
+    }
+    await fallChunk(sprites);
+    return;
+  }
 
   type Cand = { index: number; dist: number };
   let best: Cand | null = null;
@@ -115,6 +159,29 @@ export const tryMizukiEatFries = async (): Promise<boolean> => {
   let anyEaten = false;
 
   while (true) {
+    if (isContinuousPhysics()) {
+      const toEat: SpriteData[] = [];
+      for (const sp of sprites) {
+        if (!sp.isItem || !sp.itemFile || !isFriesItem(sp.itemFile)) continue;
+        const touched = sprites.some(
+          (m) =>
+            m.character?.name === CHAR.Mizuki &&
+            characterTouchesItem(m, isFriesItem) &&
+            // characterTouchesItem checks any fries; ensure this fries
+            Math.hypot(m.sprite.x - sp.sprite.x, m.sprite.y - sp.sprite.y) <
+              BOX_SIZE * 1.6,
+        );
+        if (touched) toEat.push(sp);
+      }
+      if (toEat.length === 0) break;
+      addScore(toEat.length);
+      createParticles(toEat);
+      removeSpritesFromBoard(toEat);
+      anyEaten = true;
+      await fallChunk(sprites);
+      continue;
+    }
+
     const mizukiCells: [number, number][] = [];
     for (const sp of sprites) {
       if (sp.character?.name !== CHAR.Mizuki || !sp.cells?.length) continue;

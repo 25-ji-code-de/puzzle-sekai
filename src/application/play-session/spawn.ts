@@ -20,6 +20,16 @@ import { app } from "../../runtime";
 import { handleItemLand, handleCharacterLand } from "./land";
 import { isMatchOpen } from "./match-gate";
 import type { CharacterData } from "../../characters/data";
+import {
+  highestBodyTop,
+  isContinuousPhysics,
+} from "../../board/dynamics";
+import {
+  BOX_SIZE,
+  ROWS,
+  STAGE_HEIGHT,
+  OFFSET_BOTTOM,
+} from "../../config";
 
 export type SpawnDeps = {
   /** Current sprites.length before push (land index base). */
@@ -56,7 +66,16 @@ export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
   }
 
   const index = deps.getSpriteIndexBase();
-  const maxHeight = maxOccupiedHeight(getGrid());
+  let maxHeight: number;
+  if (isContinuousPhysics()) {
+    // Approximate occupied rows from highest body top
+    const top = highestBodyTop();
+    const floor = STAGE_HEIGHT - OFFSET_BOTTOM;
+    const filledPx = Math.max(0, floor - top);
+    maxHeight = Math.min(ROWS, Math.ceil(filledPx / BOX_SIZE));
+  } else {
+    maxHeight = maxOccupiedHeight(getGrid());
+  }
   const settings = getCurrentSettings();
 
   if (maxHeight < 5 && Math.random() < getItemDropChance(settings)) {

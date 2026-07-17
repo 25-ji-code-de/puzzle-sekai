@@ -36,6 +36,12 @@ export const loadGameStates = (): Promise<StatesMod> => {
 export const preloadGame = (): void => {
   void loadGameStates();
   void import("../../ui/pause-menu");
+  // If truePhysics is already enabled in settings, warm Rapier early.
+  void import("../../settings").then(({ getCurrentSettings }) => {
+    if (getCurrentSettings().funModes?.truePhysics) {
+      void import("../../board/dynamics").then((m) => m.warmRapier());
+    }
+  });
 };
 
 export const start = (): void => {
