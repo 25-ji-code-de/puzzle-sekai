@@ -1,7 +1,7 @@
 {
   "name": "puzzle-sekai",
   "version": "1.1.0",
-  "description": "パズル⭐︎セカ - A Puyo-puyo-inspired puzzle game with Project SEKAI characters.",
+  "description": "パズル⭐︎セカ - Project SEKAI fan group-clear / Puyo-style falling-block browser game.",
   "license": "AGPL-3.0-only",
   "scripts": {
     "start": "vite --port 7426",
