@@ -39,7 +39,7 @@
       content="https://pico.nightcord.de5.net/android-chrome-512x512.png"
     />
     <script type="application/ld+json">
-      {
+            {
         "@context": "https://schema.org",
         "@graph": [
           {
@@ -55,7 +55,7 @@
               "https://github.com/25-ji-code-de",
               "https://github.com/25-ji-code-de/puzzle-sekai",
               "https://space.bilibili.com/3546904856103196",
-              "https://sekai.nightcord.de5.net"
+              "https://afdian.com/a/1806P"
             ]
           },
           {
@@ -63,39 +63,73 @@
             "@id": "https://pico.nightcord.de5.net/#website",
             "url": "https://pico.nightcord.de5.net/",
             "name": "パズル⭐︎セカ | Puzzle × SEKAI",
-            "alternateName": ["Puzzle × SEKAI", "Puzzle SEKAI", "パズルセカ"],
+            "alternateName": [
+              "Puzzle × SEKAI",
+              "Puzzle SEKAI",
+              "パズルセカ"
+            ],
             "description": "Unofficial Project SEKAI-themed browser puzzle game. Free fan work; not affiliated with SEGA, Colorful Palette, or Crypton Future Media.",
-            "inLanguage": ["zh-CN", "ja", "en"],
-            "publisher": { "@id": "https://pico.nightcord.de5.net/#organization" }
+            "inLanguage": [
+              "zh-CN",
+              "ja",
+              "en"
+            ],
+            "publisher": {
+              "@id": "https://pico.nightcord.de5.net/#organization"
+            }
           },
           {
             "@type": "WebPage",
             "@id": "https://pico.nightcord.de5.net/#webpage",
             "url": "https://pico.nightcord.de5.net/",
             "name": "パズル⭐︎セカ | Puzzle × SEKAI",
-            "isPartOf": { "@id": "https://pico.nightcord.de5.net/#website" },
-            "about": { "@id": "https://pico.nightcord.de5.net/#game" },
+            "isPartOf": {
+              "@id": "https://pico.nightcord.de5.net/#website"
+            },
+            "about": {
+              "@id": "https://pico.nightcord.de5.net/#game"
+            },
             "description": "少年少女们忽然发现，熟悉的「世界」变成了由多彩方块堆叠的消消乐世界——集结同组合成员完成消除，挑战最高分！（Project SEKAI 同人作品）",
-            "inLanguage": ["zh-CN", "ja", "en"]
+            "inLanguage": [
+              "zh-CN",
+              "ja",
+              "en"
+            ]
           },
           {
-            "@type": ["VideoGame", "WebApplication"],
+            "@type": [
+              "VideoGame",
+              "WebApplication"
+            ],
             "@id": "https://pico.nightcord.de5.net/#game",
             "name": "パズル⭐︎セカ | Puzzle × SEKAI",
-            "alternateName": ["Puzzle × SEKAI", "Puzzle SEKAI"],
+            "alternateName": [
+              "Puzzle × SEKAI",
+              "Puzzle SEKAI"
+            ],
             "url": "https://pico.nightcord.de5.net/",
             "description": "A Puyo-style group-clear puzzle with Project SEKAI characters. Drop pieces, form connected unit groups, clear chains, and chase high scores. Modes: Endless and Time Attack. Unofficial free browser fan game; not affiliated with SEGA, Colorful Palette, Crypton Future Media, or Project SEKAI COLORFUL STAGE!",
             "disambiguatingDescription": "Unofficial non-commercial fan game. Not an official Project SEKAI product.",
             "image": "https://pico.nightcord.de5.net/android-chrome-512x512.png",
             "applicationCategory": "GameApplication",
             "applicationSubCategory": "PuzzleGame",
-            "genre": ["Puzzle", "Browser game"],
-            "gamePlatform": ["Web Browser", "PWA"],
+            "genre": [
+              "Puzzle",
+              "Browser game"
+            ],
+            "gamePlatform": [
+              "Web Browser",
+              "PWA"
+            ],
             "operatingSystem": "Any (modern browser with WebGL)",
             "browserRequirements": "Requires JavaScript and WebGL.",
             "softwareVersion": "1.1.0",
             "isAccessibleForFree": true,
-            "inLanguage": ["zh-CN", "ja", "en"],
+            "inLanguage": [
+              "zh-CN",
+              "ja",
+              "en"
+            ],
             "offers": {
               "@type": "Offer",
               "price": "0",
@@ -104,10 +138,16 @@
               "url": "https://pico.nightcord.de5.net/"
             },
             "license": "https://www.gnu.org/licenses/agpl-3.0.html",
-            "author": { "@id": "https://pico.nightcord.de5.net/#organization" },
-            "publisher": { "@id": "https://pico.nightcord.de5.net/#organization" },
+            "author": {
+              "@id": "https://pico.nightcord.de5.net/#organization"
+            },
+            "publisher": {
+              "@id": "https://pico.nightcord.de5.net/#organization"
+            },
             "codeRepository": "https://github.com/25-ji-code-de/puzzle-sekai",
-            "sameAs": ["https://github.com/25-ji-code-de/puzzle-sekai"],
+            "sameAs": [
+              "https://github.com/25-ji-code-de/puzzle-sekai"
+            ],
             "playMode": "SinglePlayer"
           }
         ]
@@ -295,6 +335,20 @@
           margin-top: 12px;
         }
       }
+
+      /* Crawlable how-to-play for bots — off-screen for human UI */
+      .seo-only {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        clip-path: inset(50%) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+      }
     </style>
     <script>
       // Early locale: <html lang>, <title>, meta description before first paint.
@@ -412,6 +466,103 @@
         }
       })();
     </script>
+
+
+    <!--
+      Visually hidden, crawlable how-to-play. Not display:none so text remains
+      in the accessibility/DOM tree for search engines and AI crawlers.
+      Three locales shipped so bots need not execute locale JS.
+    -->
+    <section id="seo-howto" class="seo-only" aria-hidden="true">
+      <h2>What is Puzzle SEKAI / パズル⭐︎セカ？</h2>
+      <div lang="zh-CN">
+        <h3>这是什么游戏</h3>
+        <p>
+          パズル⭐︎セカ（Puzzle × SEKAI）是一款可在浏览器中免费游玩的 Project SEKAI
+          主题方块消除同人游戏。玩家控制下落中的角色方块，将同一组合（ユニット）的成员连成连通区域即可消除，并利用重力连锁冲击更高分数。支持无尽模式与限时挑战；可选娱乐模式提供特殊规则。本作为非商业粉丝作品，与 SEGA、Colorful Palette、Crypton Future Media 及官方「世界计划 缤纷舞台」无任何隶属或授权关系。源码以 AGPL-3.0 发布于 GitHub。
+        </p>
+        <h3>怎么玩</h3>
+        <p>
+          键盘：方向键左右移动，上或 X 顺时针旋转，Ctrl 或 Z 逆时针旋转，下键加速下落，空格硬降到底，R 重开，Esc 或 P 暂停。触控：左右滑动移动，点左/右半屏旋转，下滑硬降，长按加速。部分角色（如笑梦、NeneRobo）支持 Shift+上 或上滑微抬一格。消除同一组合相连的角色方块得分；Wonderlands×Showtime 等组合另有特殊判定。道具与娱乐模式可在设置中开关。
+        </p>
+        <h3>模式与平台</h3>
+        <p>
+          无尽模式持续堆高挑战最高分；限时挑战在设定秒数内刷分。游戏基于 WebGL / PixiJS，需现代浏览器（推荐 Chrome）。可安装为 PWA。进度与高分保存在本机 localStorage，无需账号。
+        </p>
+      </div>
+      <div lang="en">
+        <h3>What is this game</h3>
+        <p>
+          Puzzle × SEKAI (パズル⭐︎セカ) is a free browser puzzle game inspired by Project SEKAI COLORFUL STAGE! feat. Hatsune Miku. Drop character blocks, connect members of the same unit, clear groups, and chain gravity for high scores. Play Endless or Time Attack; optional entertainment modes add special rules. This is an unofficial non-commercial fan work, not affiliated with SEGA, Colorful Palette, Crypton Future Media, or the official game. Source code is AGPL-3.0 on GitHub.
+        </p>
+        <h3>How to play</h3>
+        <p>
+          Keyboard: arrow keys move, Up or X rotate clockwise, Ctrl or Z rotate counter-clockwise, Down soft-drop, Space hard-drop, R restart, Esc or P pause. Touch: swipe left or right to move, tap left or right half to rotate, swipe down to hard-drop, press-and-hold to soft-drop. Some pieces (Emu, NeneRobo) can lift one cell with Shift+Up or swipe up. Clear connected unit members to score; some units have special clear rules. Items and fun modes are toggled in Settings.
+        </p>
+        <h3>Modes and platform</h3>
+        <p>
+          Endless keeps stacking for a high score; Time Attack scores within a set duration. Requires a modern browser with WebGL (Chrome recommended). Optional PWA install. High scores and settings stay in localStorage; no account required.
+        </p>
+      </div>
+      <div lang="ja">
+        <h3>このゲームについて</h3>
+        <p>
+          パズル⭐︎セカ（Puzzle × SEKAI）は、プロジェクトセカイをモチーフにした無料のブラウザ向け落ち物・グループ消去パズルです。キャラクターのピースを落とし、同じユニットのメンバーを連結させて消し、重力による連鎖でハイスコアを目指します。エンドレスとタイムアタックに対応し、任意のお楽しみモードもあります。非商用のファン作品であり、SEGA、Colorful Palette、Crypton Future Media、および公式タイトルとは無関係です。ソースコードは GitHub で AGPL-3.0 公開です。
+        </p>
+        <h3>遊び方</h3>
+        <p>
+          キーボード：←→で移動、↑またはXで右回転、CtrlまたはZで左回転、↓でソフトドロップ、Spaceでハードドロップ、Rでやり直し、EscまたはPで一時停止。タッチ：左右スワイプで移動、左右半分タップで回転、下スワイプでハードドロップ、長押しで加速。一部ピース（えむ、ネネロボ）は Shift+↑ または上スワイプで1マス上昇。同じユニットの連結を消して得点します。アイテムやお楽しみモードは設定から切り替えられます。
+        </p>
+        <h3>モードと動作環境</h3>
+        <p>
+          エンドレスは積み上げハイスコア、タイムアタックは制限時間内の得点競争です。WebGL 対応のモダンブラウザ（Chrome 推奨）が必要です。PWA インストールにも対応。ハイスコアと設定は localStorage に保存され、アカウントは不要です。
+        </p>
+      </div>
+
+      <div lang="zh-CN">
+        <h3>开发者与相关链接</h3>
+        <p>
+          开发者账号与源码：
+          <a href="https://github.com/25-ji-code-de/puzzle-sekai">GitHub 仓库</a>；
+          组织主页 <a href="https://github.com/25-ji-code-de">github.com/25-ji-code-de</a>。
+          作者 Bilibili：
+          <a href="https://space.bilibili.com/3546904856103196">bili_47177171806</a>。
+          支持开发：
+          <a href="https://afdian.com/a/1806P">爱发电</a>。
+          上游灵感 <a href="https://github.com/hamzaabamboo/pazuru-pico">Pazuru-Pico</a>（HamP）。
+          问题反馈请到仓库 Issues 提交。
+        </p>
+      </div>
+      <div lang="en">
+        <h3>Developer and related links</h3>
+        <p>
+          Source and developer profiles:
+          <a href="https://github.com/25-ji-code-de/puzzle-sekai">GitHub repository 25-ji-code-de/puzzle-sekai</a>;
+          org home <a href="https://github.com/25-ji-code-de">github.com/25-ji-code-de</a>.
+          Author on Bilibili:
+          <a href="https://space.bilibili.com/3546904856103196">space.bilibili.com/3546904856103196</a>.
+          Support:
+          <a href="https://afdian.com/a/1806P">Afdian</a>.
+          upstream inspiration <a href="https://github.com/hamzaabamboo/pazuru-pico">Pazuru-Pico</a> (HamP).
+          Bug reports: GitHub Issues on the repository.
+        </p>
+      </div>
+      <div lang="ja">
+        <h3>開発者と関連リンク</h3>
+        <p>
+          ソースと開発者：
+          <a href="https://github.com/25-ji-code-de/puzzle-sekai">GitHub リポジトリ 25-ji-code-de/puzzle-sekai</a>；
+          組織 <a href="https://github.com/25-ji-code-de">github.com/25-ji-code-de</a>。
+          作者 Bilibili：
+          <a href="https://space.bilibili.com/3546904856103196">space.bilibili.com/3546904856103196</a>。
+          支援：
+          <a href="https://afdian.com/a/1806P">愛発電</a>。
+          上流の着想 <a href="https://github.com/hamzaabamboo/pazuru-pico">Pazuru-Pico</a>（HamP）。
+          不具合報告はリポジトリの Issues へ。
+        </p>
+      </div>
+
+    </section>
 
     <main class="main">
       <div class="game">
