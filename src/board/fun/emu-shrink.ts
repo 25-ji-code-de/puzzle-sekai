@@ -63,10 +63,7 @@ const pickKeepCell = (emuCells: Cell[], mafuyuCells: Cell[]): Cell => {
 };
 
 /** Shrink one full-size Emu to a single cell. Returns true if shrunk. */
-const shrinkEmuSprite = (
-  sp: SpriteData,
-  mafuyuCells: Cell[],
-): boolean => {
+const shrinkEmuSprite = (sp: SpriteData, mafuyuCells: Cell[]): boolean => {
   if (sp.character?.name !== CHAR.Emu) return false;
   if (sp.isShrunk || !sp.cells || sp.cells.length < 2) return false;
   if (!isAdjacentToAny(sp.cells, mafuyuCells)) return false;

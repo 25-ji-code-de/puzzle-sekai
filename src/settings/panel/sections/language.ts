@@ -1,4 +1,10 @@
-import { setLocale, SUPPORTED_LOCALES, getLocale, Locale, t } from "../../../i18n";
+import {
+  setLocale,
+  SUPPORTED_LOCALES,
+  getLocale,
+  Locale,
+  t,
+} from "../../../i18n";
 import {
   makeChip,
   makeOptionsRow,

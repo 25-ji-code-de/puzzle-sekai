@@ -40,7 +40,9 @@ export const showGameOverMenu = (): void => {
     returnToMenu();
   };
 
-  card.appendChild(buildDialogButton(t("gameOver.restart"), "primary", restart));
+  card.appendChild(
+    buildDialogButton(t("gameOver.restart"), "primary", restart),
+  );
   card.appendChild(buildDialogButton(t("gameOver.menu"), "danger", quit));
 
   document.body.appendChild(overlay);

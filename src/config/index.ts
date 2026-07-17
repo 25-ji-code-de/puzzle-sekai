@@ -17,8 +17,7 @@ export const OFFSET_BOTTOM = 26;
  * STAGE_HEIGHT - OFFSET_BOTTOM - ROWS * BOX_SIZE (may be slightly negative).
  * Single origin for active land, gravity placement, and tip fulcrums.
  */
-export const BOARD_ORIGIN_Y =
-  STAGE_HEIGHT - OFFSET_BOTTOM - ROWS * BOX_SIZE;
+export const BOARD_ORIGIN_Y = STAGE_HEIGHT - OFFSET_BOTTOM - ROWS * BOX_SIZE;
 
 /** Left X of column 0 (= LEFT_BORDER). */
 export const BOARD_ORIGIN_X = LEFT_BORDER;

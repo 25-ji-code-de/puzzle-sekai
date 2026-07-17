@@ -2,10 +2,7 @@
  * High-score persistence (per mode / time-attack duration).
  */
 import type { GameMode, GameSettings, HighScoreRecord } from "./types";
-import {
-  getDifficultyLevel,
-  isEntertainmentMode,
-} from "./difficulty";
+import { getDifficultyLevel, isEntertainmentMode } from "./difficulty";
 import { getCurrentSettings } from "./store";
 import { getStoragePort } from "./storage";
 
@@ -49,10 +46,7 @@ export function loadHighScoreRecord(
   }
 }
 
-export function loadHighScore(
-  mode: GameMode,
-  settings?: GameSettings,
-): number {
+export function loadHighScore(mode: GameMode, settings?: GameSettings): number {
   return loadHighScoreRecord(mode, settings).score;
 }
 

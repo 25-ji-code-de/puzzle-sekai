@@ -7,10 +7,7 @@ import { commitLandedSprite, settleBoard } from "../../board";
 import { resetCombo } from "../../score";
 import { pieceKindFrom, rotationToOrientation } from "../../domain/types";
 import { primaryFromSprite } from "../../presentation/placement";
-import {
-  runItemLandEffects,
-  runCharacterLandEffects,
-} from "../fun-effects";
+import { runItemLandEffects, runCharacterLandEffects } from "../fun-effects";
 import { isMatchOpen } from "./match-gate";
 
 export type LandOutcome = {

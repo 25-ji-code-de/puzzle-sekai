@@ -62,8 +62,7 @@ const isGroupComplete = (
   const rule = GROUP_RULES[group];
   if (!rule) return false;
   const hasRequired = rule.required.every((n) => names.has(n));
-  const hasSpecial =
-    hasMikudayo || rule.specials.some((n) => names.has(n));
+  const hasSpecial = hasMikudayo || rule.specials.some((n) => names.has(n));
   return hasRequired && hasSpecial;
 };
 
@@ -114,9 +113,7 @@ export const findClearChunk = (
 
   for (const component of findComponents(grid)) {
     const names = new Set(
-      component
-        .map(([x, y]) => grid[y][x]!)
-        .filter((n) => n !== ITEM_TOKEN),
+      component.map(([x, y]) => grid[y][x]!).filter((n) => n !== ITEM_TOKEN),
     );
     if (names.size === 0) continue;
 

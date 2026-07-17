@@ -143,31 +143,31 @@ export const en = {
       name: "Melody-Lit Sky",
       subtitle: "Faint breath, fading gravity",
       description:
-        "While falling, Kanade's drop speed is fixed at −50%.\nOnce she lands, that slowdown becomes a lingering \"afterglow\" that passes to later pieces, with overall drop speed recovering gradually over time. If Kanade is cleared from the board, the recovery effect ends at once.\n\n\"As long as the notes have not fully fallen silent...\"",
+        'While falling, Kanade\'s drop speed is fixed at −50%.\nOnce she lands, that slowdown becomes a lingering "afterglow" that passes to later pieces, with overall drop speed recovering gradually over time. If Kanade is cleared from the board, the recovery effect ends at once.\n\n"As long as the notes have not fully fallen silent..."',
     },
     wonderBlast: {
       name: "Wonder Blast",
       subtitle: "It's Showtime!",
       description:
-        "When Rui and NeneRobo are adjacent in the same clear, a stage-wide explosion blasts random other pieces off the board (multi-cell pieces are removed whole).\nBlast count is about \"2 + 2 × (Rui + NeneRobo sprites in that clear)\", capped at 12 and half the board. Score is awarded once for the cells removed by the blast.\n\n\"And now—the finest Showtime of all! NeneRobo, maximum output!!\"",
+        'When Rui and NeneRobo are adjacent in the same clear, a stage-wide explosion blasts random other pieces off the board (multi-cell pieces are removed whole).\nBlast count is about "2 + 2 × (Rui + NeneRobo sprites in that clear)", capped at 12 and half the board. Score is awarded once for the cells removed by the blast.\n\n"And now—the finest Showtime of all! NeneRobo, maximum output!!"',
     },
     shizukuSwap: {
       name: "Compass Mischief",
       subtitle: "「Huh? Where is this...?」",
       description:
-        "Clearing Shizuku triggers an \"anomaly\": left/right movement and left/right rotation are fully inverted, and it stays on until cleared.\nIf Shiho is already on the board when Shizuku is cleared, the effect does not activate. If Shiho lands during the anomaly (or is present again), the anomaly ends immediately.\n\n\"Oh my... so that was the wrong way? I feel like we took a bit of a detour...\"",
+        'Clearing Shizuku triggers an "anomaly": left/right movement and left/right rotation are fully inverted, and it stays on until cleared.\nIf Shiho is already on the board when Shizuku is cleared, the effect does not activate. If Shiho lands during the anomaly (or is present again), the anomaly ends immediately.\n\n"Oh my... so that was the wrong way? I feel like we took a bit of a detour..."',
     },
     itemAllergy: {
       name: "Orange Alert!",
       subtitle: "The thing you must never look at",
       description:
-        "When falling Ena or Akito touches a carrot on the board, instinctive rejection kicks in and the character piece vanishes instantly.\nDuring control, you cannot intentionally move either of them into a column that would trigger rejection. If gravity drops them into an adjacent cell, the rejection check runs again. Note: the carrot itself never disappears from this effect.\n\n\"Idiot Akito! Get that orange thing away!\" \"...I'm giving those exact words right back to you, Ena.\"",
+        'When falling Ena or Akito touches a carrot on the board, instinctive rejection kicks in and the character piece vanishes instantly.\nDuring control, you cannot intentionally move either of them into a column that would trigger rejection. If gravity drops them into an adjacent cell, the rejection check runs again. Note: the carrot itself never disappears from this effect.\n\n"Idiot Akito! Get that orange thing away!" "...I\'m giving those exact words right back to you, Ena."',
     },
     mizukiShift: {
       name: "French Fries Gravity Field",
       subtitle: "Follow the scent—capture complete ♪",
       description:
-        "While French fries are on the board, every column that would land adjacent to fries is locked as a trigger column. Mizuki can only jump between those columns. If no contact columns exist, movement returns to normal.\nAlso, when fries land, the nearest Mizuki is forcibly pulled and shifted directly above them.\nIf Mizuki ends up adjacent to fries, the fries are instantly eaten (and vanish) for bonus score.\n\n\"If you follow the smell of fries, you'll definitely catch that figure quietly sidling over ♪\"",
+        'While French fries are on the board, every column that would land adjacent to fries is locked as a trigger column. Mizuki can only jump between those columns. If no contact columns exist, movement returns to normal.\nAlso, when fries land, the nearest Mizuki is forcibly pulled and shifted directly above them.\nIf Mizuki ends up adjacent to fries, the fries are instantly eaten (and vanish) for bonus score.\n\n"If you follow the smell of fries, you\'ll definitely catch that figure quietly sidling over ♪"',
     },
     emuShrink: {
       name: "Otori Survival Rule",
@@ -179,13 +179,13 @@ export const en = {
       name: "Cantilever Tip",
       subtitle: "Support on one side—over it goes",
       description:
-        "One of the simplified physics engines. After gravity settles: multi-column pieces (horizontal 2-cell, and 2×2 NeneRobo / Mikudayo) with support on only one bottom side tip 90° as a rigid body toward the hang, then fall again. Vertical 2-cell pieces never tip.\nPieces resting only on that structure are pried up and rotate with it; external support above can pin the tip. After tipping, contact effects (Emu shrink, clears, etc.) re-run immediately.\nMutually exclusive with True Physics.\n\n\"That fulcrum... doesn't look very stable.\"",
+        'One of the simplified physics engines. After gravity settles: multi-column pieces (horizontal 2-cell, and 2×2 NeneRobo / Mikudayo) with support on only one bottom side tip 90° as a rigid body toward the hang, then fall again. Vertical 2-cell pieces never tip.\nPieces resting only on that structure are pried up and rotate with it; external support above can pin the tip. After tipping, contact effects (Emu shrink, clears, etc.) re-run immediately.\nMutually exclusive with True Physics.\n\n"That fulcrum... doesn\'t look very stable."',
     },
     truePhysics: {
       name: "True Physics",
       subtitle: "Center of mass, torque, then chaos",
       description:
-        "Full rigid-body physics (in development). Stability is computed from mass, center of mass, and support surfaces, allowing stacks to topple, slide, and cascade-collapse.\nThis version only registers the mode; the simulation will land later. Mutually exclusive with Cantilever Tip.\n\n\"...Sir Isaac, please be gentle with this SEKAI.\"",
+        'Full rigid-body physics (in development). Stability is computed from mass, center of mass, and support surfaces, allowing stacks to topple, slide, and cascade-collapse.\nThis version only registers the mode; the simulation will land later. Mutually exclusive with Cantilever Tip.\n\n"...Sir Isaac, please be gentle with this SEKAI."',
     },
   },
   inGame: {

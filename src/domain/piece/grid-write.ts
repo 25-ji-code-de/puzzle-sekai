@@ -61,9 +61,7 @@ export const isUnsupported = (
 ): boolean => {
   const bottom = bottomCells(coords);
   if (!bottom.length) return false;
-  return bottom.every(
-    ([x, y]) => y + 1 < rows && grid[y + 1]?.[x] === null,
-  );
+  return bottom.every(([x, y]) => y + 1 < rows && grid[y + 1]?.[x] === null);
 };
 
 /** Destination footprint after dropping `dy` rows. */

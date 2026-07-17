@@ -34,10 +34,7 @@ import {
   getKanadeSelfSpeedMult,
   onKanadeLanded,
 } from "../fun/effects";
-import {
-  getMizukiLockColumns,
-  getCarrotHazardColumns,
-} from "../board/contact";
+import { getMizukiLockColumns, getCarrotHazardColumns } from "../board/contact";
 import {
   CHAR,
   fileIsBig2x2,

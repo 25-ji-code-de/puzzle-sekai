@@ -21,7 +21,21 @@ export const removeSpritesFromBoard = (toRemove: SpriteData[]): void => {
     if (sp.entityId) {
       unregisterEntitySprite(sp.entityId);
     }
-    app.stage.removeChild(sp.sprite);
+    // Drop filters before destroy so ColorMatrix FBOs are released.
+    sp.sprite.filters = [];
+    if (sp.sprite.parent) {
+      sp.sprite.parent.removeChild(sp.sprite);
+    }
+    // Destroy display object only — keep shared BaseTexture from the loader.
+    try {
+      sp.sprite.destroy({ children: true, texture: false, baseTexture: false });
+    } catch {
+      try {
+        app.stage.removeChild(sp.sprite);
+      } catch {
+        /* ignore */
+      }
+    }
   });
   setSprites(
     sprites.filter((s) => !toRemove.find((sp) => s.sprite === sp.sprite)),

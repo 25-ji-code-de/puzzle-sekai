@@ -30,7 +30,12 @@ export const makeChip = (
   label: string,
   active: boolean,
   onClick: () => void,
-  opts?: { className?: string; title?: string; html?: string; subtitle?: string },
+  opts?: {
+    className?: string;
+    title?: string;
+    html?: string;
+    subtitle?: string;
+  },
 ): HTMLDivElement => {
   const opt = document.createElement("div");
   opt.className = `setting-opt ${opts?.className ?? ""} ${

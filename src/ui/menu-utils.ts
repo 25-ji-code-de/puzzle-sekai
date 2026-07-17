@@ -48,8 +48,12 @@ export const highScoreRowHtml = (): string => {
   ) => `
     <div class="hs-col">
       <div class="hs-label font-caption">${label}</div>
-      <div class="hs-value font-numeric-strong" style="color:${scoreColor}">${record.scoreStr}</div>
-      <div class="hs-meta font-caption" style="${diffColorStyle(record.diff)}">${record.star}${record.entTag}</div>
+      <div class="hs-value font-numeric-strong" style="color:${scoreColor}">${
+    record.scoreStr
+  }</div>
+      <div class="hs-meta font-caption" style="${diffColorStyle(
+        record.diff,
+      )}">${record.star}${record.entTag}</div>
     </div>`;
 
   return `${column(t("menu.highScore.endless"), "#ff6b8a", endlessHs)}${column(

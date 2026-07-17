@@ -3,7 +3,7 @@
  *
  * Sources:
  * - PIXI loader resources (move / land / effect aliases)
- * - pixi-sound aliases registered at boot (character fall + group clear voices)
+ * - pixi-sound aliases (character fall + group clear voices), registered lazily
  */
 import sound from "pixi-sound";
 import { app } from "../runtime";
@@ -14,16 +14,32 @@ import {
   SFX_LAND_BASE,
   SFX_EFFECT_BASE,
 } from "../settings";
-import { characterData } from "../characters/data";
+import { characterData, groupSounds } from "../characters/data";
 
 export type SfxChannel = "sfx" | "voice";
 
 export { SFX_MOVE_BASE, SFX_LAND_BASE, SFX_EFFECT_BASE };
 
+const ensuredAliases = new Set<string>();
+
+/** Register a pixi-sound alias on first use (no boot-time voice download). */
+const ensureSoundAlias = (key: string): void => {
+  if (!key || ensuredAliases.has(key)) return;
+  try {
+    if (!sound.exists(key)) {
+      sound.add(key, { url: key, preload: true });
+    }
+    ensuredAliases.add(key);
+  } catch {
+    /* ignore */
+  }
+};
+
 /** Resolve a sound from loader resources or pixi-sound alias registry. */
 export const resolveSound = (key: string) => {
   const fromLoader = app.loader.resources[key]?.sound;
   if (fromLoader) return fromLoader;
+  ensureSoundAlias(key);
   try {
     if (sound.exists(key)) {
       return sound.find(key);
@@ -43,7 +59,11 @@ export const playLoadedSfx = (
   const sfx = resolveSound(key);
   if (!sfx) return;
   const volume = channel === "voice" ? voiceVol(base) : sfxVol(base);
-  sfx.play({ volume });
+  try {
+    sfx.play({ volume });
+  } catch {
+    /* ignore */
+  }
 };
 
 /** Stop then play (used for move clicks so they don't stack). */
@@ -54,9 +74,13 @@ export const replayLoadedSfx = (
 ): void => {
   const sfx = resolveSound(key);
   if (!sfx) return;
-  if (sfx.isPlaying) sfx.stop();
-  const volume = channel === "voice" ? voiceVol(base) : sfxVol(base);
-  sfx.play({ volume });
+  try {
+    if (sfx.isPlaying) sfx.stop();
+    const volume = channel === "voice" ? voiceVol(base) : sfxVol(base);
+    sfx.play({ volume });
+  } catch {
+    /* ignore */
+  }
 };
 
 /** Settings-panel SFX preview. */
@@ -73,4 +97,15 @@ export const playVoicePreview = (): void => {
     return;
   }
   playLoadedSfx("move", "voice", VOICE_PREVIEW_BASE);
+};
+
+/**
+ * Optionally warm group-clear voices for units currently enabled.
+ * Safe to call after match start; does not block.
+ */
+export const prefetchGroupVoices = (groupNames: string[]): void => {
+  for (const g of groupNames) {
+    const url = (groupSounds as Record<string, string | undefined>)[g];
+    if (url) ensureSoundAlias(url);
+  }
 };

@@ -3,12 +3,7 @@
  */
 import * as PIXI from "pixi.js-legacy";
 import { app, gameTicker } from "../runtime";
-import {
-  BOX_SIZE,
-  SPEED,
-  NEXT_CHARACTER_Y,
-  NEXT_CHARACTER_X,
-} from "../config";
+import { BOX_SIZE, SPEED, NEXT_CHARACTER_Y, NEXT_CHARACTER_X } from "../config";
 import { getCurrentSettings, getSpeedMultiplier } from "../settings";
 import { loadTexture } from "../assets/load-texture";
 

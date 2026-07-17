@@ -8,10 +8,7 @@ import { playMenuBgm } from "../../audio/session";
 import { clearAppCaches } from "../../settings";
 import { t, onLocaleChange } from "../../i18n";
 import { highScoreRowHtml, refreshHighScoreRow } from "../menu-utils";
-import {
-  showSettingsPanel,
-  disposeSettingsPanel,
-} from "../../settings/panel";
+import { showSettingsPanel, disposeSettingsPanel } from "../../settings/panel";
 import {
   showControlsOverlay,
   showAboutOverlay,

@@ -60,10 +60,8 @@ export const characterFromFile = (file: string): CharacterName | undefined => {
   return undefined;
 };
 
-export const fileIsCharacter = (
-  file: string,
-  name: CharacterName,
-): boolean => characterFromFile(file) === name;
+export const fileIsCharacter = (file: string, name: CharacterName): boolean =>
+  characterFromFile(file) === name;
 
 export const fileIsBig2x2 = (file: string): boolean => {
   const id = characterFromFile(file);

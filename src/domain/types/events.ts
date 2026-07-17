@@ -30,6 +30,10 @@ export type GameEvent =
       readonly reason: "emuShrink";
     }
   | { readonly type: "comboChanged"; readonly combo: number }
-  | { readonly type: "scoreAdded"; readonly delta: number; readonly total: number }
+  | {
+      readonly type: "scoreAdded";
+      readonly delta: number;
+      readonly total: number;
+    }
   | { readonly type: "controlsSwap"; readonly on: boolean }
   | { readonly type: "speedMultChanged"; readonly mult: number };

@@ -1,10 +1,7 @@
 /**
  * Settings schema, defaults, and pure constants.
  */
-import {
-  DEFAULT_FUN_MODES,
-  FunModeFlags,
-} from "../fun/modes";
+import { DEFAULT_FUN_MODES, FunModeFlags } from "../fun/modes";
 
 export type SpeedLevel = 1 | 2 | 3 | 4 | 5;
 export type TimeAttackDuration = 60 | 90 | 120 | 180;

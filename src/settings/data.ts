@@ -15,7 +15,10 @@ const isAppStorageKey = (key: string): boolean =>
 export function clearAppData(): void {
   try {
     const storage = getStoragePort();
-    storage.keys().filter(isAppStorageKey).forEach((key) => storage.remove(key));
+    storage
+      .keys()
+      .filter(isAppStorageKey)
+      .forEach((key) => storage.remove(key));
   } catch (e) {
     console.warn("Failed to clear app data:", e);
   }

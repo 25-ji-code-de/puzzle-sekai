@@ -1,10 +1,6 @@
 import { clearAppData, clearAppCaches } from "../../data";
 import { t } from "../../../i18n";
-import {
-  makeDangerButton,
-  makeOptionsRow,
-  makeSettingGroup,
-} from "../widgets";
+import { makeDangerButton, makeOptionsRow, makeSettingGroup } from "../widgets";
 
 export const appendDataSection = (panel: HTMLElement): void => {
   const group = makeSettingGroup(t("settings.data.label"));

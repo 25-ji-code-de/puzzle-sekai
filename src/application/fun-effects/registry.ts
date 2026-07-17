@@ -47,7 +47,10 @@ export const runClearedEffects = async (
   let acc: FunResult = { changed: false };
   for (const plugin of PLUGINS) {
     if (!plugin.onCleared || !ctx.isOn(plugin.id)) continue;
-    acc = merge(acc, (await plugin.onCleared(ctx, cleared)) ?? { changed: false });
+    acc = merge(
+      acc,
+      (await plugin.onCleared(ctx, cleared)) ?? { changed: false },
+    );
   }
   return acc;
 };

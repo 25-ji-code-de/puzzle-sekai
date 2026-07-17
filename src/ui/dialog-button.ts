@@ -23,7 +23,11 @@ export const buildDialogShell = (opts: {
   title: string;
   backdropAlpha?: number;
   wide?: boolean;
-}): { overlay: HTMLDivElement; card: HTMLDivElement; title: HTMLDivElement } => {
+}): {
+  overlay: HTMLDivElement;
+  card: HTMLDivElement;
+  title: HTMLDivElement;
+} => {
   const overlay = document.createElement("div");
   overlay.id = opts.id;
   overlay.setAttribute("role", "dialog");

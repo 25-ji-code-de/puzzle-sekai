@@ -21,13 +21,7 @@ import {
   cell,
   asPrimary,
 } from "../types/cell";
-import {
-  cellToXY,
-  pickMaxX,
-  pickMaxY,
-  pickMinX,
-  pickMinY,
-} from "./cells";
+import { cellToXY, pickMaxX, pickMaxY, pickMinX, pickMinY } from "./cells";
 
 export type { Orientation, Primary, LoosePrimary };
 export { asOrientation };
@@ -46,12 +40,7 @@ export const footprintFromPrimary = (
     return [cell(x, y)];
   }
   if (kind === "big2x2") {
-    return [
-      cell(x, y),
-      cell(x - 1, y),
-      cell(x, y - 1),
-      cell(x - 1, y - 1),
-    ];
+    return [cell(x, y), cell(x - 1, y), cell(x, y - 1), cell(x - 1, y - 1)];
   }
   switch (orient) {
     case 0:

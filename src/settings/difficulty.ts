@@ -146,7 +146,9 @@ export function getScoreMultiplierBreakdown(
     },
     {
       label: t("settings.difficulty.orientLine", {
-        orient: t(`settings.orientation.${orientation}` as import("../i18n").MessageKey),
+        orient: t(
+          `settings.orientation.${orientation}` as import("../i18n").MessageKey,
+        ),
       }),
       factor: orient,
     },
@@ -202,7 +204,9 @@ export function getSpawnRotation(settings?: GameSettings): number {
 
 export const getSpeedLabel = (level: SpeedLevel): string =>
   t(
-    `settings.speed.${(["slow", "normal", "fast", "faster", "hell"] as const)[level - 1]}`,
+    `settings.speed.${
+      (["slow", "normal", "fast", "faster", "hell"] as const)[level - 1]
+    }`,
   );
 
 export const getTimeLabel = (

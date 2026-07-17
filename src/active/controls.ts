@@ -2,7 +2,7 @@
  * Shared keyboard + Hammer bindings for the active falling piece.
  * Handles control-swap (Shizuku fun mode) for both standard and 2×2 pieces.
  */
-import { hammerManager } from "../runtime";
+import { app, hammerManager } from "../runtime";
 import { isControlsSwapped } from "../fun/effects";
 
 export type PieceControlActions = {
@@ -18,6 +18,20 @@ export type PieceControlActions = {
    * Called only when the piece opts in (Emu / NeneRobo).
    */
   tryLift?: () => void;
+};
+
+/**
+ * Whether a client point is on the left half of the game canvas.
+ * Uses the canvas bounding box (not window.innerWidth) so letterboxing
+ * does not flip left/right rotate zones.
+ */
+export const isLeftHalfOfCanvas = (
+  clientX: number,
+  view: HTMLElement = app.view as HTMLElement,
+): boolean => {
+  const rect = view.getBoundingClientRect();
+  if (rect.width <= 0) return clientX < window.innerWidth / 2;
+  return clientX < rect.left + rect.width / 2;
 };
 
 /** Bind controls; returns a dispose function that removes every listener. */
@@ -70,7 +84,7 @@ export const bindPieceControls = (
     actions.tryLift?.();
   };
   const handleTap = (e: HammerInput) => {
-    const leftHalf = e.center.x < window.innerWidth / 2;
+    const leftHalf = isLeftHalfOfCanvas(e.center.x);
     if (isControlsSwapped()) {
       leftHalf ? actions.rotateCW() : actions.rotateCCW();
     } else {

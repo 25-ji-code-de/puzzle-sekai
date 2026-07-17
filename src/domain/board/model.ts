@@ -4,9 +4,8 @@
  */
 
 import { COLUMNS, ROWS } from "../../config";
-import type { CellToken, BoardGrid, BoardCell } from "../types";
+import type { CellToken, BoardGrid, BoardCell, Cell } from "../types";
 import {
-  type Cell,
   clearFootprint,
   writeFootprint,
   maxDropDistance,

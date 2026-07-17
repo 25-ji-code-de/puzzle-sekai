@@ -17,10 +17,7 @@ import { getGrid, sprites } from "../../game/board-state";
 import { getCurrentSettings, getItemDropChance } from "../../settings";
 import { playLoadedSfx } from "../../audio/sfx";
 import { app } from "../../runtime";
-import {
-  handleItemLand,
-  handleCharacterLand,
-} from "./land";
+import { handleItemLand, handleCharacterLand } from "./land";
 import { isMatchOpen } from "./match-gate";
 import type { CharacterData } from "../../characters/data";
 
@@ -39,9 +36,7 @@ export type SpawnDeps = {
   onSpawnAborted?: () => void;
 };
 
-const refreshNextPreview = async (
-  deps: SpawnDeps,
-): Promise<void> => {
+const refreshNextPreview = async (deps: SpawnDeps): Promise<void> => {
   if (!nextCharacter) return;
   const preview = await showNextPiece(
     nextCharacter.preview ?? nextCharacter.file,

@@ -1,10 +1,7 @@
 /**
  * Settings singleton + localStorage persistence + game mode.
  */
-import {
-  DEFAULT_FUN_MODES,
-  normalizeFunModes,
-} from "../fun/modes";
+import { DEFAULT_FUN_MODES, normalizeFunModes } from "../fun/modes";
 import {
   DEFAULT_SETTINGS,
   GAME_GROUPS,

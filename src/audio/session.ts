@@ -70,7 +70,8 @@ export const playMenuBgm = async () => {
   const s = await getBgm("bgm161");
   if (!s) return;
   playBgm(s, { loop: true });
-  prefetchPlayBgm();
+  // Do not prefetch play/game-over tracks here — that pulls multi‑MB audio
+  // while the player is still on the menu. Match start loads them just-in-time.
 };
 
 export const playGameOverBgm = async () => {
@@ -134,6 +135,8 @@ const checkBGM = () => {
 /** Start in-match BGM rotation (non-loop tracks). */
 export const startPlayBgm = () => {
   bgmActive = true;
+  // Warm both play tracks once a match actually starts (not on the menu).
+  prefetchPlayBgm();
   void playNextBGM();
   gameTicker.remove(checkBGM);
   gameTicker.add(checkBGM);

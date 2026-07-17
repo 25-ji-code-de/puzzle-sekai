@@ -9,13 +9,14 @@ import {
   createFlyingavatar,
   createFallingavatar,
 } from "../characters/avatar";
-import { barrel, curtain, createBarrel, gameOverCurtain } from "../props/objects";
-import { BOX_SIZE, LEFT_BORDER } from "../config";
 import {
-  initRNG,
-  nextCharacter,
-  showNextPiece,
-} from "../active";
+  barrel,
+  curtain,
+  createBarrel,
+  gameOverCurtain,
+} from "../props/objects";
+import { BOX_SIZE, LEFT_BORDER } from "../config";
+import { initRNG, nextCharacter, showNextPiece } from "../active";
 import { rotationToOrientation } from "../domain/types";
 import { primaryFromSprite } from "../presentation/placement";
 import {
@@ -24,15 +25,9 @@ import {
   setTimeRemaining,
   decrementTime,
 } from "../score";
-import {
-  getCurrentGameMode,
-  getCurrentSettings,
-} from "../settings";
+import { getCurrentGameMode, getCurrentSettings } from "../settings";
 import { resetFunEffects } from "../fun/effects";
-import {
-  setPlayPhase,
-  isPausedPhase,
-} from "../application/play-session/phase";
+import { setPlayPhase, isPausedPhase } from "../application/play-session/phase";
 import {
   openMatch,
   closeMatch,
@@ -59,11 +54,7 @@ import { sprites, clearSpritesList, resetGrid } from "./board-state";
 export { welcome } from "../ui/welcome";
 export { isPlayActive } from "../application/play-session/phase";
 export { addDropScore } from "../score";
-export {
-  type SpriteData,
-  sprites,
-  setSprites,
-} from "./board-state";
+export { type SpriteData, sprites, setSprites } from "./board-state";
 export { playMenuBgm, stopBgm } from "../audio/session";
 
 /** Timeout id for curtain / flourish; also used as "end already started" latch. */
@@ -102,7 +93,20 @@ const clearStage = () => {
   closeMatch();
   creating = false;
   ending = false;
-  sprites.forEach((sp) => app.stage.removeChild(sp.sprite));
+  // Prefer destroy path so filters / display objects are released.
+  sprites.forEach((sp) => {
+    sp.sprite.filters = [];
+    if (sp.sprite.parent) sp.sprite.parent.removeChild(sp.sprite);
+    try {
+      sp.sprite.destroy({ children: true, texture: false, baseTexture: false });
+    } catch {
+      try {
+        app.stage.removeChild(sp.sprite);
+      } catch {
+        /* ignore */
+      }
+    }
+  });
   clearSpritesList();
   resetGameTicker();
   if (endAnimation) {

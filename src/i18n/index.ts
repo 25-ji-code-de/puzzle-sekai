@@ -112,7 +112,8 @@ export const SUPPORTED_LOCALES: { value: Locale; label: string }[] = [
 
 // Initialize on module load
 currentLocale = getLocale();
-document.documentElement.lang = currentLocale === "zh" ? "zh-CN" : currentLocale;
+document.documentElement.lang =
+  currentLocale === "zh" ? "zh-CN" : currentLocale;
 document.title = LOCALES[currentLocale].page.title;
 applyMetaTags(currentLocale);
 applyDataI18n();

@@ -33,10 +33,12 @@ export const appendDifficultySection = (
   card.className = "diff-card";
   card.innerHTML = `
     <div><span style="${diffColorStyle(diffLevel)}">${label}</span>${
-      entOn
-        ? ` <span class="diff-ent">${t("settings.difficulty.entertainment")}</span>`
-        : ""
-    }</div>
+    entOn
+      ? ` <span class="diff-ent">${t(
+          "settings.difficulty.entertainment",
+        )}</span>`
+      : ""
+  }</div>
     <div class="diff-mult">
       <span class="font-numeric">×${mult.toFixed(2)}</span>
       <span class="diff-info">${t("settings.difficulty.info")}</span>

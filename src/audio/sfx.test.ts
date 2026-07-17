@@ -22,11 +22,9 @@ vi.mock("../runtime", () => ({
   },
 }));
 
-vi.mock("pixi-sound", () => ({
-  default: {
-    exists: (key: string) => soundExists(key),
-    find: (key: string) => soundFind(key),
-  },
+vi.mock("../characters/data", () => ({
+  characterData: [{ name: "Ichika", sounds: { fall: ["voice/ichika_1"] } }],
+  groupSounds: {},
 }));
 
 vi.mock("../settings", () => ({
@@ -37,8 +35,12 @@ vi.mock("../settings", () => ({
   SFX_EFFECT_BASE: 0.45,
 }));
 
-vi.mock("../characters/data", () => ({
-  characterData: [{ name: "Ichika", sounds: { fall: ["voice/ichika_1"] } }],
+vi.mock("pixi-sound", () => ({
+  default: {
+    exists: (key: string) => soundExists(key),
+    find: (key: string) => soundFind(key),
+    add: vi.fn(),
+  },
 }));
 
 describe("resolveSound / playLoadedSfx", () => {

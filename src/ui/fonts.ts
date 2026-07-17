@@ -194,34 +194,52 @@ const loadFace = async (family: string, url: string): Promise<void> => {
   await face.load();
 };
 
-const fontLoads = [
-  ["MaokenAssortedSans", maokenFontUrl],
-  ["NishikiTeki", nishikiFontUrl],
-  ["DroidSansMono", droidSansMonoFontUrl],
-] as const;
+/** Display face needed for a locale (brand always uses Nishiki). */
+const displayFaceFor = (locale: Locale): { family: string; url: string } =>
+  locale === "zh"
+    ? { family: "MaokenAssortedSans", url: maokenFontUrl }
+    : { family: "NishikiTeki", url: nishikiFontUrl };
 
-export const fontsReady: Promise<void> = Promise.allSettled(
-  fontLoads.map(([family, url]) => loadFace(family, url)),
-).then((results) => {
-  results.forEach((result, index) => {
-    if (result.status === "rejected") {
-      console.warn(
-        `Failed to load ${fontLoads[index][0]} font:`,
-        result.reason,
-      );
-    }
-  });
-});
+const loadedFamilies = new Set<string>();
+
+const ensureFace = async (family: string, url: string): Promise<void> => {
+  if (loadedFamilies.has(family)) return;
+  try {
+    await loadFace(family, url);
+    loadedFamilies.add(family);
+  } catch (e) {
+    console.warn(`Failed to load ${family} font:`, e);
+  }
+};
+
+/** Load mono + brand (Nishiki) + the locale display face. */
+const loadFontsForLocale = async (locale: Locale): Promise<void> => {
+  const display = displayFaceFor(locale);
+  await Promise.allSettled([
+    ensureFace("DroidSansMono", droidSansMonoFontUrl),
+    ensureFace("NishikiTeki", nishikiFontUrl), // brand always
+    ensureFace(display.family, display.url),
+  ]);
+};
+
+let fontsReady: Promise<void> = Promise.resolve();
 
 let initialized = false;
 
-/** Apply locale-aware CSS variables and register one locale listener. */
+/** Apply locale-aware CSS variables and load only fonts this locale needs. */
 export const initializeFontSystem = (): Promise<void> => {
   if (!initialized) {
     initialized = true;
     injectFallbackFaces();
     applyFontVariables();
-    onLocaleChange((locale) => applyFontVariables(locale));
+    fontsReady = loadFontsForLocale(getLocale());
+    onLocaleChange((locale) => {
+      applyFontVariables(locale);
+      // Lazy-load the other display face if the user switches language.
+      void loadFontsForLocale(locale);
+    });
   }
   return fontsReady;
 };
+
+export { fontsReady };

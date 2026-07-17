@@ -6,7 +6,6 @@
  * when the player starts a match (see application/play-session).
  */
 import * as PIXI from "pixi.js-legacy";
-import sound from "pixi-sound";
 import "./style.scss";
 // Non-critical DOM chrome (menus/dialogs/settings) — does not block first paint.
 // Boot LCP CSS is inlined in index.html.
@@ -18,7 +17,7 @@ import emuShrinkSfx from "./assets/sounds/effects/47_004_007.mp3";
 import carrotAkitoSfx from "./assets/sounds/effects/2509_004_002.mp3";
 import carrotEnaSfx from "./assets/sounds/effects/2509_004_003.mp3";
 import bg from "./assets/bg.png";
-import { characterData, groupSounds } from "./characters/data";
+import { characterData } from "./characters/data";
 import { avatarTextures } from "./characters/avatar";
 import gameOver from "./assets/gameOver.png";
 import avatar from "./assets/chara/avatar.png";
@@ -34,12 +33,7 @@ import {
 } from "./ui/welcome";
 import { prefetchMenuBgm } from "./audio/bgm";
 import { preloadGame } from "./application/play-session";
-import {
-  app,
-  setState,
-  tickMain,
-  setBgSprite,
-} from "./runtime";
+import { app, setState, tickMain, setBgSprite } from "./runtime";
 
 // Re-export runtime for any remaining `from "./index"` consumers.
 export {
@@ -65,21 +59,13 @@ window.addEventListener("resize", () => {
 // Initial main-loop state (boot shell only — not the match FSM)
 setState(welcome);
 
-// Register textures + voice aliases for boot loader
+// Register play textures for boot loader.
+// Character fall / group-clear voices are registered lazily in audio/sfx
+// on first play — avoids multi‑MB downloads on the welcome screen.
 characterData.forEach((character) => {
   app.loader.add(character.file);
   if (character.preview) {
     app.loader.add(character.preview);
-  }
-  character.sounds?.fall?.forEach((voice) => {
-    if (!sound.exists(voice)) {
-      sound.add(voice, { url: voice });
-    }
-  });
-});
-Object.values(groupSounds).forEach((url) => {
-  if (url && !sound.exists(url)) {
-    sound.add(url, { url });
   }
 });
 items.forEach((img) => {

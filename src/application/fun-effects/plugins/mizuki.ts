@@ -1,10 +1,7 @@
 /**
  * Fun plugin — Mizuki fries shift / eat.
  */
-import {
-  applyMizukiShift,
-  tryMizukiEatFries,
-} from "../../../board/fun/mizuki";
+import { applyMizukiShift, tryMizukiEatFries } from "../../../board/fun/mizuki";
 import { isFriesItem } from "../../../items";
 import type { FunEffect } from "../types";
 

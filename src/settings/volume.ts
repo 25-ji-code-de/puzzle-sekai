@@ -5,10 +5,7 @@ import type { GameSettings } from "./types";
 import { getCurrentSettings } from "./store";
 
 /** Clamp / coerce a stored volume percent (0–100). Invalid → default. */
-export function clampVolumePercent(
-  v: unknown,
-  fallback: number = 100,
-): number {
+export function clampVolumePercent(v: unknown, fallback: number = 100): number {
   if (typeof v !== "number" || !Number.isFinite(v)) return fallback;
   return Math.min(100, Math.max(0, Math.round(v)));
 }
@@ -26,8 +23,8 @@ export function getVolumeScale(
     channel === "bgm"
       ? clampVolumePercent(s.bgmVolume)
       : channel === "sfx"
-        ? clampVolumePercent(s.sfxVolume)
-        : clampVolumePercent(s.voiceVolume);
+      ? clampVolumePercent(s.sfxVolume)
+      : clampVolumePercent(s.voiceVolume);
   return pct / 100;
 }
 

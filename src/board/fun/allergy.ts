@@ -21,8 +21,8 @@ const playCarrotAllergySfx = (name?: string) => {
     name === CHAR.Akito
       ? "carrotAkito"
       : name === CHAR.Ena
-        ? "carrotEna"
-        : null;
+      ? "carrotEna"
+      : null;
   if (!key) return;
   playLoadedSfx(key, "voice", 0.5);
 };

@@ -17,17 +17,22 @@ export const appendGroupsSection = (
   GAME_GROUPS.forEach((unit) => {
     const isSelected = ctx.settings.selectedGroups.includes(unit);
     options.appendChild(
-      makeChip(GROUP_LABELS[unit], isSelected, () => {
-        const idx = ctx.settings.selectedGroups.indexOf(unit);
-        if (idx >= 0) {
-          if (ctx.settings.selectedGroups.length > 3) {
-            ctx.settings.selectedGroups.splice(idx, 1);
+      makeChip(
+        GROUP_LABELS[unit],
+        isSelected,
+        () => {
+          const idx = ctx.settings.selectedGroups.indexOf(unit);
+          if (idx >= 0) {
+            if (ctx.settings.selectedGroups.length > 3) {
+              ctx.settings.selectedGroups.splice(idx, 1);
+            }
+          } else if (ctx.settings.selectedGroups.length < 5) {
+            ctx.settings.selectedGroups.push(unit);
           }
-        } else if (ctx.settings.selectedGroups.length < 5) {
-          ctx.settings.selectedGroups.push(unit);
-        }
-        commitAndRefresh(ctx);
-      }, { className: "group-opt" }),
+          commitAndRefresh(ctx);
+        },
+        { className: "group-opt" },
+      ),
     );
   });
   group.appendChild(options);

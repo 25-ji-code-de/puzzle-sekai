@@ -311,7 +311,7 @@ const commitTipLanding = (sp: SpriteData, newCells: Cell[]) => {
     // Match piece.ts convention: spawn at π, orient 0 → π, orient 1 → π + π/2, …
     // rotationToOrientation: (rotation/π * 2 + 2) % 4 — we only need it === orient.
     const current = rotationToOrientation(sp.sprite.rotation);
-    const delta = ((orient - current) % 4 + 4) % 4;
+    const delta = (((orient - current) % 4) + 4) % 4;
     sp.sprite.rotation += (delta * Math.PI) / 2;
   }
 
@@ -371,7 +371,13 @@ const animateTip = (plan: TipPlan): Promise<void> => {
 
       members.forEach(({ sp }, i) => {
         const p = poses[i];
-        const pos = rotatePoint(p.startX, p.startY, fulcrum.x, fulcrum.y, theta);
+        const pos = rotatePoint(
+          p.startX,
+          p.startY,
+          fulcrum.x,
+          fulcrum.y,
+          theta,
+        );
         sp.sprite.x = pos.x;
         sp.sprite.y = pos.y;
         sp.sprite.rotation = p.startRot + theta;
@@ -384,7 +390,10 @@ const animateTip = (plan: TipPlan): Promise<void> => {
           sp.sprite.rotation = p.startRot + angleEnd;
           sp.sprite.zIndex = Math.max(0, (sp.sprite.zIndex || 0) - 100);
           // Commit cells by tip geometry — never via primaryFromSprite re-derive
-          commitTipLanding(sp, p.newCells.map(([x, y]) => asCell([x, y])));
+          commitTipLanding(
+            sp,
+            p.newCells.map(([x, y]) => asCell([x, y])),
+          );
         });
         resolve();
       }

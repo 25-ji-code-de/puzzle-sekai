@@ -18,8 +18,8 @@ type PathsToStringProps<T> = T extends string
       [K in keyof T & (string | number)]: T[K] extends string
         ? `${K}`
         : T[K] extends Record<string, unknown>
-          ? Join<K, PathsToStringProps<T[K]>>
-          : never;
+        ? Join<K, PathsToStringProps<T[K]>>
+        : never;
     }[keyof T & (string | number)];
 
 /** Canonical message keys from the English locale tree. */

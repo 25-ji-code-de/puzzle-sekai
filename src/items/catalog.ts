@@ -47,7 +47,8 @@ export const isCarrotItem = (file: string) => CARROT_ITEMS.includes(file);
 
 /** Group B: fries / ポテト / 薯条 — used by mizukiShift fun mode */
 export const FRIES_ITEMS: readonly string[] = itemGroups[1];
-export const isFriesItem = (file: string): boolean => FRIES_ITEMS.includes(file);
+export const isFriesItem = (file: string): boolean =>
+  FRIES_ITEMS.includes(file);
 
 // Get a random item - first select group, then select variant
 export const getRandomItem = (): string => {

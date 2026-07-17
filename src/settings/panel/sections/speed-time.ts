@@ -18,13 +18,10 @@ export const appendSpeedSection = (
   for (let i = 1; i <= 5; i++) {
     const level = i as SpeedLevel;
     options.appendChild(
-      makeChip(
-        getSpeedLabel(level),
-        level === ctx.settings.speedLevel,
-        () =>
-          commitAndRefresh(ctx, () => {
-            ctx.settings.speedLevel = level;
-          }),
+      makeChip(getSpeedLabel(level), level === ctx.settings.speedLevel, () =>
+        commitAndRefresh(ctx, () => {
+          ctx.settings.speedLevel = level;
+        }),
       ),
     );
   }

@@ -59,9 +59,7 @@ const fillHowtoBody = () => {
   // Prefer the active locale block(s); fall back to full howto if missing.
   const preferred = source.querySelectorAll(localeHowtoBlockSelector());
   const nodes =
-    preferred.length > 0
-      ? Array.from(preferred)
-      : Array.from(source.children);
+    preferred.length > 0 ? Array.from(preferred) : Array.from(source.children);
 
   for (const node of nodes) {
     body.appendChild(node.cloneNode(true));

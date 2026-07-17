@@ -189,10 +189,7 @@ export const showAboutOverlay = () => {
   card.appendChild(
     row(
       t("footer.author"),
-      link(
-        "bili_47177171806",
-        "https://space.bilibili.com/3546904856103196",
-      ),
+      link("bili_47177171806", "https://space.bilibili.com/3546904856103196"),
     ),
   );
   card.appendChild(
