@@ -1,0 +1,15 @@
+# Cloudflare Pages redirects
+# https://developers.cloudflare.com/pages/configuration/redirects/
+#
+# This app has NO client-side path routes (play state is in-memory only).
+# Do NOT add:  /*  /index.html  200
+# That rule causes soft-404 (missing /assets/*, /sitemap.xml, etc. return HTML 200).
+#
+# Default Pages behavior is correct for us:
+#   - real files under / and /assets/ are served as static files
+#   - unknown paths return a real 404
+#
+# Optional convenience redirects only:
+
+# Prefer apex without index.html in the address bar
+/index.html  /  301
