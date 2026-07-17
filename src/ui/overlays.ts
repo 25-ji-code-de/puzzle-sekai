@@ -167,9 +167,16 @@ export const showAboutOverlay = () => {
   card.appendChild(
     row(
       t("footer.inspiration"),
-      link(
-        "BanG Dream! ☆PICO ～OHMORI～ Ep.9",
-        "https://www.youtube.com/watch?v=q5YETLAebUY",
+      join(
+        link(
+          "BanG Dream! ☆PICO ～OHMORI～ Ep.9",
+          "https://www.youtube.com/watch?v=q5YETLAebUY",
+        ),
+        " / ",
+        link(
+          "BanG Dream! 少女乐团派对！☆PICO～大份～ 第 9 话 消消乐☆PICO",
+          "https://www.bilibili.com/bangumi/play/ep324533",
+        ),
       ),
     ),
   );
