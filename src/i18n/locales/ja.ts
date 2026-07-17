@@ -3,7 +3,7 @@ export const ja = {
   page: {
     title: "パズル⭐︎セカ | Puzzle × SEKAI",
     description:
-      "Project SEKAIのメンバーを集めてブロックを消すパズルゲーム。ハイスコアを目指そう！（ファン作品）",
+      "気がつけば「セカイ」はカラフルなブロックでできたパズルの世界に。ユニットのメンバーを揃えて消し、ハイスコアを目指そう！（Project SEKAI ファン作品）",
   },
   welcome: {
     title: "パズル⭐︎セカ",

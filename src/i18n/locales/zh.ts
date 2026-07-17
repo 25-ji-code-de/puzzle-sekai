@@ -3,7 +3,7 @@ export const zh = {
   page: {
     title: "パズル⭐︎セカ | Puzzle × SEKAI",
     description:
-      "Project SEKAI 主题的方块消除游戏。收集成员、消除方块，挑战最高分！（同人作品）",
+      "少年少女们忽然发现，熟悉的「世界」变成了由多彩方块堆叠的消消乐世界——集结同组合成员完成消除，挑战最高分！（Project SEKAI 同人作品）",
   },
   welcome: {
     title: "パズル⭐︎セカ",

@@ -3,7 +3,7 @@ export const en = {
   page: {
     title: "Puzzle ⭐︎ SEKAI",
     description:
-      "A Project SEKAI-themed puzzle game. Clear blocks with unit members and chase high scores. Unofficial fan work.",
+      "The world has turned into a puzzle of colorful blocks. Gather unit members, clear the board, and chase high scores! Unofficial Project SEKAI fan work.",
   },
   welcome: {
     title: "パズル⭐︎セカ",
