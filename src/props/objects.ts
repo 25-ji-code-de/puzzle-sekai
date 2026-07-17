@@ -17,11 +17,7 @@ export const gameOverCurtain = (onFinish: () => void = () => {}) => {
   // and only covers half the stage under low-performance mode.
   const floorY = STAGE_HEIGHT;
   const moveDown = (delta: number) => {
-    if (
-      bounce % 2 == 0
-        ? curtain.y < floorY
-        : curtain.y > floorY - 80
-    ) {
+    if (bounce % 2 == 0 ? curtain.y < floorY : curtain.y > floorY - 80) {
       curtain.y += ((bounce % 2) * -2 + 1) * 10 * delta;
     } else {
       if (bounce < 2) {

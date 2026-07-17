@@ -48,12 +48,7 @@ const MOVE_MAP = {
 };
 
 /** Files that stay put (entry + assets + i18n + scss + d.ts) */
-const STAY = new Set([
-  "index.ts",
-  "style.scss",
-  "assets.d.ts",
-  "types.d.ts",
-]);
+const STAY = new Set(["index.ts", "style.scss", "assets.d.ts", "types.d.ts"]);
 
 function toPosix(p) {
   return p.split(path.sep).join("/");
@@ -185,11 +180,7 @@ async function main() {
   // utils/index.ts barrel
   const utilsIndex = path.join(SRC, "utils/index.ts");
   await ensureDir(utilsIndex);
-  await fs.writeFile(
-    utilsIndex,
-    `export * from "./coords";\n`,
-    "utf8",
-  );
+  await fs.writeFile(utilsIndex, `export * from "./coords";\n`, "utf8");
 
   // characters/index optional
   await fs.writeFile(

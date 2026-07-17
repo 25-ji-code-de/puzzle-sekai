@@ -80,7 +80,9 @@ function subsetDisplayFonts(): Plugin {
       this.info(
         `[subset-fonts] ${label}: ${(input.length / 1024).toFixed(0)} KB → ${(
           output.length / 1024
-        ).toFixed(0)} KB (${pct}%, ${[...charset].length} chars, hash ${hash}, ${
+        ).toFixed(
+          0,
+        )} KB (${pct}%, ${[...charset].length} chars, hash ${hash}, ${
           Date.now() - t0
         }ms)`,
       );
@@ -114,7 +116,11 @@ export default defineConfig({
         // and so the entry chunk is smaller for Lighthouse bootup-time.
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
-          if (id.includes("pixi.js-legacy") || id.includes("pixi.js" + path.sep) || id.includes(`${path.sep}pixi.js${path.sep}`)) {
+          if (
+            id.includes("pixi.js-legacy") ||
+            id.includes("pixi.js" + path.sep) ||
+            id.includes(`${path.sep}pixi.js${path.sep}`)
+          ) {
             return "pixi";
           }
           // pixi package path variants

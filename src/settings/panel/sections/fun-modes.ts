@@ -19,10 +19,13 @@ export const appendFunModesSection = (
 ): void => {
   const { settings } = ctx;
   if (!settings.funModes) {
-    settings.funModes = FUN_MODE_DEFS.reduce((acc, d) => {
-      acc[d.id] = false;
-      return acc;
-    }, {} as Record<FunModeId, boolean>);
+    settings.funModes = FUN_MODE_DEFS.reduce(
+      (acc, d) => {
+        acc[d.id] = false;
+        return acc;
+      },
+      {} as Record<FunModeId, boolean>,
+    );
   }
 
   const group = makeSettingGroup(t("settings.fun.label"));

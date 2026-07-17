@@ -105,7 +105,8 @@ export const en = {
       label: "Performance",
       normal: "Normal",
       low: "Low",
-      normalHelp: "Full render buffer (sharpest). Layout and controls unchanged.",
+      normalHelp:
+        "Full render buffer (sharpest). Layout and controls unchanged.",
       lowHelp:
         "Half render buffer (~¼ pixels). Looks softer; layout, hitboxes, and controls stay the same.",
     },

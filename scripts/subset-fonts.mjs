@@ -126,9 +126,8 @@ export async function collectCharset() {
   add(SAFETY);
 
   // Prefer i18n locales (main copy) + the rest of src for hard-coded labels.
-  const files = await walk(
-    SRC,
-    (f) => /\.(ts|tsx|js|jsx|html|scss|css)$/.test(f),
+  const files = await walk(SRC, (f) =>
+    /\.(ts|tsx|js|jsx|html|scss|css)$/.test(f),
   );
 
   for (const file of files) {
@@ -146,7 +145,10 @@ export async function collectCharset() {
 }
 
 export function charsetHash(charset) {
-  return createHash("sha256").update(charset, "utf8").digest("hex").slice(0, 12);
+  return createHash("sha256")
+    .update(charset, "utf8")
+    .digest("hex")
+    .slice(0, 12);
 }
 
 /**

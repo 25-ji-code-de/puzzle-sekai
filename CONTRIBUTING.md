@@ -91,6 +91,7 @@ git push origin feature/your-feature-name
 ```
 
 **Pull Request 要求：**
+
 - 清晰的标题和描述
 - 关联相关的 Issue（如果有）
 - 通过所有测试（如果有）
@@ -101,6 +102,7 @@ git push origin feature/your-feature-name
 ### 代码风格
 
 **JavaScript/TypeScript 项目：**
+
 - 使用 2 空格缩进
 - 使用 ES6+ 语法
 - 变量命名使用 camelCase
@@ -108,6 +110,7 @@ git push origin feature/your-feature-name
 - 类名使用 PascalCase
 
 **关键逻辑必须添加注释：**
+
 ```javascript
 // ✅ 好的注释
 // 计算视频片段和偏移量，基于当前时间
@@ -121,16 +124,19 @@ const x = 10;
 ### Git 工作流
 
 1. **保持分支更新**
+
 ```bash
 git fetch upstream
 git rebase upstream/main
 ```
 
 2. **小步提交**
+
 - 每个 commit 只做一件事
 - commit 信息要清晰明确
 
 3. **避免强制推送**
+
 - 不要使用 `git push --force` 到公共分支
 - 如果必须，使用 `git push --force-with-lease`
 

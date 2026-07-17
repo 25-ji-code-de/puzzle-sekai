@@ -23,8 +23,8 @@ export function getVolumeScale(
     channel === "bgm"
       ? clampVolumePercent(s.bgmVolume)
       : channel === "sfx"
-      ? clampVolumePercent(s.sfxVolume)
-      : clampVolumePercent(s.voiceVolume);
+        ? clampVolumePercent(s.sfxVolume)
+        : clampVolumePercent(s.voiceVolume);
   return pct / 100;
 }
 

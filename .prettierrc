@@ -3,7 +3,7 @@
   "arrowParens": "always",
   "singleQuote": false,
   "jsxSingleQuote": false,
-  "jsxBracketSameLine": false,
+  "bracketSameLine": false,
   "trailingComma": "all",
   "endOfLine": "lf"
 }

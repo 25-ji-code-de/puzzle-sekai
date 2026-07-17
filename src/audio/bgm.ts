@@ -67,8 +67,7 @@ export { playSfxPreview, playVoicePreview } from "./sfx";
 export const unlockAudio = (): void => {
   try {
     const ctx = (sound as any).context?.audioContext as
-      | AudioContext
-      | undefined;
+      AudioContext | undefined;
     if (ctx && ctx.state === "suspended") {
       void ctx.resume();
     }

@@ -82,7 +82,7 @@ export const commitLandedSprite = (
   const name: CellToken | undefined =
     kind === "item"
       ? ITEM_TOKEN
-      : character?.name ?? sprites[idx].character?.name;
+      : (character?.name ?? sprites[idx].character?.name);
   if (!name) return;
 
   getBoardModel().write(cells, name);
@@ -91,11 +91,9 @@ export const commitLandedSprite = (
   // Assign domain entity identity once on land (stable across later gravity).
   if (!sprites[idx].entityId) {
     const group = (sprites[idx].character?.group ?? "Special") as
-      | GroupName
-      | "Special";
+      GroupName | "Special";
     const charName = (character?.name ?? sprites[idx].character?.name) as
-      | CharacterName
-      | undefined;
+      CharacterName | undefined;
     if (kind === "item") {
       const ent = makeItemEntity({
         itemFile: sprites[idx].itemFile ?? "item",
