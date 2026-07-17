@@ -4417,7 +4417,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pixi.js@npm:5.3.12, pixi.js@npm:^5.3.0":
+"pixi.js@npm:5.3.12":
   version: 5.3.12
   resolution: "pixi.js@npm:5.3.12"
   dependencies:
@@ -4528,7 +4528,6 @@ __metadata:
     "@types/hammerjs": "npm:^2.0.36"
     hammerjs: "npm:^2.0.8"
     pixi-sound: "npm:^3.0.4"
-    pixi.js: "npm:^5.3.0"
     pixi.js-legacy: "npm:^5.3.2"
     prettier: "npm:^3.6.2"
     sass: "npm:^1.26.10"
