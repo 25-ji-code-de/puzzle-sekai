@@ -16,6 +16,12 @@
 
 **当前版本：`1.1.0`**
 
+### 🎮 在线游玩
+
+**[https://pico.nightcord.de5.net/](https://pico.nightcord.de5.net/)** — 浏览器直接打开，无需安装。
+
+[![Play online](https://img.shields.io/badge/Play-pico.nightcord.de5.net-884499?style=for-the-badge)](https://pico.nightcord.de5.net/)
+
 ## ✨ 特性
 
 - 🎮 **经典玩法** - 同组角色连通消除（含 WxS 特殊规则：四人 + 特殊位）
