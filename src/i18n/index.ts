@@ -28,19 +28,23 @@ export function getLocale(): Locale {
   return detectLocale();
 }
 
-/** Keep <meta name="description"> in sync with the active locale. */
-function applyMetaDescription(locale: Locale = currentLocale): void {
-  const content = LOCALES[locale].page.description;
-  if (!content) return;
-  let meta = document.querySelector(
-    'meta[name="description"]',
-  ) as HTMLMetaElement | null;
-  if (!meta) {
-    meta = document.createElement("meta");
-    meta.name = "description";
-    document.head.appendChild(meta);
-  }
-  meta.content = content;
+/** Keep <meta name="description"> and <meta name="keywords"> in sync. */
+function applyMetaTags(locale: Locale = currentLocale): void {
+  const page = LOCALES[locale].page;
+  const setMeta = (name: "description" | "keywords", content: string) => {
+    if (!content) return;
+    let meta = document.querySelector(
+      `meta[name="${name}"]`,
+    ) as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = name;
+      document.head.appendChild(meta);
+    }
+    meta.content = content;
+  };
+  setMeta("description", page.description);
+  setMeta("keywords", page.keywords);
 }
 
 /** Switch locale, save to localStorage, notify listeners */
@@ -50,7 +54,7 @@ export function setLocale(locale: Locale): void {
   getStoragePort().set("puzzleSekaiLocale", locale);
   document.documentElement.lang = locale === "zh" ? "zh-CN" : locale;
   document.title = LOCALES[locale].page.title;
-  applyMetaDescription(locale);
+  applyMetaTags(locale);
   applyDataI18n();
   for (const fn of listeners) fn(locale);
 }
@@ -110,5 +114,5 @@ export const SUPPORTED_LOCALES: { value: Locale; label: string }[] = [
 currentLocale = getLocale();
 document.documentElement.lang = currentLocale === "zh" ? "zh-CN" : currentLocale;
 document.title = LOCALES[currentLocale].page.title;
-applyMetaDescription(currentLocale);
+applyMetaTags(currentLocale);
 applyDataI18n();

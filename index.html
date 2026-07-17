@@ -7,6 +7,10 @@
       name="description"
       content="少年少女们忽然发现，熟悉的「世界」变成了由多彩方块堆叠的消消乐世界——集结同组合成员完成消除，挑战最高分！（Project SEKAI 同人作品）"
     />
+    <meta
+      name="keywords"
+      content="パズル⭐︎セカ,Puzzle SEKAI,拼图世界,世界计划,缤纷舞台,Project SEKAI,PJSK,プロセカ,初音未来,ミク,Miku,Vocaloid,虚拟歌手,消消乐,方块消除,拼图游戏,同人游戏,无尽模式,计时挑战,组合消除,Leo/need,MORE MORE JUMP,Vivid BAD SQUAD,Wonderlands×Showtime,25時、ナイトコードで。,25时,Nightcord,Wonderlands,NeneRobo,Mikudayo,高分,浏览器游戏,PixiJS"
+    />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -183,10 +187,17 @@
           ja: "気がつけば「セカイ」はカラフルなブロックでできたパズルの世界に。ユニットのメンバーを揃えて消し、ハイスコアを目指そう！（Project SEKAI ファン作品）",
           en: "The world has turned into a puzzle of colorful blocks. Gather unit members, clear the board, and chase high scores! Unofficial Project SEKAI fan work.",
         };
+        var keywords = {
+          zh: "パズル⭐︎セカ,Puzzle SEKAI,拼图世界,世界计划,缤纷舞台,Project SEKAI,PJSK,プロセカ,初音未来,ミク,Miku,Vocaloid,虚拟歌手,消消乐,方块消除,拼图游戏,同人游戏,无尽模式,计时挑战,组合消除,Leo/need,MORE MORE JUMP,Vivid BAD SQUAD,Wonderlands×Showtime,25時、ナイトコードで。,25时,Nightcord,NeneRobo,Mikudayo,高分,浏览器游戏,PixiJS",
+          ja: "パズル⭐︎セカ,Puzzle SEKAI,プロジェクトセカイ,プロセカ,PJSK,Project SEKAI,初音ミク,ボーカロイド,バーチャルシンガー,パズル,ブロック消し,落ち物,ファンゲーム,エンドレス,タイムアタック,ユニット,Leo/need,MORE MORE JUMP,Vivid BAD SQUAD,ワンダーランズ×ショウタイム,25時,ナイトコード,NeneRobo,Mikudayo,ハイスコア,ブラウザゲーム,PixiJS",
+          en: "Puzzle SEKAI,パズル⭐︎セカ,Project SEKAI,PJSK,Hatsune Miku,Vocaloid,virtual singer,puzzle game,block puzzle,match-3,fan game,endless mode,time attack,unit clear,Leo/need,MORE MORE JUMP,Vivid BAD SQUAD,Wonderlands Showtime,Nightcord,NeneRobo,Mikudayo,high score,browser game,PixiJS",
+        };
         document.title = titles[locale] || titles.zh;
         var meta = document.querySelector('meta[name="description"]');
         if (meta)
           meta.setAttribute("content", descriptions[locale] || descriptions.zh);
+        var kw = document.querySelector('meta[name="keywords"]');
+        if (kw) kw.setAttribute("content", keywords[locale] || keywords.zh);
       })();
     </script>
   </head>

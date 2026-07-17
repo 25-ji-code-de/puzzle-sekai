@@ -4,6 +4,8 @@ export const zh = {
     title: "パズル⭐︎セカ | Puzzle × SEKAI",
     description:
       "少年少女们忽然发现，熟悉的「世界」变成了由多彩方块堆叠的消消乐世界——集结同组合成员完成消除，挑战最高分！（Project SEKAI 同人作品）",
+    keywords:
+      "パズル⭐︎セカ,Puzzle SEKAI,拼图世界,世界计划,缤纷舞台,Project SEKAI,PJSK,プロセカ,初音未来,ミク,Miku,Vocaloid,虚拟歌手,消消乐,方块消除,拼图游戏,同人游戏,无尽模式,计时挑战,组合消除,Leo/need,MORE MORE JUMP,Vivid BAD SQUAD,Wonderlands×Showtime,25時、ナイトコードで。,25时,Nightcord,NeneRobo,Mikudayo,高分,浏览器游戏,PixiJS",
   },
   welcome: {
     title: "パズル⭐︎セカ",

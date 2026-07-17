@@ -4,6 +4,8 @@ export const en = {
     title: "Puzzle ⭐︎ SEKAI",
     description:
       "The world has turned into a puzzle of colorful blocks. Gather unit members, clear the board, and chase high scores! Unofficial Project SEKAI fan work.",
+    keywords:
+      "Puzzle SEKAI,パズル⭐︎セカ,Project SEKAI,PJSK,Hatsune Miku,Vocaloid,virtual singer,puzzle game,block puzzle,match-3,fan game,endless mode,time attack,unit clear,Leo/need,MORE MORE JUMP,Vivid BAD SQUAD,Wonderlands Showtime,Nightcord,NeneRobo,Mikudayo,high score,browser game,PixiJS",
   },
   welcome: {
     title: "パズル⭐︎セカ",
