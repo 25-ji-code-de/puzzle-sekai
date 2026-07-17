@@ -113,6 +113,7 @@ export const getMizukiLockColumns = (): number[] => {
 export const characterTouchesItem = (
   characterSp: (typeof sprites)[number],
   itemPred: (file: string) => boolean,
+  gap?: number,
 ): boolean => {
   if (!characterSp.character) return false;
   const charKind = pieceKindFrom({
@@ -137,7 +138,7 @@ export const characterTouchesItem = (
         rotation: sp.sprite.rotation,
       },
     };
-    if (entitiesTouching(charEnt, itemEnt)) return true;
+    if (entitiesTouching(charEnt, itemEnt, gap)) return true;
   }
   return false;
 };

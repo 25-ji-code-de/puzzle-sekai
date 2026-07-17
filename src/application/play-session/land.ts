@@ -80,6 +80,7 @@ export const handleCharacterLand = async (
     const landFx = await runCharacterLandEffects({
       spriteIndex,
       name: character.name,
+      sprite,
     });
     if (!isMatchOpen()) return { scored: false, topOut: false };
     const { cleared } = await settleBoard();
@@ -101,6 +102,7 @@ export const handleCharacterLand = async (
   const landFx = await runCharacterLandEffects({
     spriteIndex,
     name: character.name,
+    sprite,
   });
   if (!isMatchOpen()) return { scored: false, topOut: false };
   const { cleared } = await settleBoard();

@@ -3,6 +3,7 @@
  * Ena/Akito touching a carrot are silently cleared.
  * Grid path: cell ortho. Continuous: body proximity.
  */
+import type * as PIXI from "pixi.js-legacy";
 import { SpriteData, sprites, getGrid } from "../../game/board-state";
 import {
   isFunModeOn,
@@ -19,16 +20,24 @@ import { playLoadedSfx } from "../../audio/sfx";
 import { characterTouchesItem } from "../contact";
 import { isContinuousPhysics, massOfKind } from "../dynamics";
 import { pieceKindFrom } from "../../domain/types";
+import { BOX_SIZE } from "../../config";
+// Vite URL keys — same pattern as character fall voices.
+// Loader aliases "carrotAkito"/"carrotEna" often have no .sound attached.
+import carrotAkitoSfx from "../../assets/sounds/effects/2509_004_002.mp3";
+import carrotEnaSfx from "../../assets/sounds/effects/2509_004_003.mp3";
+
+/** Continuous allergy contact: looser than generic CONTACT_GAP so stacks still trigger. */
+const ALLERGY_CONTACT_GAP = Math.max(24, BOX_SIZE * 0.2);
 
 const playCarrotAllergySfx = (name?: string) => {
-  const key =
+  const url =
     name === CHAR.Akito
-      ? "carrotAkito"
+      ? carrotAkitoSfx
       : name === CHAR.Ena
-        ? "carrotEna"
+        ? carrotEnaSfx
         : null;
-  if (!key) return;
-  playLoadedSfx(key, "voice", 0.5);
+  if (!url) return;
+  playLoadedSfx(url, "voice", 0.55);
 };
 
 const scoreUnits = (sp: SpriteData): number => {
@@ -67,9 +76,7 @@ const silentClearChunk = async (chunk: [number, number][]): Promise<void> => {
   await silentClearSprites(spritesInChunk(chunk));
 };
 
-const clearAllergySprites = async (toClear: SpriteData[]): Promise<boolean> => {
-  if (toClear.length === 0) return false;
-
+const playAllergyVoices = (toClear: SpriteData[]): void => {
   const played = new Set<string>();
   for (const sp of toClear) {
     const n = sp.character?.name;
@@ -78,6 +85,11 @@ const clearAllergySprites = async (toClear: SpriteData[]): Promise<boolean> => {
       played.add(n);
     }
   }
+};
+
+const clearAllergySprites = async (toClear: SpriteData[]): Promise<boolean> => {
+  if (toClear.length === 0) return false;
+  playAllergyVoices(toClear);
   await silentClearSprites(toClear);
   return true;
 };
@@ -96,14 +108,7 @@ const clearAllergyCells = async (
   }
   if (toClear.length === 0) return false;
 
-  const played = new Set<string>();
-  for (const sp of toClear) {
-    const n = sp.character?.name;
-    if (n && !played.has(n)) {
-      playCarrotAllergySfx(n);
-      played.add(n);
-    }
-  }
+  playAllergyVoices(toClear);
 
   const chunkKeys = new Set<string>();
   for (const sp of toClear) {
@@ -123,7 +128,6 @@ export const applyCarrotAllergy = async (
   if (!isFunModeOn("itemAllergy")) return false;
 
   if (isContinuousPhysics()) {
-    // Continuous: recheck proximity globally (item coords are approximate)
     return recheckCarrotAllergy();
   }
 
@@ -154,21 +158,40 @@ export const applyCarrotAllergy = async (
 };
 
 /**
- * Reverse direction: Ena/Akito just landed — clear them if any cell is
- * orthogonally adjacent to a carrot item.
+ * Prefer live sprite ref — spawn-time index goes stale after mid-fall clears.
+ */
+const resolveLandedCharacter = (
+  characterIndex: number,
+  sprite?: PIXI.Sprite,
+): SpriteData | undefined => {
+  if (sprite) {
+    const found = sprites.find((s) => s.sprite === sprite);
+    if (found) return found;
+  }
+  const byIndex = sprites[characterIndex];
+  if (byIndex && isAllergyAvoiderName(byIndex.character?.name)) return byIndex;
+  for (let i = sprites.length - 1; i >= 0; i--) {
+    if (isAllergyAvoiderName(sprites[i].character?.name)) return sprites[i];
+  }
+  return undefined;
+};
+
+/**
+ * Reverse direction: Ena/Akito just landed — clear them if adjacent to a carrot.
  */
 export const applyCarrotAllergyOnCharacter = async (
   characterIndex: number,
+  sprite?: PIXI.Sprite,
 ): Promise<boolean> => {
   if (!isFunModeOn("itemAllergy")) return false;
-  const sp = sprites[characterIndex];
+  const sp = resolveLandedCharacter(characterIndex, sprite);
   if (!sp) return false;
-  if (!isAllergyAvoiderName(sp.character?.name)) {
-    return false;
-  }
+  if (!isAllergyAvoiderName(sp.character?.name)) return false;
 
   if (isContinuousPhysics()) {
-    if (!characterTouchesItem(sp, isCarrotItem)) return false;
+    if (!characterTouchesItem(sp, isCarrotItem, ALLERGY_CONTACT_GAP)) {
+      return false;
+    }
     playCarrotAllergySfx(sp.character?.name);
     await silentClearSprites([sp]);
     return true;
@@ -201,8 +224,7 @@ export const applyCarrotAllergyOnCharacter = async (
 };
 
 /**
- * After gravity: any Ena/Akito that ends orthogonally adjacent to a carrot
- * is cleared (silent, no unit voice).
+ * After gravity: any Ena/Akito adjacent to a carrot is cleared + allergy voice.
  */
 export const recheckCarrotAllergy = async (): Promise<boolean> => {
   if (!isFunModeOn("itemAllergy")) return false;
@@ -211,7 +233,7 @@ export const recheckCarrotAllergy = async (): Promise<boolean> => {
     const toClear = sprites.filter(
       (sp) =>
         isAllergyAvoiderName(sp.character?.name) &&
-        characterTouchesItem(sp, isCarrotItem),
+        characterTouchesItem(sp, isCarrotItem, ALLERGY_CONTACT_GAP),
     );
     return clearAllergySprites(toClear);
   }

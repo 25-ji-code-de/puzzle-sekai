@@ -19,11 +19,11 @@ export const allergyEffect: FunEffect = {
     const scored = await applyCarrotAllergy(x, y);
     return { changed: scored, scored };
   },
-  async onCharacterLand(ctx, { spriteIndex, name }) {
+  async onCharacterLand(ctx, { spriteIndex, name, sprite }) {
     if (!ctx.isOn("itemAllergy") || !isAllergyAvoiderName(name)) {
       return { changed: false };
     }
-    const scored = await applyCarrotAllergyOnCharacter(spriteIndex);
+    const scored = await applyCarrotAllergyOnCharacter(spriteIndex, sprite);
     return { changed: scored, scored };
   },
   async onSettled(ctx) {

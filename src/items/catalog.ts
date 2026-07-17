@@ -43,7 +43,13 @@ const itemGroups: string[][] = [
 
 /** Group A: carrot materials (にんじん) — used by itemAllergy fun mode */
 export const CARROT_ITEMS = [material008, material013];
-export const isCarrotItem = (file: string) => CARROT_ITEMS.includes(file);
+/** Match by import URL equality or path substring (robust to hashed URLs). */
+export const isCarrotItem = (file: string): boolean => {
+  if (!file) return false;
+  if (CARROT_ITEMS.includes(file)) return true;
+  const lower = file.toLowerCase();
+  return lower.includes("material008") || lower.includes("material013");
+};
 
 /** Group B: fries / ポテト / 薯条 — used by mizukiShift fun mode */
 export const FRIES_ITEMS: readonly string[] = itemGroups[1];

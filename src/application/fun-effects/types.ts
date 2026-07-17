@@ -25,6 +25,8 @@ export type ItemLandArgs = {
 export type CharacterLandArgs = {
   spriteIndex: number;
   name: CharacterName;
+  /** Live sprite ref — preferred over index (indices go stale after clears). */
+  sprite?: import("pixi.js-legacy").Sprite;
 };
 
 export interface FunEffect {

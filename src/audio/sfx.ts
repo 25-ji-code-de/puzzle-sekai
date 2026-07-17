@@ -37,8 +37,20 @@ const ensureSoundAlias = (key: string): void => {
 
 /** Resolve a sound from loader resources or pixi-sound alias registry. */
 export const resolveSound = (key: string) => {
-  const fromLoader = app.loader.resources[key]?.sound;
-  if (fromLoader) return fromLoader;
+  const res = app.loader.resources[key];
+  // Prefer resource.sound; if middleware didn't attach it, re-register via URL.
+  if (res?.sound) return res.sound;
+  const resUrl =
+    (res as { url?: string; data?: string } | undefined)?.url ??
+    (res as { data?: string } | undefined)?.data;
+  if (resUrl && typeof resUrl === "string") {
+    ensureSoundAlias(resUrl);
+    try {
+      if (sound.exists(resUrl)) return sound.find(resUrl);
+    } catch {
+      /* ignore */
+    }
+  }
   ensureSoundAlias(key);
   try {
     if (sound.exists(key)) {
