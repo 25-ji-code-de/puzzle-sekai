@@ -33,6 +33,11 @@ import {
   setPlayPhase,
   isPausedPhase,
 } from "../application/play-session/phase";
+import {
+  openMatch,
+  closeMatch,
+  isMatchOpen,
+} from "../application/play-session/match-gate";
 import { spawnNext } from "../application/play-session/spawn";
 import { enterMenu } from "../ui/welcome";
 import {
@@ -52,26 +57,24 @@ import {
 import { sprites, clearSpritesList, resetGrid } from "./board-state";
 
 export { welcome } from "../ui/welcome";
-
 export { isPlayActive } from "../application/play-session/phase";
-
 export { addDropScore } from "../score";
-
 export {
   type SpriteData,
   sprites,
   setSprites,
 } from "./board-state";
-
 export { playMenuBgm, stopBgm } from "../audio/session";
-let endAnimation: number | undefined;
-let avatarStab: PIXI.AnimatedSprite;
-let nextPiece: PIXI.Sprite;
 
-// Time attack timer
+/** Timeout id for curtain / flourish; also used as "end already started" latch. */
+let endAnimation: number | undefined;
+/** True once an end path has begun (sync, before any await). */
+let ending = false;
+let avatarStab: PIXI.AnimatedSprite;
+let nextPiece: PIXI.Sprite | undefined;
+/** Latch so create is not re-entered while a spawn cycle is in flight. */
+let creating = false;
 let timeAttackInterval: number | undefined;
-let created = false;
-// Stop time attack timer
 
 const stopTimeAttackTimer = () => {
   if (timeAttackInterval) {
@@ -79,13 +82,11 @@ const stopTimeAttackTimer = () => {
     timeAttackInterval = undefined;
   }
 };
-// Start time attack timer
 
 const startTimeAttackTimer = () => {
   stopTimeAttackTimer();
   const settings = getCurrentSettings();
   setTimeRemaining(settings.timeAttackDuration);
-  // Don't decrement while paused (portrait): just re-arm for the next tick.
   timeAttackInterval = window.setInterval(() => {
     if (isPausedPhase()) return;
     const isTimeUp = decrementTime();
@@ -96,14 +97,18 @@ const startTimeAttackTimer = () => {
   }, 1000);
 };
 
-/** Remove every gameplay-owned sprite + stop timers. Shared by `start`
- * (before re-seeding) and `returnToMenu` (leaving the match). */
-
+/** Remove every gameplay-owned sprite + stop timers. */
 const clearStage = () => {
+  closeMatch();
+  creating = false;
+  ending = false;
   sprites.forEach((sp) => app.stage.removeChild(sp.sprite));
   clearSpritesList();
   resetGameTicker();
-  endAnimation = undefined;
+  if (endAnimation) {
+    clearTimeout(endAnimation);
+    endAnimation = undefined;
+  }
   stopBgm();
   stopTimeAttackTimer();
   if (avatarStab) {
@@ -115,29 +120,78 @@ const clearStage = () => {
   resetGrid();
   if (nextPiece) {
     app.stage.removeChild(nextPiece);
+    nextPiece = undefined;
   }
 };
+
+const ensureNextPreview = async (): Promise<void> => {
+  if (nextPiece || !nextCharacter) return;
+  try {
+    nextPiece = await showNextPiece(
+      nextCharacter.preview ?? nextCharacter.file,
+    );
+  } catch (e) {
+    console.warn("[start] next preview failed", e);
+  }
+};
+
+const unlockCreate = () => {
+  creating = false;
+};
+
+const create = async () => {
+  if (creating || ending || !isMatchOpen()) return;
+  creating = true;
+  try {
+    await spawnNext({
+      getSpriteIndexBase: () => sprites.length,
+      avatarStab,
+      getNextPiece: () => nextPiece,
+      setNextPiece: (s: PIXI.Sprite) => {
+        nextPiece = s;
+      },
+      onTopOut: () => {
+        // Close immediately so concurrent land handlers bail before end runs.
+        closeMatch();
+        unlockCreate();
+        setState(end);
+      },
+      onSpawnComplete: () => {
+        unlockCreate();
+        if (isMatchOpen() && !ending) setState(create);
+      },
+      onFalling: () => setState(falling),
+      onSpawnAborted: () => {
+        unlockCreate();
+      },
+    });
+  } catch (e) {
+    console.warn("[create] spawn failed", e);
+    unlockCreate();
+  }
+};
+
+const falling = () => {};
 
 const start = () => {
   clearStage();
   setBgmSessionPaused(false);
-  disposePauseMenu(); // drop any stale pause overlay (e.g. "r" restart from pause)
-  disposeGameOverMenu(); // drop game-over choice if "r" / restart was pressed
+  disposePauseMenu();
+  disposeGameOverMenu();
   avatarStab = createavatarSan();
   app.stage.addChild(avatarStab);
   resetScore();
   initScoreDisplay();
   initRNG();
   resetFunEffects();
+  openMatch();
   gameTicker.start();
-  setState(create);
-  if (nextCharacter) {
-    showNextPiece(nextCharacter.preview ?? nextCharacter.file).then(
-      (s) => (nextPiece = s),
-    );
-  }
+  // Prefer having a preview ready; create never hard-blocks if it is missing.
+  void ensureNextPreview().finally(() => {
+    if (!isMatchOpen() || ending) return;
+    setState(create);
+  });
   startPlayBgm();
-  // Start timer for time attack mode
   const mode = getCurrentGameMode();
   if (mode === "timeAttack") {
     startTimeAttackTimer();
@@ -148,29 +202,6 @@ const start = () => {
 
 export { start };
 
-const create = async () => {
-  if (created) return;
-  created = true;
-  await spawnNext({
-    getSpriteIndexBase: () => sprites.length,
-    avatarStab,
-    getNextPiece: () => nextPiece,
-    setNextPiece: (s: PIXI.Sprite) => {
-      nextPiece = s;
-    },
-    onTopOut: () => setState(end),
-    onSpawnComplete: () => {
-      created = false;
-      setState(create);
-    },
-    onFalling: () => setState(falling),
-  });
-};
-
-const falling = () => {};
-
-/** Pause gameplay: freeze the falling ticker and stop ticking the timer. */
-
 export const pausePlay = () => {
   gameTicker.stop();
   setBgmSessionPaused(true);
@@ -179,24 +210,13 @@ export const pausePlay = () => {
   setPlayPhase({ type: "paused", reason: "user", mode });
 };
 
-/** Resume gameplay after a pause (caller ensures ticker is restarted). */
-
 export const resumePlay = () => {
-  // Resume BGM before clearing paused phase so a same-tick checkBGM can't
-  // mis-detect the still-paused track as finished and start a new song.
   resumeBgmPlayback();
   setBgmSessionPaused(false);
-  // pausePlay stopped the ticker; start it again so pieces resume falling.
   if (!gameTicker.started) gameTicker.start();
   const mode = getCurrentGameMode();
   setPlayPhase({ type: "playing", mode });
 };
-
-/**
- * Abandon the current match and return to the welcome menu. Tears down the
- * board, stops timers/BGM, drops the pause overlay, and shows the menu. The
- * match state is fully cleared — calling `start` again later re-seeds it.
- */
 
 export const returnToMenu = () => {
   clearStage();
@@ -207,81 +227,90 @@ export const returnToMenu = () => {
   disposePauseMenu();
   disposeGameOverMenu();
   hidePauseButton();
-  setState(() => {}); // idle state while the menu shows
+  setState(() => {});
   enterMenu();
 };
 
+const beginGameOver = (cause: "topOut" | "timeUp") => {
+  ending = true;
+  closeMatch();
+  creating = false;
+  stopTimeAttackTimer();
+  setPlayPhase({
+    type: "gameOver",
+    cause,
+    mode: getCurrentGameMode(),
+  });
+  hidePauseButton();
+  disposePauseMenu();
+  void playGameOverBgm();
+};
+
+/** Always reach curtain → ended → menu. */
+const finishWithCurtain = () => {
+  if (nextPiece) {
+    app.stage.removeChild(nextPiece);
+    nextPiece = undefined;
+  }
+  createBarrel();
+  gameOverCurtain(() => {
+    setState(ended);
+  });
+};
+
 const end = async () => {
-  if (!endAnimation) {
-    // Stop time attack timer if running
-    stopTimeAttackTimer();
-    setPlayPhase({
-      type: "gameOver",
-      cause: "topOut",
-      mode: getCurrentGameMode(),
-    });
-    hidePauseButton();
-    disposePauseMenu();
-    // Play game over BGM: 182.1 once, then loop 182.2
-    void playGameOverBgm();
-    if (nextCharacter?.file) {
+  if (ending) return;
+  beginGameOver("topOut");
+
+  const last = sprites[sprites.length - 1];
+  if (last?.sprite && avatarStab && nextCharacter?.file) {
+    try {
       app.stage.removeChild(avatarStab);
       if (nextPiece) {
         app.stage.removeChild(nextPiece);
+        nextPiece = undefined;
       }
       createBarrel();
       await createFlyingavatar();
-      const avatarFlyDown = createFallingavatar();
-      const lastSprite = sprites[sprites.length - 1].sprite;
+      const avatarFall = createFallingavatar();
+      const lastSprite = last.sprite;
       const lastPieceOff = rotationToOrientation(lastSprite.rotation);
       const lastPieceCoor = primaryFromSprite(lastSprite, "cell2", "ceil");
       const overflow =
         lastPieceOff === 0 ? lastPieceCoor.y - 1 : lastPieceCoor.y;
-      avatarFlyDown.x = LEFT_BORDER + BOX_SIZE / 2 + BOX_SIZE * lastPieceCoor.x;
-      avatarFlyDown.y = (-1 + overflow) * BOX_SIZE + BOX_SIZE / 2;
+      avatarFall.x = LEFT_BORDER + BOX_SIZE / 2 + BOX_SIZE * lastPieceCoor.x;
+      avatarFall.y = (-1 + overflow) * BOX_SIZE + BOX_SIZE / 2;
       const speed = overflow === -2 ? 4 : 3;
       const moveDown = (delta: number) => {
         sprites.forEach((sp) => (sp.sprite.y += speed * delta));
-        avatarFlyDown.y += speed * delta;
+        avatarFall.y += speed * delta;
       };
-      const dur = overflow === -2 ? 2000 : 2000;
       app.ticker.add(moveDown);
-      endAnimation = setTimeout(() => {
+      endAnimation = window.setTimeout(() => {
         app.ticker.remove(moveDown);
         gameOverCurtain(() => {
           setState(ended);
         });
-      }, dur);
+      }, 2000);
+      return;
+    } catch (e) {
+      console.warn("[end] flourish failed, falling back", e);
     }
   }
+
+  endAnimation = window.setTimeout(() => {
+    finishWithCurtain();
+  }, 0);
 };
 
-// Time attack end - time ran out
-
 const endTimeAttack = async () => {
-  if (!endAnimation) {
-    stopTimeAttackTimer();
-    setPlayPhase({
-      type: "gameOver",
-      cause: "timeUp",
-      mode: getCurrentGameMode(),
-    });
-    hidePauseButton();
-    disposePauseMenu();
-    // Play game over BGM
-    void playGameOverBgm();
-    // Show game over curtain
-    if (nextPiece) {
-      app.stage.removeChild(nextPiece);
-    }
-    createBarrel();
-    gameOverCurtain(() => {
-      setState(ended);
-    });
-  }
+  if (ending) return;
+  beginGameOver("timeUp");
+  endAnimation = window.setTimeout(() => {
+    finishWithCurtain();
+  }, 0);
 };
 
 const ended = () => {
-  // Present Restart / Back-to-menu choices instead of tap-to-restart.
   showGameOverMenu();
 };

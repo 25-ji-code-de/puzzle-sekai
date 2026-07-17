@@ -9,7 +9,7 @@ export const wonderBlastEffect: FunEffect = {
   id: "wonderBlast",
   onCleared(ctx, cleared: SpriteData[]) {
     if (!ctx.isOn("wonderBlast")) return { changed: false };
-    applyWonderBlast(cleared);
-    return { changed: true };
+    const blasted = applyWonderBlast(cleared);
+    return { changed: blasted, scored: blasted };
   },
 };

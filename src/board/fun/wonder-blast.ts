@@ -28,25 +28,26 @@ const pickBlastTargets = (
 /**
  * When Rui and NeneRobo are both in a cleared set AND share an edge,
  * randomly blast extra pieces.
+ * @returns true if any sprites were removed by the blast.
  */
-export const applyWonderBlast = (cleared: SpriteData[]) => {
+export const applyWonderBlast = (cleared: SpriteData[]): boolean => {
   const ruiSprites = cleared.filter((sp) => sp.character?.name === CHAR.Rui);
   const neneRoboSprites = cleared.filter(
     (sp) => sp.character?.name === CHAR.NeneRobo,
   );
-  if (ruiSprites.length === 0 || neneRoboSprites.length === 0) return;
-  if (!anyPairAdjacent(ruiSprites, neneRoboSprites)) return;
+  if (ruiSprites.length === 0 || neneRoboSprites.length === 0) return false;
+  if (!anyPairAdjacent(ruiSprites, neneRoboSprites)) return false;
 
   const ruiNeneCount = ruiSprites.length + neneRoboSprites.length;
   const halfBoard = Math.floor((ROWS * COLUMNS) / 2);
   const blastTarget = Math.min(12, halfBoard, 2 + 2 * ruiNeneCount);
-  if (blastTarget <= 0) return;
+  if (blastTarget <= 0) return false;
 
   const candidates = shuffleInPlace(
     sprites.filter((sp) => sp.cells && sp.cells.length > 0).slice(),
   );
   const { remove, cellsCleared } = pickBlastTargets(candidates, blastTarget);
-  if (remove.length === 0) return;
+  if (remove.length === 0) return false;
 
   if (remove.some((sp) => sp.character?.name === CHAR.Kanade)) {
     onKanadeCleared();
@@ -55,4 +56,5 @@ export const applyWonderBlast = (cleared: SpriteData[]) => {
   addScore(cellsCleared);
   createParticles(remove);
   removeSpritesFromBoard(remove);
+  return true;
 };

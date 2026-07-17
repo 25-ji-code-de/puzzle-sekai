@@ -21,6 +21,7 @@ import {
   handleItemLand,
   handleCharacterLand,
 } from "./land";
+import { isMatchOpen } from "./match-gate";
 import type { CharacterData } from "../../characters/data";
 
 export type SpawnDeps = {
@@ -34,13 +35,31 @@ export type SpawnDeps = {
   onSpawnComplete: () => void;
   /** Set falling ticker state while piece is in the air. */
   onFalling: () => void;
+  /** Spawn could not start a piece (caller should unlock create latch). */
+  onSpawnAborted?: () => void;
+};
+
+const refreshNextPreview = async (
+  deps: SpawnDeps,
+): Promise<void> => {
+  if (!nextCharacter) return;
+  const preview = await showNextPiece(
+    nextCharacter.preview ?? nextCharacter.file,
+  );
+  deps.setNextPiece(preview);
 };
 
 /**
  * One spawn cycle: either two items or one character.
  * Calls onSpawnComplete when ready for the next create(), onTopOut on fail.
+ * Never hard-depends on a pre-existing next preview sprite.
  */
 export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
+  if (!isMatchOpen()) {
+    deps.onSpawnAborted?.();
+    return;
+  }
+
   const index = deps.getSpriteIndexBase();
   const maxHeight = maxOccupiedHeight(getGrid());
   const settings = getCurrentSettings();
@@ -48,18 +67,31 @@ export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
   if (maxHeight < 5 && Math.random() < getItemDropChance(settings)) {
     const itemFile = getRandomItem();
     const dropped = [false, false];
-    const onDropped = (id: number) => async (sprite: PIXI.Sprite) => {
-      const { x, y } = primaryFromSprite(sprite, "item", "ceil");
-      const outcome = await handleItemLand(sprite, index + id, itemFile, x, y);
-      if (outcome.topOut) {
-        deps.onTopOut();
-      } else {
-        dropped[id] = true;
-        if (dropped.every((e) => e)) {
-          deps.onSpawnComplete();
-        }
+    const finished = [false, false];
+
+    const finishPair = () => {
+      if (finished.every(Boolean) && dropped.every(Boolean) && isMatchOpen()) {
+        deps.onSpawnComplete();
       }
     };
+
+    const onDropped = (id: number) => async (sprite: PIXI.Sprite) => {
+      if (!isMatchOpen()) {
+        finished[id] = true;
+        return;
+      }
+      const { x, y } = primaryFromSprite(sprite, "item", "ceil");
+      const outcome = await handleItemLand(sprite, index + id, itemFile, x, y);
+      finished[id] = true;
+      if (!isMatchOpen()) return;
+      if (outcome.topOut) {
+        deps.onTopOut();
+        return;
+      }
+      dropped[id] = true;
+      finishPair();
+    };
+
     const positions = Array(COLUMNS)
       .fill(0)
       .map((_, i) => i);
@@ -85,13 +117,20 @@ export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
         return item;
       }),
     ]);
-    deps.onFalling();
+    if (isMatchOpen()) deps.onFalling();
     return;
   }
 
-  const character = randomCharacter() as CharacterData;
+  const character = randomCharacter() as CharacterData | undefined;
+  if (!character?.file) {
+    deps.onSpawnAborted?.();
+    return;
+  }
+
   const onDropped = async (sprite: PIXI.Sprite) => {
+    if (!isMatchOpen()) return;
     const outcome = await handleCharacterLand(sprite, index, character);
+    if (!isMatchOpen()) return;
     if (outcome.topOut) {
       deps.onTopOut();
     } else {
@@ -99,21 +138,28 @@ export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
     }
   };
 
-  const nextPiece = deps.getNextPiece();
-  if (nextPiece) {
+  const beginPiece = async () => {
+    const piece = await createPiece(character.file, onDropped);
+    if (!sprites.some((s) => s.sprite === piece)) {
+      sprites.push({ sprite: piece, character });
+    }
+  };
+
+  const preview = deps.getNextPiece();
+  if (preview) {
     deps.avatarStab.play();
-    fly(nextPiece, async (s) => {
+    fly(preview, async (s) => {
       deps.avatarStab.gotoAndStop(0);
       app.stage.removeChild(s);
-      if (nextCharacter) {
-        const preview = await showNextPiece(
-          nextCharacter.preview ?? nextCharacter.file,
-        );
-        deps.setNextPiece(preview);
-      }
-      const piece = await createPiece(character.file, onDropped);
-      sprites.push({ sprite: piece, character });
+      if (!isMatchOpen()) return;
+      // Kick next preview without blocking the falling piece.
+      void refreshNextPreview(deps);
+      await beginPiece();
     });
+  } else {
+    // No preview yet (async race / empty bag recovery): still spawn.
+    void refreshNextPreview(deps);
+    await beginPiece();
   }
 
   if (character.sounds?.fall?.length) {
@@ -122,5 +168,5 @@ export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
     playLoadedSfx(key, "voice", 0.5);
   }
 
-  deps.onFalling();
+  if (isMatchOpen()) deps.onFalling();
 };

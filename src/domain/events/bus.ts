@@ -1,6 +1,7 @@
 /**
  * Tiny typed event bus for domain / application events.
- * Presentation and audio subscribe; producers only emit.
+ * Optional scaffold: play paths do not emit yet. Subscribe/emit when wiring
+ * presentation or audio to domain outcomes; safe to keep unused.
  */
 import type { GameEvent } from "../types/events";
 

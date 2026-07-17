@@ -11,6 +11,7 @@ import {
   runItemLandEffects,
   runCharacterLandEffects,
 } from "../fun-effects";
+import { isMatchOpen } from "./match-gate";
 
 export type LandOutcome = {
   scored: boolean;
@@ -24,10 +25,14 @@ export const handleItemLand = async (
   x: number,
   y: number,
 ): Promise<LandOutcome> => {
+  if (!isMatchOpen()) return { scored: false, topOut: false };
   if (y < 0) return { scored: false, topOut: true };
   commitLandedSprite(sprite, spriteIndex, undefined, true);
+  if (!isMatchOpen()) return { scored: false, topOut: false };
   const landFx = await runItemLandEffects({ itemFile, x, y });
+  if (!isMatchOpen()) return { scored: false, topOut: false };
   const { cleared } = await settleBoard();
+  if (!isMatchOpen()) return { scored: false, topOut: false };
   const scored = !!(landFx.scored || cleared);
   if (!scored) resetCombo();
   return { scored, topOut: false };
@@ -38,6 +43,7 @@ export const handleCharacterLand = async (
   spriteIndex: number,
   character: CharacterData,
 ): Promise<LandOutcome> => {
+  if (!isMatchOpen()) return { scored: false, topOut: false };
   const kind = pieceKindFrom({ characterName: character.name });
   const { y } = primaryFromSprite(sprite, kind);
   const orientation = rotationToOrientation(sprite.rotation);
@@ -45,11 +51,14 @@ export const handleCharacterLand = async (
     return { scored: false, topOut: true };
   }
   commitLandedSprite(sprite, spriteIndex, character);
+  if (!isMatchOpen()) return { scored: false, topOut: false };
   const landFx = await runCharacterLandEffects({
     spriteIndex,
     name: character.name,
   });
+  if (!isMatchOpen()) return { scored: false, topOut: false };
   const { cleared } = await settleBoard();
+  if (!isMatchOpen()) return { scored: false, topOut: false };
   const scored = !!(landFx.scored || cleared);
   if (!scored) resetCombo();
   return { scored, topOut: false };

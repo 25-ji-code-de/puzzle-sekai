@@ -9,8 +9,11 @@ export {
   isPlayActive,
   isPlayingPhase,
   isPausedPhase,
+  isGameOverPhase,
   type PlayPhase,
 } from "./phase";
+
+export { openMatch, closeMatch, isMatchOpen } from "./match-gate";
 
 type StatesMod = typeof import("../../game/states");
 
