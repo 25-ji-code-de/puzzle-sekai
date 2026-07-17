@@ -105,9 +105,9 @@ export const en = {
       label: "Performance",
       normal: "Normal",
       low: "Low",
-      normalHelp: "Full render resolution (sharpest).",
+      normalHelp: "Full render buffer (sharpest). Layout and controls unchanged.",
       lowHelp:
-        "Half render resolution — fewer pixels, smoother on weak devices. Stage layout stays the same.",
+        "Half render buffer (~¼ pixels). Looks softer; layout, hitboxes, and controls stay the same.",
     },
     data: {
       label: "Data / Cache",

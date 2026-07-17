@@ -66,8 +66,11 @@ textarea {
     canvas {
       position: absolute;
 
-      width: auto;
-      height: 100%;
+      /* Display size is CSS-only. PIXI must not set inline width/height
+         (autoDensity does that and breaks letterbox). Keep !important as a
+         safety net if any code path reintroduces inline sizes. */
+      width: auto !important;
+      height: 100% !important;
 
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
       border-radius: 8px;
@@ -75,10 +78,17 @@ textarea {
       touch-action: none;
       -ms-touch-action: none;
 
+      /* Low-performance mode: crisp upscale of a smaller buffer. */
+      &[data-perf="low"] {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
       @media (max-aspect-ratio: 1280/720) {
         top: 0;
         left: 0;
-        width: 100%;
+        width: 100% !important;
+        height: auto !important;
       }
     }
   }

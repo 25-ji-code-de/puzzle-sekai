@@ -11,7 +11,10 @@ const { Application } = PIXI;
 
 /** Canvas buffer scale relative to logical stage (1 = full 1920×1080 buffer). */
 export const FULL_RESOLUTION = 1;
-/** Low-performance: half the pixels (~960×540 buffer, stage still 1920×1080). */
+/**
+ * Low-performance: half linear resolution → ~1/4 the pixels.
+ * Stage / interaction coordinates stay STAGE_WIDTH × STAGE_HEIGHT.
+ */
 export const LOW_PERF_RESOLUTION = 0.5;
 
 /**
@@ -30,43 +33,67 @@ const readLowPerformanceFlag = (): boolean => {
 };
 
 const initialLowPerf = readLowPerformanceFlag();
+const initialResolution = initialLowPerf
+  ? LOW_PERF_RESOLUTION
+  : FULL_RESOLUTION;
 
+// Keep filter FBOs in step with the main buffer (default is always 1).
+PIXI.settings.FILTER_RESOLUTION = initialResolution;
+
+/**
+ * IMPORTANT: do NOT enable autoDensity.
+ * autoDensity writes canvas.style.width/height = logical stage px (1920×1080),
+ * which fights our CSS letterbox (height:100%; width:auto) and breaks layout
+ * on every screen size. Display size is owned by style.scss only.
+ */
 export const app = new Application({
   width: STAGE_WIDTH,
   height: STAGE_HEIGHT,
-  // Keep CSS letterbox size tied to logical stage; only the buffer shrinks.
-  autoDensity: true,
-  resolution: initialLowPerf ? LOW_PERF_RESOLUTION : FULL_RESOLUTION,
-  // Prefer power-saving GPU profile when available.
-  powerPreference: initialLowPerf ? "low-power" : "default",
+  autoDensity: false,
+  resolution: initialResolution,
 });
+
+/** Clear any inline size PIXI may have set so CSS letterbox stays in charge. */
+const clearViewInlineSize = (): void => {
+  const canvas = app.view as HTMLCanvasElement;
+  if (!canvas?.style) return;
+  canvas.style.removeProperty("width");
+  canvas.style.removeProperty("height");
+};
+
+clearViewInlineSize();
+if (initialLowPerf) {
+  (app.view as HTMLCanvasElement).dataset.perf = "low";
+}
 
 /**
  * Switch renderer buffer resolution at runtime.
- * Stage coordinates stay STAGE_WIDTH × STAGE_HEIGHT; only back-buffer size changes.
+ * - Logical stage stays STAGE_WIDTH × STAGE_HEIGHT (game math unchanged).
+ * - Back-buffer becomes stage × resolution (0.5 → ~960×540).
+ * - CSS still letterboxes the canvas; we never set fixed inline CSS sizes.
  */
 export const applyPerformanceMode = (lowPerformance: boolean): void => {
   const next = lowPerformance ? LOW_PERF_RESOLUTION : FULL_RESOLUTION;
-  const renderer = app.renderer as PIXI.Renderer & {
+  const renderer = app.renderer as PIXI.AbstractRenderer & {
     resolution: number;
     resize: (w: number, h: number) => void;
   };
-  if (Math.abs(renderer.resolution - next) < 1e-6) return;
-  renderer.resolution = next;
-  // Re-apply logical size so the view buffer is rebuilt at the new resolution.
-  renderer.resize(STAGE_WIDTH, STAGE_HEIGHT);
-  try {
-    const gl = (renderer as unknown as { gl?: WebGLRenderingContext }).gl;
-    const canvas = app.view as HTMLCanvasElement;
-    // Hint is only honored by some browsers at context creation; set when possible.
-    if (canvas && lowPerformance) {
-      canvas.dataset.perf = "low";
-    } else if (canvas) {
-      delete canvas.dataset.perf;
-    }
-    void gl;
-  } catch {
-    /* ignore */
+
+  PIXI.settings.FILTER_RESOLUTION = next;
+
+  if (Math.abs(renderer.resolution - next) >= 1e-6) {
+    renderer.resolution = next;
+    // Rebuild the view buffer at the new resolution for the same logical size.
+    renderer.resize(STAGE_WIDTH, STAGE_HEIGHT);
+  }
+
+  clearViewInlineSize();
+
+  const canvas = app.view as HTMLCanvasElement;
+  if (lowPerformance) {
+    canvas.dataset.perf = "low";
+  } else {
+    delete canvas.dataset.perf;
   }
 };
 
