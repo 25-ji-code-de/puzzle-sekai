@@ -36,9 +36,15 @@ const refreshBootCopy = () => {
   const title = modalEl.querySelector(".welcome-title");
   const subtitle = modalEl.querySelector(".welcome-subtitle");
   const desc = modalEl.querySelector(".welcome-desc");
-  if (title) title.innerHTML = t("welcome.title");
-  if (subtitle) subtitle.innerHTML = t("welcome.subtitle");
+  const disc = modalEl.querySelector(".welcome-disclaimer");
+  if (title) title.textContent = t("welcome.title");
+  if (subtitle) subtitle.textContent = t("welcome.subtitle");
   if (desc) desc.innerHTML = t("welcome.desc");
+  if (disc) {
+    disc.innerHTML =
+      t("welcome.disclaimer") +
+      ' · <a class="welcome-disclaimer__link" href="https://github.com/25-ji-code-de/puzzle-sekai" target="_blank" rel="noopener noreferrer">GitHub</a>';
+  }
   if (welcomeReady && clickPromptEl) {
     clickPromptEl.textContent = t("welcome.click");
   } else {
@@ -81,10 +87,11 @@ const createBootShellFallback = (): HTMLDivElement => {
   const content = document.createElement("div");
   content.className = "welcome-card";
   content.innerHTML = `
-    <div class="welcome-title font-brand">${t("welcome.title")}</div>
+    <h1 class="welcome-title font-brand">${t("welcome.title")}</h1>
     <div class="welcome-subtitle font-brand">${t("welcome.subtitle")}</div>
     <div class="welcome-desc font-body">${t("welcome.desc")}</div>
     <div class="welcome-click font-action">${formatLoadingPrompt(0)}</div>
+    <p class="welcome-disclaimer">${t("welcome.disclaimer")} · <a class="welcome-disclaimer__link" href="https://github.com/25-ji-code-de/puzzle-sekai" target="_blank" rel="noopener noreferrer">GitHub</a></p>
   `;
   shell.appendChild(content);
   document.body.appendChild(shell);

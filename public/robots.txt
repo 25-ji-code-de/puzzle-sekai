@@ -1,22 +1,36 @@
 # robots.txt — Puzzle × SEKAI (パズル⭐︎セカ)
-# Live site: https://pico.nightcord.de5.net/
+# Live: https://pico.nightcord.de5.net/
 # Source: https://github.com/25-ji-code-de/puzzle-sekai
+#
+# NOTE: Cloudflare may prepend a "Managed Content" block (AI bot Disallow).
+# If that conflicts with the Allow rules below, fix AI Crawl Control in the
+# Cloudflare dashboard so the live robots.txt matches this file's intent.
 
 User-agent: *
 Allow: /
 
-# Disallow common non-content paths if the whole repo is ever served as root
+# Single-page app — only the homepage is indexable HTML
+Sitemap: https://pico.nightcord.de5.net/sitemap.xml
+
+# LLM-oriented project summary (not an HTML sitemap)
+# https://pico.nightcord.de5.net/llms.txt
+
+# Defensive if the full git tree is ever served as a site root
 User-agent: *
 Disallow: /node_modules/
 Disallow: /.git/
 Disallow: /src/
 Disallow: /scripts/
 
-# AI / research bots: same open crawl policy (AGPL source is public)
+# AI / research retrieval bots (fan game + public AGPL source)
+# Align Cloudflare managed rules with these Allows, or AI crawlers stay blocked.
 User-agent: GPTBot
 Allow: /
 
 User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
 Allow: /
 
 User-agent: Google-Extended
@@ -31,11 +45,11 @@ Allow: /
 User-agent: Claude-Web
 Allow: /
 
+User-agent: PerplexityBot
+Allow: /
+
 User-agent: Bytespider
 Allow: /
 
 User-agent: CCBot
 Allow: /
-
-# LLM-oriented project summary (not a traditional HTML sitemap)
-# https://pico.nightcord.de5.net/llms.txt

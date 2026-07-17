@@ -12,6 +12,7 @@ export const en = {
     subtitle: "～ Puzzle × SEKAI ～",
     desc: "Gather the members of Project SEKAI,<br>clear the blocks, and chase the high score!",
     click: "Tap / Click to Continue",
+    disclaimer: "Unofficial fan work — not affiliated with SEGA, Colorful Palette, or Crypton. Free in-browser game.",
   },
   menu: {
     title: "パズル⭐︎セカ",
