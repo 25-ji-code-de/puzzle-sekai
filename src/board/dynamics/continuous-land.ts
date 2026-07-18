@@ -46,12 +46,10 @@ export const commitLandContinuous = (
   entry.pose = { x: sprite.x, y: sprite.y, rotation: sprite.rotation };
 
   if (!entry.entityId) {
-    const group = (entry.character?.group ??
-      character?.group ??
-      "Special") as GroupName | "Special";
+    const group = (entry.character?.group ?? character?.group ?? "Special") as
+      GroupName | "Special";
     const charName = (character?.name ?? entry.character?.name) as
-      | CharacterName
-      | undefined;
+      CharacterName | undefined;
 
     // Dummy single cell for entity factories that require cells[] shape
     const dummy = [asCell([0, 0])];

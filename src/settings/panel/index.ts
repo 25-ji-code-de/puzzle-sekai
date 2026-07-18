@@ -2,7 +2,11 @@
  * Settings side panel — shell + section composition.
  * Styles: styles/_settings-panel.scss
  */
-import { prefersReducedMotion, trapFocus, type FocusTrapHandle } from "../../a11y";
+import {
+  prefersReducedMotion,
+  trapFocus,
+  type FocusTrapHandle,
+} from "../../a11y";
 import { getCurrentSettings } from "../store";
 import { t } from "../../i18n";
 import type { SettingsSectionCtx } from "./widgets";

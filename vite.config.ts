@@ -133,7 +133,10 @@ export default defineConfig({
           if (id.includes("hammerjs")) {
             return "hammer";
           }
-          if (id.includes("@dimforge/rapier2d") || id.includes("rapier2d-compat")) {
+          if (
+            id.includes("@dimforge/rapier2d") ||
+            id.includes("rapier2d-compat")
+          ) {
             return "rapier";
           }
         },

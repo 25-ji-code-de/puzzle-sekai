@@ -2,7 +2,11 @@
  * Boot welcome shell: static HTML adopt, load progress, click-to-continue.
  * Layout for #boot-welcome lives in index.html (LCP). Fallback uses same classes.
  */
-import { prefersReducedMotion, trapFocus, type FocusTrapHandle } from "../../a11y";
+import {
+  prefersReducedMotion,
+  trapFocus,
+  type FocusTrapHandle,
+} from "../../a11y";
 import { t, getLocale, onLocaleChange } from "../../i18n";
 import { unlockAudio } from "../../audio/bgm";
 import { playMenuBgm } from "../../audio/session";

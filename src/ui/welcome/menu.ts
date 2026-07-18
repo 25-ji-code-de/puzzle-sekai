@@ -14,11 +14,7 @@ import {
   resetHighScoreViewState,
   handleHighScoreRowEvent,
 } from "../menu-utils";
-import {
-  danColorStyle,
-  danMessageKey,
-  getDanSummary,
-} from "../../score";
+import { danColorStyle, danMessageKey, getDanSummary } from "../../score";
 import {
   displayNameOf,
   getAuthSnapshot,
@@ -27,10 +23,7 @@ import {
   onAuthChange,
   startLogin,
 } from "../../auth";
-import {
-  getSyncStatus,
-  onSyncStatus,
-} from "../../sync";
+import { getSyncStatus, onSyncStatus } from "../../sync";
 import type { MessageKey } from "../../i18n";
 import { ensureLiveRegions } from "../../a11y";
 import { showSettingsPanel, disposeSettingsPanel } from "../../settings/panel";

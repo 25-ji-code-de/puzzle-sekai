@@ -96,7 +96,9 @@ for (const name of big2x2) {
   const com = await comOf(file, 0.5, 0.5, BOX, BOX);
   entries.push(["emu_shrunk", com]);
 }
-for (const f of fs.readdirSync(itemsDir).filter((x) => /^material\d+\.png$/i.test(x))) {
+for (const f of fs
+  .readdirSync(itemsDir)
+  .filter((x) => /^material\d+\.png$/i.test(x))) {
   const file = path.join(itemsDir, f);
   const meta = await sharp(file).metadata();
   const com = await comOf(file, 0.5, 0.5, meta.width, meta.height);

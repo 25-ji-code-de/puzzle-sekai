@@ -2,7 +2,11 @@
  * Pure contact-graph adjacency from poses (testable without Rapier).
  */
 import type { PieceKind } from "../../domain/types";
-import { entitiesTouching, CONTACT_GAP, type ProximityEntity } from "./proximity";
+import {
+  entitiesTouching,
+  CONTACT_GAP,
+  type ProximityEntity,
+} from "./proximity";
 import type { Pose } from "./pose";
 
 export type GraphNode = {

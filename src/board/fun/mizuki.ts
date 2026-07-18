@@ -22,11 +22,7 @@ import { footprintFromPrimary } from "../../domain/piece";
 import { placeSpriteAtAnchor } from "../../presentation/placement";
 import { CHAR } from "../../characters/ids";
 import { characterTouchesItem } from "../contact";
-import {
-  isContinuousPhysics,
-  setBodyPose,
-  wakeBody,
-} from "../dynamics";
+import { isContinuousPhysics, setBodyPose, wakeBody } from "../dynamics";
 
 /** 2-cell footprint for primary (ax,ay) if every cell is on-board; else null. */
 const cellsFor = (
@@ -63,10 +59,7 @@ export const applyMizukiShift = async (
     for (const m of sprites) {
       if (m.character?.name !== CHAR.Mizuki) continue;
       for (const f of fries) {
-        const d = Math.hypot(
-          m.sprite.x - f.sprite.x,
-          m.sprite.y - f.sprite.y,
-        );
+        const d = Math.hypot(m.sprite.x - f.sprite.x, m.sprite.y - f.sprite.y);
         if (d < bestDist) {
           bestDist = d;
           bestM = m;

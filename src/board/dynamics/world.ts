@@ -14,11 +14,7 @@ import {
 } from "../../config";
 import type { EntityId } from "../../domain/types";
 import type { PieceKind } from "../../domain/types";
-import {
-  buildAlphaShape,
-  hullToFloat32,
-  type LocalPoint,
-} from "./alpha-shape";
+import { buildAlphaShape, hullToFloat32, type LocalPoint } from "./alpha-shape";
 import { colliderSpecFor, massOfKind } from "./colliders";
 import { resolveComOffset, type ComOffset } from "./com-table";
 import { poseAabb } from "./pose";
@@ -82,15 +78,18 @@ export const ensureWorld = async (): Promise<void> => {
       RAPIER.RigidBodyDesc.fixed().setTranslation(x, y),
     );
     world.createCollider(
-      RAPIER.ColliderDesc.cuboid(hx, hy)
-        .setFriction(0.8)
-        .setRestitution(0.05),
+      RAPIER.ColliderDesc.cuboid(hx, hy).setFriction(0.8).setRestitution(0.05),
       body,
     );
   };
 
   // Floor
-  makeFixed(playCenterX, playBottom + FLOOR_THICKNESS / 2, playWidth / 2 + 20, FLOOR_THICKNESS / 2);
+  makeFixed(
+    playCenterX,
+    playBottom + FLOOR_THICKNESS / 2,
+    playWidth / 2 + 20,
+    FLOOR_THICKNESS / 2,
+  );
   // Left / right walls
   makeFixed(
     playLeft - WALL_THICKNESS / 2,
@@ -356,13 +355,10 @@ export const rebuildBodyKind = (
       .setAngularDamping(0.8)
       .setCanSleep(true),
   );
-  const { collider, localPoints, com } = attachCollider(
-    s,
-    body,
-    kind,
-    sprite,
-    { isShrunk: kind === "shrunk", ...opts },
-  );
+  const { collider, localPoints, com } = attachCollider(s, body, kind, sprite, {
+    isShrunk: kind === "shrunk",
+    ...opts,
+  });
   s.registry.set(entityId, {
     entityId,
     kind,

@@ -110,7 +110,7 @@ describe("mergePicoData / parse", () => {
       },
       highScores: {
         "hs:endless:1:std": { score: 5, difficultyLevel: 1 },
-        "nope": { score: 1 },
+        nope: { score: 1 },
       },
     });
     expect(p).not.toBeNull();

@@ -55,12 +55,7 @@ export {
   computeDanRating,
   compareDan,
 } from "./dan";
-export type {
-  DanId,
-  DanRunEntry,
-  DanState,
-  DanRatingBreakdown,
-} from "./dan";
+export type { DanId, DanRunEntry, DanState, DanRatingBreakdown } from "./dan";
 
 export {
   getDanSummary,

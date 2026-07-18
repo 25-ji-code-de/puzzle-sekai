@@ -1,8 +1,9 @@
+export { prefersReducedMotion, onReducedMotionChange } from "./motion";
 export {
-  prefersReducedMotion,
-  onReducedMotionChange,
-} from "./motion";
-export { trapFocus, type FocusTrapHandle, type FocusTrapOptions } from "./focus-trap";
+  trapFocus,
+  type FocusTrapHandle,
+  type FocusTrapOptions,
+} from "./focus-trap";
 export {
   ensureLiveRegions,
   announce,

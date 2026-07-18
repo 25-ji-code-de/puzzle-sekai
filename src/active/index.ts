@@ -80,13 +80,7 @@ const nearestIndex = (list: number[], target: number): number => {
 const landYFor = (sprite: PIXI.Sprite): number => {
   if (!isDisplayAlive(sprite)) return 0;
   if (isContinuousPhysics()) {
-    return castDownY(
-      "cell2",
-      sprite.x,
-      sprite.y,
-      sprite.rotation,
-      sprite,
-    );
+    return castDownY("cell2", sprite.x, sprite.y, sprite.rotation, sprite);
   }
   const orient = asOrientation(rotationToOrientation(sprite.rotation));
   const primary = primaryFromSprite(sprite, "cell2", "floor");
@@ -143,8 +137,7 @@ export const createPiece = async (
   const isAllergyAvoider = isAllergyAvoiderFile(file);
   // truePhysics is continuous space — skip column lock / hazard columns
   // (fun effects still apply via proximity after land / settle).
-  const mizukiLockCols =
-    !continuous && isMizuki ? getMizukiLockColumns() : [];
+  const mizukiLockCols = !continuous && isMizuki ? getMizukiLockColumns() : [];
   const mizukiLocked = mizukiLockCols.length > 0;
   const carrotHazards =
     !continuous && isAllergyAvoider ? getCarrotHazardColumns() : [];
@@ -211,8 +204,7 @@ export const createPiece = async (
       );
       if (nx === null) return;
       // Snap when we fully reached the column center
-      piece.x =
-        Math.abs(nx - targetX) < 0.75 ? targetX : nx;
+      piece.x = Math.abs(nx - targetX) < 0.75 ? targetX : nx;
       activeFall.onMoved();
       return;
     }
@@ -328,7 +320,14 @@ export const createPiece = async (
   const rotateCW = () => {
     if (!isDisplayAlive(piece)) return;
     if (isContinuousPhysics()) {
-      const res = tryRotate("cell2", piece.x, piece.y, piece.rotation, 1, piece);
+      const res = tryRotate(
+        "cell2",
+        piece.x,
+        piece.y,
+        piece.rotation,
+        1,
+        piece,
+      );
       if (!res) return;
       piece.x = res.x;
       piece.y = res.y;

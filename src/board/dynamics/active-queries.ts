@@ -18,11 +18,7 @@ import { buildAlphaShape } from "./alpha-shape";
 import { colliderSpecFor } from "./colliders";
 import { resolveComOffset, type ComOffset } from "./com-table";
 import { poseAabb } from "./pose";
-import {
-  allSettledBodies,
-  getActiveBody,
-  localPointsForSprite,
-} from "./world";
+import { allSettledBodies, getActiveBody, localPointsForSprite } from "./world";
 
 const playLeft = () => BOARD_ORIGIN_X;
 const playRight = () => BOARD_ORIGIN_X + (RIGHT_BORDER - LEFT_BORDER);
@@ -86,9 +82,7 @@ export const geometricCenter = (
   sprite?: PIXI.Sprite,
 ): { x: number; y: number } => {
   const cLocal =
-    com ??
-    (sprite ? comFor(kind, sprite) : null) ??
-    resolveComOffset({ kind });
+    com ?? (sprite ? comFor(kind, sprite) : null) ?? resolveComOffset({ kind });
   // Prefer hardcoded COM for rotation pivot (matches physics mass props)
   if (cLocal) {
     const c = Math.cos(rotation);
@@ -137,9 +131,7 @@ export const originFromCenter = (
   sprite?: PIXI.Sprite,
 ): { x: number; y: number } => {
   const cLocal =
-    com ??
-    (sprite ? comFor(kind, sprite) : null) ??
-    resolveComOffset({ kind });
+    com ?? (sprite ? comFor(kind, sprite) : null) ?? resolveComOffset({ kind });
   if (cLocal) {
     const c = Math.cos(rotation);
     const s = Math.sin(rotation);

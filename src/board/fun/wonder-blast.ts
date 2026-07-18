@@ -9,11 +9,7 @@ import { createParticles } from "../particles";
 import { removeSpritesFromBoard } from "../mutate";
 import { anyPairAdjacent, shuffleInPlace } from "../grid";
 import { CHAR } from "../../characters/ids";
-import {
-  entitiesTouching,
-  isContinuousPhysics,
-  massOfKind,
-} from "../dynamics";
+import { entitiesTouching, isContinuousPhysics, massOfKind } from "../dynamics";
 import { pieceKindFrom } from "../../domain/types";
 
 const scoreUnits = (sp: SpriteData): number => {

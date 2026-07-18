@@ -68,7 +68,7 @@ export const trapFocus = (
     const target =
       opts.initialFocus && root.contains(opts.initialFocus)
         ? opts.initialFocus
-        : tabbables(root)[0] ?? root;
+        : (tabbables(root)[0] ?? root);
     try {
       target.focus({ preventScroll: true });
     } catch {

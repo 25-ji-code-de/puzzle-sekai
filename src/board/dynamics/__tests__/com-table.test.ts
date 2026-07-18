@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  assetKeyFromFile,
-  resolveComOffset,
-  COM_BY_ASSET,
-} from "../com-table";
+import { assetKeyFromFile, resolveComOffset, COM_BY_ASSET } from "../com-table";
 import { CHAR } from "../../../characters/ids";
 
 describe("COM table", () => {

@@ -21,16 +21,8 @@ import { chance, takeRandom } from "../../domain/prng";
 import { handleItemLand, handleCharacterLand } from "./land";
 import { isMatchOpen } from "./match-gate";
 import type { CharacterData } from "../../characters/data";
-import {
-  highestBodyTop,
-  isContinuousPhysics,
-} from "../../board/dynamics";
-import {
-  BOX_SIZE,
-  ROWS,
-  STAGE_HEIGHT,
-  OFFSET_BOTTOM,
-} from "../../config";
+import { highestBodyTop, isContinuousPhysics } from "../../board/dynamics";
+import { BOX_SIZE, ROWS, STAGE_HEIGHT, OFFSET_BOTTOM } from "../../config";
 
 export type SpawnDeps = {
   /** Current sprites.length before push (land index base). */
@@ -114,26 +106,22 @@ export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
       .fill(0)
       .map((_, i) => i);
     await Promise.all([
-      createItem(
-        itemFile,
-        takeRandom(positions)!,
-        onDropped(0),
-      ).then((item) => {
-        if (!sprites.some((s) => s.sprite === item)) {
-          sprites.push({ sprite: item, isItem: true, itemFile });
-        }
-        return item;
-      }),
-      createItem(
-        itemFile,
-        takeRandom(positions)!,
-        onDropped(1),
-      ).then((item) => {
-        if (!sprites.some((s) => s.sprite === item)) {
-          sprites.push({ sprite: item, isItem: true, itemFile });
-        }
-        return item;
-      }),
+      createItem(itemFile, takeRandom(positions)!, onDropped(0)).then(
+        (item) => {
+          if (!sprites.some((s) => s.sprite === item)) {
+            sprites.push({ sprite: item, isItem: true, itemFile });
+          }
+          return item;
+        },
+      ),
+      createItem(itemFile, takeRandom(positions)!, onDropped(1)).then(
+        (item) => {
+          if (!sprites.some((s) => s.sprite === item)) {
+            sprites.push({ sprite: item, isItem: true, itemFile });
+          }
+          return item;
+        },
+      ),
     ]);
     if (isMatchOpen()) deps.onFalling();
     return;

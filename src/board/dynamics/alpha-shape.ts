@@ -92,19 +92,14 @@ export const convexHull = (pts: LocalPoint[]): LocalPoint[] => {
   return lower.concat(upper);
 };
 
-const getImageSource = (
-  sprite: PIXI.Sprite,
-): CanvasImageSource | null => {
+const getImageSource = (sprite: PIXI.Sprite): CanvasImageSource | null => {
   const base = sprite.texture?.baseTexture as
     | {
         resource?: { source?: CanvasImageSource };
         source?: CanvasImageSource;
       }
     | undefined;
-  const src =
-    base?.resource?.source ??
-    base?.source ??
-    null;
+  const src = base?.resource?.source ?? base?.source ?? null;
   if (!src) return null;
   // HTMLImageElement / HTMLCanvasElement / ImageBitmap
   if (

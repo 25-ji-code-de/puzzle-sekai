@@ -3,11 +3,7 @@
  * Keeps score/combo spam down during multi-clear cascades.
  */
 import { t } from "../i18n";
-import {
-  getCombo,
-  getScore,
-  getTimeRemaining,
-} from "../score/model";
+import { getCombo, getScore, getTimeRemaining } from "../score/model";
 import { announce } from "./live-region";
 
 const SCORE_DEBOUNCE_MS = 700;

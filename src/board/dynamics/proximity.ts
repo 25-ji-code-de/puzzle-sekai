@@ -1,12 +1,7 @@
 /**
  * Continuous-space proximity helpers (no Rapier dependency).
  */
-import {
-  BOARD_ORIGIN_X,
-  BOX_SIZE,
-  COLUMNS,
-  LEFT_BORDER,
-} from "../../config";
+import { BOARD_ORIGIN_X, BOX_SIZE, COLUMNS, LEFT_BORDER } from "../../config";
 import type { PieceKind } from "../../domain/types";
 import type { LocalPoint } from "./alpha-shape";
 import { aabbGap, poseAabb, type Pose } from "./pose";

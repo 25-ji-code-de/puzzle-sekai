@@ -10,10 +10,7 @@ import {
 } from "../game/board-state";
 import type { Cell } from "../domain/types";
 import { unregisterEntitySprite } from "../presentation/entity-view";
-import {
-  continuousRemoveBody,
-  isContinuousPhysics,
-} from "./dynamics";
+import { continuousRemoveBody, isContinuousPhysics } from "./dynamics";
 
 /** Wipe footprint cells, remove from stage, drop sprites[], unregister entity views. */
 export const removeSpritesFromBoard = (toRemove: SpriteData[]): void => {

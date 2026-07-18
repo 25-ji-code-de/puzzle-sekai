@@ -2,11 +2,7 @@
  * Drive Rapier until the board is quiet (sleep / low velocity) or timeout.
  */
 import { gameTicker } from "../../runtime";
-import {
-  allSettledBodies,
-  stepWorld,
-  syncSpritesFromBodies,
-} from "./world";
+import { allSettledBodies, stepWorld, syncSpritesFromBodies } from "./world";
 
 const EPS_V = 12; // px/s
 const EPS_W = 0.2; // rad/s

@@ -31,7 +31,9 @@ export const redirectUri = (): string => {
     return `${origin}${dir}`;
   }
   // Ensure trailing slash for consistency with registered URIs.
-  const base = pathname.endsWith("/") ? pathname : pathname.replace(/[^/]*$/, "");
+  const base = pathname.endsWith("/")
+    ? pathname
+    : pathname.replace(/[^/]*$/, "");
   return `${origin}${base || "/"}`;
 };
 

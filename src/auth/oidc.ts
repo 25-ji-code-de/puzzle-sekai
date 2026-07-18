@@ -25,8 +25,7 @@ import {
 import { notifyAuthChanged } from "./user";
 
 export type LoginStartResult =
-  | { ok: true }
-  | { ok: false; reason: "not_configured" | "crypto" };
+  { ok: true } | { ok: false; reason: "not_configured" | "crypto" };
 
 /** Redirect browser to SEKAI Pass authorize endpoint. */
 export const startLogin = async (): Promise<LoginStartResult> => {

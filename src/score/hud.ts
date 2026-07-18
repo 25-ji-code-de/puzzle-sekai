@@ -3,10 +3,7 @@
  * Also drives screen-reader live regions (score / low timer).
  */
 import * as PIXI from "pixi.js-legacy";
-import {
-  announceTimerIfNeeded,
-  scheduleScoreAnnounce,
-} from "../a11y";
+import { announceTimerIfNeeded, scheduleScoreAnnounce } from "../a11y";
 import { app } from "../runtime";
 import {
   DifficultyLevel,

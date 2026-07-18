@@ -156,7 +156,8 @@ export const summarizeDanState = (state: DanState): DanSummary => {
   };
 };
 
-export const getDanSummary = (): DanSummary => summarizeDanState(loadDanState());
+export const getDanSummary = (): DanSummary =>
+  summarizeDanState(loadDanState());
 
 /**
  * Append one finished run (score > 0). Idempotent per session via latch.

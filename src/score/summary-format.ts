@@ -31,8 +31,7 @@ export const groupsForSummary = (summary: ScoreSummary): GroupName[] => {
   return GAME_GROUPS.filter((g) => wanted.has(g));
 };
 
-export const formatMultiplier = (mult: number): string =>
-  `×${mult.toFixed(2)}`;
+export const formatMultiplier = (mult: number): string => `×${mult.toFixed(2)}`;
 
 export const SCORE_PAD = 8;
 export const COMBO_PAD = 4;

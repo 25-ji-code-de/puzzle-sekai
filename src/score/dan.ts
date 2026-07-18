@@ -142,7 +142,10 @@ export const isSOrAbove = (rank: ScoreRank | string): boolean =>
   S_OR_ABOVE.has(rank as ScoreRank);
 
 export const difficultyWeight = (difficulty: number): number => {
-  const d = Math.min(7, Math.max(1, Math.floor(difficulty) || 1)) as DifficultyLevel;
+  const d = Math.min(
+    7,
+    Math.max(1, Math.floor(difficulty) || 1),
+  ) as DifficultyLevel;
   return DIFFICULTY_WEIGHT[d];
 };
 
@@ -229,9 +232,7 @@ export const computeDanRating = (
   );
 
   const sortedDesc = [...ratings].sort((a, b) => b - a);
-  const b30 = sortedDesc
-    .slice(0, DAN_B30)
-    .reduce((sum, v) => sum + v, 0);
+  const b30 = sortedDesc.slice(0, DAN_B30).reduce((sum, v) => sum + v, 0);
 
   const recent = ratings.slice(-DAN_R10);
   const r10 = recent.reduce((sum, v) => sum + v, 0);

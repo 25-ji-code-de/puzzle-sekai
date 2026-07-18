@@ -3,7 +3,12 @@
  */
 import { isFunModeOn } from "../../fun/effects";
 import { isRapierLoadFailed, warmRapier, loadRapier } from "./rapier-loader";
-import { destroyWorld, ensureWorld, hasPhysicsWorld, removeBody } from "./world";
+import {
+  destroyWorld,
+  ensureWorld,
+  hasPhysicsWorld,
+  removeBody,
+} from "./world";
 import { settleWorld } from "./settle";
 import type { EntityId } from "../../domain/types";
 
@@ -102,8 +107,4 @@ export {
 } from "./proximity";
 export { settleWorld } from "./settle";
 export { buildAlphaShape, convexHull } from "./alpha-shape";
-export {
-  resolveComOffset,
-  COM_BY_ASSET,
-  type ComOffset,
-} from "./com-table";
+export { resolveComOffset, COM_BY_ASSET, type ComOffset } from "./com-table";

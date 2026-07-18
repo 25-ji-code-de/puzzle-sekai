@@ -23,11 +23,7 @@ import {
   runSettledEffects,
   runClearedEffects,
 } from "../application/fun-effects";
-import {
-  findClearEntities,
-  isContinuousPhysics,
-  massOfKind,
-} from "./dynamics";
+import { findClearEntities, isContinuousPhysics, massOfKind } from "./dynamics";
 import { pieceKindFrom } from "../domain/types";
 
 /**

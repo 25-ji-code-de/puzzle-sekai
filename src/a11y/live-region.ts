@@ -70,10 +70,7 @@ export type AnnounceOptions = {
 };
 
 /** Speak `text` via the matching live region. */
-export const announce = (
-  text: string,
-  opts: AnnounceOptions = {},
-): void => {
+export const announce = (text: string, opts: AnnounceOptions = {}): void => {
   ensureLiveRegions();
   const polite = opts.politeness !== "assertive";
   write(polite ? politeEl : assertiveEl, text);

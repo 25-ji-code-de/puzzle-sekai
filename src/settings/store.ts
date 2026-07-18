@@ -83,9 +83,7 @@ export function migrateSettingsPayload(parsed: unknown): GameSettings {
 
   const o = parsed as Record<string, unknown>;
   const version =
-    typeof o.version === "number" && Number.isFinite(o.version)
-      ? o.version
-      : 0;
+    typeof o.version === "number" && Number.isFinite(o.version) ? o.version : 0;
 
   if (version > SETTINGS_VERSION) {
     console.warn(

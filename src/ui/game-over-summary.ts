@@ -51,9 +51,7 @@ const makePaddedNumber = (
  *   center: big score / high / dan
  *   bottom: [group clears vertical] | [COMBO]
  */
-export const buildGameOverSummary = (
-  summary: ScoreSummary,
-): HTMLDivElement => {
+export const buildGameOverSummary = (summary: ScoreSummary): HTMLDivElement => {
   const root = document.createElement("div");
   root.className = "go-summary";
 

@@ -32,6 +32,5 @@ export const disposeAllActivePieces = (): void => {
  * After `destroy()`, PIXI nulls `transform` — that is the public signal
  * (`_destroyed` is protected and not usable from our TS types).
  */
-export const isDisplayAlive = (obj: {
-  transform: unknown | null;
-}): boolean => obj.transform != null;
+export const isDisplayAlive = (obj: { transform: unknown | null }): boolean =>
+  obj.transform != null;

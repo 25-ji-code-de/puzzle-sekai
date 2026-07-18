@@ -64,9 +64,11 @@ const fillPaddedNumber = (
   const strongFont = `600 ${sizeFamily}`;
 
   // Prefer tabular figures so pad-aligned scores line up (Roboto is not mono).
-  const prevVariant = (ctx as CanvasRenderingContext2D & {
-    fontVariantNumeric?: string;
-  }).fontVariantNumeric;
+  const prevVariant = (
+    ctx as CanvasRenderingContext2D & {
+      fontVariantNumeric?: string;
+    }
+  ).fontVariantNumeric;
   try {
     (
       ctx as CanvasRenderingContext2D & { fontVariantNumeric?: string }
@@ -82,11 +84,7 @@ const fillPaddedNumber = (
   const total = grayW + solidW;
 
   let cursor =
-    align === "center"
-      ? x - total / 2
-      : align === "right"
-        ? x - total
-        : x;
+    align === "center" ? x - total / 2 : align === "right" ? x - total : x;
   const prevAlign = ctx.textAlign;
   ctx.textAlign = "left";
 
@@ -122,8 +120,7 @@ const displayFontFamily = (): string => {
   return "NishikiTeki, 'Hiragino Sans', 'Segoe UI', sans-serif";
 };
 
-const monoFontFamily = (): string =>
-  "Roboto, Arial, Helvetica, sans-serif";
+const monoFontFamily = (): string => "Roboto, Arial, Helvetica, sans-serif";
 
 const waitFonts = async (): Promise<void> => {
   try {
@@ -264,8 +261,7 @@ const drawCard = (
     ctx.font = nameFont;
     nameW = ctx.measureText(playerName).width;
   }
-  const totalW =
-    (playerName ? nameW + gap : 0) + danW + gap + ratingW;
+  const totalW = (playerName ? nameW + gap : 0) + danW + gap + ratingW;
   let cursorX = CARD_W / 2 - totalW / 2;
 
   ctx.textAlign = "left";
@@ -568,9 +564,7 @@ const canShareFiles = (file: File): boolean => {
   }
 };
 
-export const shareScoreCard = async (
-  summary: ScoreSummary,
-): Promise<void> => {
+export const shareScoreCard = async (summary: ScoreSummary): Promise<void> => {
   await waitFonts();
   const qrImage = await loadQrImage(SHARE_SITE_URL, QR_SIZE * 2);
   const canvas = drawCard(summary, qrImage);
