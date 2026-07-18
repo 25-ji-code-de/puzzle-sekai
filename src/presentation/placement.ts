@@ -52,6 +52,11 @@ export const primaryFromSprite = (
   method: RoundMethod = "ceil",
   stageHeight: number = STAGE_HEIGHT,
 ): { x: number; y: number } => {
+  // Destroyed display objects null out transform; callers that still hold a
+  // stale sprite ref must not throw mid-control handler.
+  if (!sprite.transform) {
+    return { x: 0, y: 0 };
+  }
   const originY = boardOriginY(stageHeight);
   if (kind === "big2x2") {
     return {

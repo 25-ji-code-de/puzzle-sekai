@@ -87,11 +87,19 @@ export const replayLoadedSfx = (
   const sfx = resolveSound(key);
   if (!sfx) return;
   try {
+    // stop() before re-play avoids stacking, but WebAudio can still throw
+    // "Cannot set the buffer attribute … more than once" if a decode race
+    // reuses the same AudioBufferSourceNode. Swallow and fall back to play.
     if (sfx.isPlaying) sfx.stop();
     const volume = channel === "voice" ? voiceVol(base) : sfxVol(base);
     sfx.play({ volume });
   } catch {
-    /* ignore */
+    try {
+      const volume = channel === "voice" ? voiceVol(base) : sfxVol(base);
+      sfx.play({ volume });
+    } catch {
+      /* ignore — move SFX is best-effort */
+    }
   }
 };
 

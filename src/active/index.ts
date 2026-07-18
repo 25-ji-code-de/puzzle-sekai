@@ -44,12 +44,14 @@ import {
 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
+import { isDisplayAlive, registerActivePiece } from "./lifecycle";
 import { loadTexture } from "../assets/load-texture";
 import {
   canPlaceAt,
   castDownY,
   createActiveBody,
   isContinuousPhysics,
+  removeActiveBody,
   stepShiftX,
   tryRotate,
 } from "../board/dynamics";
@@ -58,6 +60,7 @@ export { nextCharacter, initRNG, randomCharacter } from "./rng";
 export { getMatchSeed } from "../domain/prng";
 export { fly, showNextPiece } from "./preview";
 export { createNeneRobo, neneRoboFall } from "./nenerobo";
+export { disposeAllActivePieces } from "./lifecycle";
 
 /** Index of the value in `list` nearest to `target`. Assumes list is non-empty. */
 const nearestIndex = (list: number[], target: number): number => {
@@ -75,6 +78,7 @@ const nearestIndex = (list: number[], target: number): number => {
 
 /** Land / drop pixel Y for a live standard piece. */
 const landYFor = (sprite: PIXI.Sprite): number => {
+  if (!isDisplayAlive(sprite)) return 0;
   if (isContinuousPhysics()) {
     return castDownY(
       "cell2",
@@ -188,6 +192,7 @@ export const createPiece = async (
   };
 
   const tryShiftToCol = (fromCol: number, targetCol: number, y: number) => {
+    if (!isDisplayAlive(piece)) return;
     if (targetCol < 0 || targetCol >= COLUMNS || targetCol === fromCol) return;
     if (isContinuousPhysics()) {
       // Prefer snap to the target column center; if blocked (wide hull / wall),
@@ -226,6 +231,7 @@ export const createPiece = async (
   };
 
   const moveAlongLockedCols = (direction: -1 | 1) => {
+    if (!isDisplayAlive(piece)) return;
     const col = currentCol();
     const y = pieceY();
     const sorted = mizukiLockCols;
@@ -241,6 +247,7 @@ export const createPiece = async (
   };
 
   const moveAvoidingHazards = (direction: -1 | 1) => {
+    if (!isDisplayAlive(piece)) return;
     const col = currentCol();
     let next = col + direction;
     while (next >= 0 && next < COLUMNS && carrotHazards.includes(next)) {
@@ -250,6 +257,7 @@ export const createPiece = async (
   };
 
   const moveFree = (direction: -1 | 1) => {
+    if (!isDisplayAlive(piece)) return;
     if (isContinuousPhysics()) {
       // Full cell step, else residual slide to wall / rubble
       const nx = stepShiftX(
@@ -277,6 +285,7 @@ export const createPiece = async (
   };
 
   const moveToAllowedCol = (direction: -1 | 1) => {
+    if (!isDisplayAlive(piece)) return;
     // Column-lock / hazard-skip only on the grid path.
     if (!continuous && mizukiLocked) {
       moveAlongLockedCols(direction);
@@ -290,6 +299,7 @@ export const createPiece = async (
   };
 
   const moveUp = () => {
+    if (!isDisplayAlive(piece)) return;
     if (isContinuousPhysics()) {
       const ny = piece.y - BOX_SIZE;
       if (canPlaceAt("cell2", piece.x, ny, piece.rotation, piece)) {
@@ -316,6 +326,7 @@ export const createPiece = async (
   const canLift = fileIsCharacter(file, CHAR.Emu);
 
   const rotateCW = () => {
+    if (!isDisplayAlive(piece)) return;
     if (isContinuousPhysics()) {
       const res = tryRotate("cell2", piece.x, piece.y, piece.rotation, 1, piece);
       if (!res) return;
@@ -341,6 +352,7 @@ export const createPiece = async (
   };
 
   const rotateCCW = () => {
+    if (!isDisplayAlive(piece)) return;
     if (isContinuousPhysics()) {
       const res = tryRotate(
         "cell2",
@@ -373,6 +385,7 @@ export const createPiece = async (
   };
 
   const hardDrop = () => {
+    if (!isDisplayAlive(piece)) return;
     const newY = landYFor(piece);
     const distance = Math.floor((newY - piece.y) / BOX_SIZE);
     activeFall.addHardDropScore(distance);
@@ -399,13 +412,16 @@ export const createPiece = async (
     });
   }
 
-  const finish = () => {
+  // Match teardown must unbind / stop fall / drop kinematic body before
+  // sprites are destroyed — otherwise key/swipe handlers hit null transform.
+  const release = registerActivePiece(() => {
     unbind();
     activeFall.stop();
-    if (isContinuousPhysics()) {
-      // Active body is converted to dynamic in commitLandContinuous
-      // (or removed if land path recreates). Keep reference for land.
-    }
+    if (isContinuousPhysics()) removeActiveBody(piece);
+  });
+
+  const finish = () => {
+    release();
     const dropScore = activeFall.getDropScore();
     if (dropScore > 0) addDropScore(dropScore);
 

@@ -10,13 +10,16 @@ import { primaryFromSprite } from "../presentation/placement";
 import { getGrid } from "../game/board-state";
 import { loadTexture } from "../assets/load-texture";
 import { createActiveFall } from "../active/active-fall";
+import { isDisplayAlive, registerActivePiece } from "../active/lifecycle";
 import {
   castDownY,
   createActiveBody,
   isContinuousPhysics,
+  removeActiveBody,
 } from "../board/dynamics";
 
 const landYFor = (item: PIXI.Sprite): number => {
+  if (!isDisplayAlive(item)) return 0;
   if (isContinuousPhysics()) {
     return castDownY("item", item.x, item.y, item.rotation, item);
   }
@@ -41,10 +44,17 @@ const startItemFall = (
     landLockMs: 0,
   });
   fall.softDrop();
+  const release = registerActivePiece(() => {
+    fall.stop();
+    if (isContinuousPhysics()) removeActiveBody(item);
+  });
   fall.start(
     () => landYFor(item),
     () => landYFor(item),
-    () => onLand(item),
+    () => {
+      release();
+      onLand(item);
+    },
   );
 };
 

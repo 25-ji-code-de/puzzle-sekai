@@ -6,6 +6,7 @@ import { gameTicker } from "../runtime";
 import { BOX_SIZE, SPEED } from "../config";
 import { SFX_LAND_BASE, SFX_MOVE_BASE } from "../settings";
 import { playLoadedSfx, replayLoadedSfx } from "../audio/sfx";
+import { isDisplayAlive } from "./lifecycle";
 
 export type ActiveFall = {
   softDrop: () => void;
@@ -82,6 +83,10 @@ export const createActiveFall = (
   };
 
   const fireLand = (getLandY: () => number, onLand: () => void) => {
+    if (!isDisplayAlive(sprite)) {
+      stop();
+      return;
+    }
     if (landSfx) playLoadedSfx("land", "sfx", SFX_LAND_BASE);
     sprite.y = getLandY();
     if (checkOffset) {
@@ -94,9 +99,11 @@ export const createActiveFall = (
 
   return {
     softDrop: () => {
+      if (!isDisplayAlive(sprite)) return;
       speed = baseSpeed * softDropMult;
     },
     normalSpeed: () => {
+      if (!isDisplayAlive(sprite)) return;
       speed = baseSpeed;
     },
     onMoved,
@@ -110,6 +117,10 @@ export const createActiveFall = (
       falling = true;
 
       checkOffset = (delta: number) => {
+        if (!isDisplayAlive(sprite)) {
+          stop();
+          return;
+        }
         const dropHeight = getDropHeight();
         if (sprite.y < dropHeight) {
           const prevY = sprite.y;

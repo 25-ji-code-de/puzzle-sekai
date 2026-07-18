@@ -40,7 +40,12 @@ import {
   gameOverCurtain,
 } from "../props/objects";
 import { BOX_SIZE, LEFT_BORDER } from "../config";
-import { initRNG, nextCharacter, showNextPiece } from "../active";
+import {
+  disposeAllActivePieces,
+  initRNG,
+  nextCharacter,
+  showNextPiece,
+} from "../active";
 import {
   enterVisualCritical,
   leaveVisualCritical,
@@ -135,6 +140,10 @@ const clearStage = () => {
   closeMatch();
   creating = false;
   ending = false;
+  // Unbind controls / stop fall tickers / drop kinematic bodies BEFORE
+  // destroying sprites. Otherwise leftover key/swipe handlers read
+  // sprite.transform after PIXI nulls it (console spam + stuck inputs).
+  disposeAllActivePieces();
   // Prefer destroy path so filters / display objects are released.
   sprites.forEach((sp) => {
     sp.sprite.filters = [];
@@ -334,6 +343,9 @@ const beginGameOver = (cause: "topOut" | "timeUp") => {
   closeMatch();
   creating = false;
   stopTimeAttackTimer();
+  // Drop live controls immediately so post-game key spam cannot drive a
+  // still-falling piece (or a piece about to be destroyed on restart).
+  disposeAllActivePieces();
   // Persist as soon as the run ends (before curtain / menu / restart).
   flushHighScoreIfNeeded();
   // Account dan: one append per match (latched).

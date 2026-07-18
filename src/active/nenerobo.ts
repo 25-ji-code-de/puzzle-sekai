@@ -33,12 +33,14 @@ import { primaryFromSprite } from "../presentation/placement";
 import { fileIsBig2x2 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
+import { isDisplayAlive, registerActivePiece } from "./lifecycle";
 import { loadTexture } from "../assets/load-texture";
 import {
   canPlaceAt,
   castDownY,
   createActiveBody,
   isContinuousPhysics,
+  removeActiveBody,
   stepShiftX,
   tryRotate,
 } from "../board/dynamics";
@@ -48,6 +50,7 @@ const KIND = "big2x2" as const;
 const ORIENT = 0 as const;
 
 const landYFor = (sprite: PIXI.Sprite): number => {
+  if (!isDisplayAlive(sprite)) return 0;
   if (isContinuousPhysics()) {
     return castDownY(KIND, sprite.x, sprite.y, sprite.rotation, sprite);
   }
@@ -70,6 +73,7 @@ const tryMovePrimary = (
   dy: number,
   onMoved: () => void,
 ): boolean => {
+  if (!isDisplayAlive(sprite)) return false;
   if (isContinuousPhysics()) {
     if (dx !== 0 && dy === 0) {
       const dir: -1 | 1 = dx > 0 ? 1 : -1;
@@ -127,20 +131,23 @@ export const createNeneRobo = async (
   const canLift = fileIsBig2x2(file);
 
   const moveLeft = () => {
+    if (!isDisplayAlive(nenerobo)) return;
     tryMovePrimary(nenerobo, -1, 0, fall.onMoved);
   };
 
   const moveRight = () => {
+    if (!isDisplayAlive(nenerobo)) return;
     tryMovePrimary(nenerobo, 1, 0, fall.onMoved);
   };
 
   /** Easter egg: Shift+↑ / swipe up lifts one cell when free. */
   const tryLift = () => {
-    if (!canLift) return;
+    if (!canLift || !isDisplayAlive(nenerobo)) return;
     tryMovePrimary(nenerobo, 0, -1, fall.onMoved);
   };
 
   const rotateCW = () => {
+    if (!isDisplayAlive(nenerobo)) return;
     if (isContinuousPhysics()) {
       const res = tryRotate(
         KIND,
@@ -162,6 +169,7 @@ export const createNeneRobo = async (
   };
 
   const rotateCCW = () => {
+    if (!isDisplayAlive(nenerobo)) return;
     if (isContinuousPhysics()) {
       const res = tryRotate(
         KIND,
@@ -183,6 +191,7 @@ export const createNeneRobo = async (
   };
 
   const hardDrop = () => {
+    if (!isDisplayAlive(nenerobo)) return;
     const newY = landYFor(nenerobo);
     const distance = Math.floor((newY - nenerobo.y) / BOX_SIZE);
     fall.addHardDropScore(distance);
@@ -209,9 +218,14 @@ export const createNeneRobo = async (
     });
   }
 
-  const finish = () => {
+  const release = registerActivePiece(() => {
     unbind();
     fall.stop();
+    if (isContinuousPhysics()) removeActiveBody(nenerobo);
+  });
+
+  const finish = () => {
+    release();
     const dropScore = fall.getDropScore();
     if (dropScore > 0) addDropScore(dropScore);
     onDropped(nenerobo);
