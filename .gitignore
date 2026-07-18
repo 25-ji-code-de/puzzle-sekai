@@ -40,6 +40,8 @@ out/
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
 
 # Audio
 *.m4a
