@@ -4,7 +4,8 @@
  * truePhysics: continuous contact clears instead of grid findClearChunk.
  */
 import { groupSounds } from "../characters/data";
-import { addScore } from "../score";
+import { addScore, recordGroupClear } from "../score";
+import type { GroupName } from "../settings";
 import { sprites, getGrid, type SpriteData } from "../game/board-state";
 import {
   onKanadeCleared,
@@ -140,6 +141,15 @@ export const clearSprites = async (
 
   const units = toRemove.reduce((sum, sp) => sum + scoreUnitsOf(sp), 0);
   addScore(units);
+
+  // Tally completed units present in this clear (excludes Special / items).
+  // Multi-group clears (Mikudayo bridge) increment each completed unit once.
+  const clearedUnits = new Set<GroupName>();
+  for (const sp of toRemove) {
+    const g = sp.character?.group;
+    if (g && g !== "Special") clearedUnits.add(g as GroupName);
+  }
+  for (const g of clearedUnits) recordGroupClear(g);
 
   const clearedGroup = toRemove.find((sp) => sp.character?.group)?.character
     ?.group;

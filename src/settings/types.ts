@@ -93,12 +93,54 @@ export const SFX_MOVE_BASE = 0.12;
 export const SFX_LAND_BASE = 0.65;
 export const SFX_EFFECT_BASE = 0.65;
 
+/** Compact labels for tight UI (settings chips). Settlement uses full GroupName. */
 export const GROUP_LABELS: Record<GroupName, string> = {
-  "Leo/need": "Leo/need",
+  "Leo/need": "L/n",
   "MORE MORE JUMP!": "MMJ",
   "Vivid BAD SQUAD": "VBS",
   "Wonderlands×Showtime": "WxS",
-  "25時、ナイトコードで。": "25時、ナイトコードで。",
+  "25時、ナイトコードで。": "25時",
+};
+
+/**
+ * Official Project SEKAI unit brand colors.
+ * Leo/need #4455dd · MORE MORE JUMP! #88dd44 · Vivid BAD SQUAD #ee1166 ·
+ * Wonderlands×Showtime #ff9900 · 25時、ナイトコードで。 #884499
+ */
+export const GROUP_COLORS: Record<GroupName, string> = {
+  "Leo/need": "#4455dd",
+  "MORE MORE JUMP!": "#88dd44",
+  "Vivid BAD SQUAD": "#ee1166",
+  "Wonderlands×Showtime": "#ff9900",
+  "25時、ナイトコードで。": "#884499",
+};
+
+export const getGroupColor = (group: GroupName | string): string =>
+  GROUP_COLORS[group as GroupName] ?? "#ffffff";
+
+/** Mix brand hex toward white for readable text on dark UI. */
+const lightenHex = (hex: string, amount: number): string => {
+  const raw = hex.replace("#", "");
+  if (raw.length !== 6) return hex;
+  const n = parseInt(raw, 16);
+  if (Number.isNaN(n)) return hex;
+  const mix = (c: number) => Math.round(c + (255 - c) * amount);
+  const r = mix((n >> 16) & 255);
+  const g = mix((n >> 8) & 255);
+  const b = mix(n & 255);
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+};
+
+/**
+ * Brand color lightened for body text on dark settlement / share cards.
+ * Keeps unit identity without losing contrast (esp. Leo/need, 25時).
+ */
+export const getGroupDisplayColor = (group: GroupName | string): string => {
+  const base = getGroupColor(group);
+  // Darker brand hues (blue / purple) need more lift than already-bright ones.
+  const amount =
+    group === "Leo/need" || group === "25時、ナイトコードで。" ? 0.42 : 0.28;
+  return lightenHex(base, amount);
 };
 
 export const DEFAULT_SETTINGS: GameSettings = {

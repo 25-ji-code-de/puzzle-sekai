@@ -15,6 +15,8 @@ import droidSansMonoFontUrl from "../assets/fonts/DroidSansMono.woff2";
  *  - display : large/short UI (and, under all-cartoon policy, body/caption too)
  *  - body    : same stack as display (settings, captions, descriptions, credits)
  *  - mono    : DroidSansMono for scores / timers / pure factors
+ *              (single master — DOM 700 uses browser synthetic bold;
+ *              canvas share-card fakes strong digits itself)
  *
  * Fallback faces (`* Fallback`, `* Fallback Latin`) are local()-only @font-face
  * rules with metric overrides (and size-adjust where needed) so font-display
@@ -181,13 +183,17 @@ const injectFallbackFaces = () => {
   document.head.appendChild(style);
 };
 
-const loadFace = async (family: string, url: string): Promise<void> => {
+const loadFace = async (
+  family: string,
+  url: string,
+  weight: "400" | "700" = "400",
+): Promise<void> => {
   // Register the face immediately with font-display: swap so the stack can
   // paint metric-matched local fallbacks while the woff2 downloads, then
   // swap in the web font without a layout shift.
   const face = new FontFace(family, `url(${url})`, {
     style: "normal",
-    weight: "400",
+    weight,
     display: "swap",
   });
   document.fonts.add(face);
@@ -200,15 +206,21 @@ const displayFaceFor = (locale: Locale): { family: string; url: string } =>
     ? { family: "MaokenAssortedSans", url: maokenFontUrl }
     : { family: "NishikiTeki", url: nishikiFontUrl };
 
-const loadedFamilies = new Set<string>();
+/** Keys are `${family}:${weight}` so multi-weight families can load both. */
+const loadedFaces = new Set<string>();
 
-const ensureFace = async (family: string, url: string): Promise<void> => {
-  if (loadedFamilies.has(family)) return;
+const ensureFace = async (
+  family: string,
+  url: string,
+  weight: "400" | "700" = "400",
+): Promise<void> => {
+  const key = `${family}:${weight}`;
+  if (loadedFaces.has(key)) return;
   try {
-    await loadFace(family, url);
-    loadedFamilies.add(family);
+    await loadFace(family, url, weight);
+    loadedFaces.add(key);
   } catch (e) {
-    console.warn(`Failed to load ${family} font:`, e);
+    console.warn(`Failed to load ${family} (${weight}) font:`, e);
   }
 };
 
@@ -216,7 +228,7 @@ const ensureFace = async (family: string, url: string): Promise<void> => {
 const loadFontsForLocale = async (locale: Locale): Promise<void> => {
   const display = displayFaceFor(locale);
   await Promise.allSettled([
-    ensureFace("DroidSansMono", droidSansMonoFontUrl),
+    ensureFace("DroidSansMono", droidSansMonoFontUrl, "400"),
     ensureFace("NishikiTeki", nishikiFontUrl), // brand always
     ensureFace(display.family, display.url),
   ]);

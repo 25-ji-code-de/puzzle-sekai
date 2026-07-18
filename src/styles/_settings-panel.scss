@@ -118,10 +118,43 @@
     text-align: center;
     /* Unit names include JP (e.g. 25時、ナイトコードで。) in every locale. */
     font-family: var(--font-brand);
+    /* Unselected: light text for contrast; brand only on border/glow. */
+    color: var(--ui-text-soft);
+    border-color: color-mix(
+      in srgb,
+      var(--group-color, var(--ui-accent-solid)) 55%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--group-color, transparent) 8%,
+      transparent
+    );
+
+    &:hover {
+      color: #fff;
+      background: color-mix(
+        in srgb,
+        var(--group-color, var(--ui-accent-solid)) 16%,
+        transparent
+      );
+      border-color: var(--group-color, var(--ui-accent-solid));
+    }
 
     &.active {
-      background: var(--ui-accent-group);
-      border-color: var(--ui-accent-solid);
+      background: color-mix(
+        in srgb,
+        var(--group-color, var(--ui-accent-group)) 32%,
+        transparent
+      );
+      border-color: var(--group-color, var(--ui-accent-solid));
+      color: #fff;
+      box-shadow: 0 0 10px
+        color-mix(
+          in srgb,
+          var(--group-color, var(--ui-accent-solid)) 35%,
+          transparent
+        );
     }
   }
 }

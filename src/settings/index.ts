@@ -25,6 +25,9 @@ export {
   SFX_LAND_BASE,
   SFX_EFFECT_BASE,
   GROUP_LABELS,
+  GROUP_COLORS,
+  getGroupColor,
+  getGroupDisplayColor,
 } from "./types";
 
 export {

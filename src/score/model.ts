@@ -12,6 +12,7 @@ import {
   isEntertainmentMode,
   loadHighScoreRecord,
   saveHighScore,
+  type GroupName,
 } from "../settings";
 
 let _score = 0;
@@ -21,6 +22,10 @@ let _highScoreEntertainment = false;
 let _combo = 0;
 let _maxCombo = 0;
 let _timeRemaining = 0;
+/** Latched from the last flushHighScoreIfNeeded(); not derived from score===highScore. */
+let _isNewRecord = false;
+/** Per-unit clear events this run (not cell counts). Fun-only scores do not increment. */
+let _groupClears: Partial<Record<GroupName, number>> = {};
 
 /** Optional UI refresh hooks registered by the HUD module. */
 let onScoreChanged: (() => void) | null = null;
@@ -97,7 +102,14 @@ export const resetScore = () => {
   _combo = 0;
   _maxCombo = 0;
   _timeRemaining = 0;
+  _isNewRecord = false;
+  _groupClears = {};
   onScoreChanged?.();
+};
+
+/** Count one completed unit clear event (grid or continuous). */
+export const recordGroupClear = (group: GroupName) => {
+  _groupClears[group] = (_groupClears[group] ?? 0) + 1;
 };
 
 /** Load high-score record for the HUD at match start. */
@@ -116,10 +128,14 @@ export const loadMatchHighScore = () => {
  */
 export const flushHighScoreIfNeeded = (): boolean => {
   try {
-    if (_score <= 0) return false;
+    if (_score <= 0) {
+      _isNewRecord = false;
+      return false;
+    }
     const mode = getCurrentGameMode();
     const settings = getCurrentSettings();
     const isNewHigh = saveHighScore(mode, _score, settings);
+    _isNewRecord = isNewHigh;
     if (isNewHigh) {
       _highScore = _score;
       _highScoreDifficulty = getDifficultyLevel(settings);
@@ -128,6 +144,7 @@ export const flushHighScoreIfNeeded = (): boolean => {
     }
     return isNewHigh;
   } catch {
+    _isNewRecord = false;
     return false;
   }
 };
@@ -151,15 +168,32 @@ export const bindHighScoreLifecycle = () => {
   window.addEventListener("beforeunload", flush);
 };
 
-export const getScoreSummary = () => ({
-  score: _score,
-  highScore: _highScore,
-  highScoreDifficulty: _highScoreDifficulty,
-  highScoreEntertainment: _highScoreEntertainment,
-  highScoreLabel:
-    _highScoreDifficulty >= 1 && _highScoreDifficulty <= 7
-      ? getDifficultyLabel(_highScoreDifficulty as DifficultyLevel)
-      : "",
-  maxCombo: _maxCombo,
-  timeRemaining: _timeRemaining,
-});
+export const getScoreSummary = () => {
+  const settings = getCurrentSettings();
+  const difficulty = getDifficultyLevel(settings);
+  const entertainment = isEntertainmentMode(settings);
+  return {
+    score: _score,
+    maxCombo: _maxCombo,
+    timeRemaining: _timeRemaining,
+    mode: getCurrentGameMode(),
+    difficulty,
+    difficultyLabel: getDifficultyLabel(difficulty),
+    entertainment,
+    multiplier: getScoreMultiplier(settings),
+    highScore: _highScore,
+    highScoreDifficulty: _highScoreDifficulty,
+    highScoreEntertainment: _highScoreEntertainment,
+    highScoreLabel:
+      _highScoreDifficulty >= 1 && _highScoreDifficulty <= 7
+        ? getDifficultyLabel(_highScoreDifficulty as DifficultyLevel)
+        : "",
+    isNewRecord: _isNewRecord,
+    groupClears: { ..._groupClears } as Partial<Record<GroupName, number>>,
+    selectedGroups: [...settings.selectedGroups] as GroupName[],
+    // Deferred: ScoreRank formula/UI not designed yet.
+    scoreRank: null as string | null,
+  };
+};
+
+export type ScoreSummary = ReturnType<typeof getScoreSummary>;

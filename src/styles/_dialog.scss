@@ -110,6 +110,235 @@
   margin-top: 20px;
 }
 
+// Game-over settlement layout
+// top: diff×mult | rank · center: score · bottom: groups | COMBO · actions
+
+.ui-dialog--game-over {
+  max-width: 340px;
+  gap: 14px;
+}
+
+.go-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 2px 0 2px;
+}
+
+.go-summary__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.go-summary__diff {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-width: 0;
+}
+
+.go-summary__diff-label {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+}
+
+.go-summary__mult {
+  font-size: 13px;
+  color: var(--ui-accent-text);
+  opacity: 0.9;
+  letter-spacing: 0.5px;
+}
+
+.go-summary__ent {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: rgba(255, 220, 140, 0.9);
+  letter-spacing: 1px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 220, 140, 0.35);
+  background: rgba(255, 220, 140, 0.08);
+}
+
+.go-summary__rank {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 1px;
+  color: #ffd76a;
+  text-shadow: 0 0 14px rgba(255, 215, 106, 0.35);
+  flex-shrink: 0;
+  line-height: 1;
+
+  &--empty {
+    color: rgba(255, 255, 255, 0.22);
+    text-shadow: none;
+    font-size: 22px;
+  }
+}
+
+.go-summary__score-block {
+  text-align: center;
+  padding: 4px 0 2px;
+}
+
+// Padded zeros dim / significant digits solid (HUD-style)
+.go-num__pad {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.go-summary__score {
+  display: inline-block;
+  font-size: 40px;
+  letter-spacing: 2px;
+  line-height: 1.05;
+
+  .go-num__solid {
+    color: #ff6b8a;
+    text-shadow: 0 0 18px rgba(255, 107, 138, 0.28);
+  }
+}
+
+.go-summary__high {
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0;
+}
+
+.go-summary__high-label {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.go-summary__high-num {
+  font-size: 12px;
+  letter-spacing: 1px;
+
+  .go-num__solid {
+    color: rgba(255, 255, 255, 0.72);
+  }
+}
+
+.go-summary__new-record {
+  margin-top: 8px;
+  color: #ffd76a;
+  letter-spacing: 2px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  text-shadow: 0 0 12px rgba(255, 215, 106, 0.45);
+  animation: newRecordPulse 1.6s ease-in-out infinite;
+}
+
+.go-summary__bottom {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px 18px;
+  align-items: start;
+  padding-top: 4px;
+  border-top: 1px solid rgba(100, 200, 255, 0.12);
+}
+
+.go-summary__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.go-summary__group-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+
+  &--empty {
+    color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.go-summary__group-name {
+  font-family: var(--font-display);
+  /* color set inline via unit brand color */
+  letter-spacing: 0.2px;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.go-summary__group-count {
+  font-size: 14px;
+  min-width: 2.6em;
+  text-align: right;
+  flex-shrink: 0;
+
+  .go-num__solid {
+    color: #fff;
+  }
+}
+
+.go-summary__combo {
+  text-align: right;
+  padding-top: 2px;
+  min-width: 72px;
+}
+
+.go-summary__combo-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.go-summary__combo-value {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 28px;
+  letter-spacing: 1px;
+  line-height: 1;
+
+  .go-num__solid {
+    color: #fff;
+  }
+}
+
+.go-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@keyframes newRecordPulse {
+  0%,
+  100% {
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+// Legacy summary classes kept unused (safe no-op if old markup returns)
+.ui-dialog__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 2px 0 6px;
+  padding: 12px 14px;
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--ui-border-cyan-soft);
+  background: rgba(0, 0, 0, 0.22);
+}
+
 // Floating pause FAB
 .pause-fab {
   position: fixed;
