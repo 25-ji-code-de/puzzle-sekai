@@ -15,7 +15,10 @@
 #   - style-src 'unsafe-inline': critical boot CSS lives in <style> for LCP.
 #   - connect-src: SEKAI Pass + gateway defaults (auth/config.ts). Override
 #     hosts via VITE_SEKAI_PASS_ISSUER / VITE_GATEWAY_BASE require a matching
-#     CSP update before enforce.
+#     CSP update before enforce. Also cloudflareinsights.com for CF Web Analytics
+#     beacon POSTs (Pages injects this when Analytics is enabled on the project).
+#   - script-src static.cloudflareinsights.com — CF Web Analytics beacon.min.js
+#     (auto-injected by Cloudflare; not in our index.html).
 #   - img-src data: blob: — QR toDataURL + share-card download ObjectURL.
 #   - worker-src 'self' — vite-plugin-pwa Service Worker (sw.js + workbox).
 #   - No report-uri yet: watch DevTools console / CF logs during Report-Only.
@@ -35,13 +38,13 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy-Report-Only: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net; worker-src 'self'; manifest-src 'self';
+  Content-Security-Policy-Report-Only: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self';
 
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
-  Content-Security-Policy-Report-Only: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net; worker-src 'self'; manifest-src 'self';
+  Content-Security-Policy-Report-Only: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self';
 
 # Service worker / PWA — never long-cache
 /sw.js
