@@ -1,10 +1,10 @@
 /**
  * Fun-mode plugin contract.
+ * Plugins run as direct hooks from land/settle/clear — there is no domain event bus.
  */
 import type { FunModeId } from "../../fun/modes";
 import type { SpriteData } from "../../game/board-state";
 import type { CharacterName } from "../../characters/ids";
-import type { GameEvent } from "../../domain/events";
 
 export type FunContext = {
   isOn: (id: FunModeId) => boolean;
@@ -13,7 +13,6 @@ export type FunContext = {
 export type FunResult = {
   changed: boolean;
   scored?: boolean;
-  events?: GameEvent[];
 };
 
 export type ItemLandArgs = {

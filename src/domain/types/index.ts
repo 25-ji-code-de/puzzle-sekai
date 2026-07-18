@@ -1,5 +1,5 @@
 /**
- * Domain type kernel — single source for branded primitives, kinds, occupants, events.
+ * Domain type kernel — single source for branded primitives, kinds, occupants.
  * Pure types + small helpers; no PIXI / DOM.
  *
  * Rules:
@@ -65,7 +65,5 @@ export {
 
 export type { EntityId } from "./entity";
 export { createEntityId, resetEntityIdSeq } from "./entity";
-
-export type { ClearReason, GameEvent } from "./events";
 
 export { assertNever } from "./assert";
