@@ -14,6 +14,11 @@ export type ItemDropRate = 0 | 5 | 10 | 15 | 20 | 30;
  */
 export type SpawnOrientation = "inverted" | "upright";
 
+export const SPEED_LEVELS: readonly SpeedLevel[] = [1, 2, 3, 4, 5];
+export const TIME_ATTACK_DURATIONS: readonly TimeAttackDuration[] = [
+  60, 90, 120, 180,
+];
+
 export const GAME_GROUPS = [
   "Leo/need",
   "MORE MORE JUMP!",
@@ -87,6 +92,24 @@ export const isSpawnOrientation = (v: unknown): v is SpawnOrientation =>
 
 export const isItemDropRate = (v: unknown): v is ItemDropRate =>
   typeof v === "number" && (ITEM_DROP_RATES as number[]).includes(v);
+
+export const isSpeedLevel = (v: unknown): v is SpeedLevel =>
+  typeof v === "number" &&
+  Number.isInteger(v) &&
+  (SPEED_LEVELS as readonly number[]).includes(v);
+
+export const isTimeAttackDuration = (v: unknown): v is TimeAttackDuration =>
+  typeof v === "number" &&
+  Number.isInteger(v) &&
+  (TIME_ATTACK_DURATIONS as readonly number[]).includes(v);
+
+/**
+ * Persist envelope version. Bump when the on-disk shape or field semantics
+ * change; add a migrate step in store.loadSettings.
+ * v0 = legacy flat JSON without `version` (pre-versioning).
+ * v1 = flat `{ version: 1, ...GameSettings }`.
+ */
+export const SETTINGS_VERSION = 1 as const;
 
 /** Absolute bases at 100% SFX slider. */
 export const SFX_MOVE_BASE = 0.12;

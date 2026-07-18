@@ -15,12 +15,18 @@ export type {
 
 export {
   GAME_GROUPS,
+  SPEED_LEVELS,
+  TIME_ATTACK_DURATIONS,
   SPEED_MULTIPLIERS,
   ITEM_DROP_RATES,
   ITEM_DROP_SCORE_FACTORS,
   SPAWN_ORIENTATIONS,
   SPAWN_ORIENTATION_SCORE_FACTORS,
   isSpawnOrientation,
+  isItemDropRate,
+  isSpeedLevel,
+  isTimeAttackDuration,
+  SETTINGS_VERSION,
   SFX_MOVE_BASE,
   SFX_LAND_BASE,
   SFX_EFFECT_BASE,
@@ -44,6 +50,8 @@ export {
   saveSettings,
   getCurrentSettings,
   updateCurrentSettings,
+  normalizeSettings,
+  migrateSettingsPayload,
   getCurrentGameMode,
   setCurrentGameMode,
 } from "./store";
