@@ -118,10 +118,12 @@ export type GameMode = "endless" | "timeAttack";
 
 export type HighScoreRecord = {
   score: number;
-  /** Difficulty when the high score was achieved; 0 = unknown/legacy */
+  /** Difficulty when the high score was achieved; 0 = empty / unknown */
   difficultyLevel: number;
   /** Whether entertainment modes were on when the score was set */
   entertainment: boolean;
+  /** Epoch ms when this record was written; 0 for empty */
+  updatedAt: number;
 };
 
 export type DifficultyLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7;

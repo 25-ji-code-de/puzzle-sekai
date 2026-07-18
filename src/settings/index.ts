@@ -69,7 +69,10 @@ export type { ScoreMultLine, ScoreMultBreakdown } from "./difficulty";
 
 export {
   getHighScoreKey,
+  emptyRecord,
   loadHighScoreRecord,
+  loadBestHighScoreRecord,
+  listHighScoreRecords,
   loadHighScore,
   saveHighScore,
 } from "./high-score";

@@ -8,6 +8,10 @@ import { getStoragePort } from "./storage";
 const isAppStorageKey = (key: string): boolean =>
   key === SETTINGS_KEY ||
   key === "puzzleSekaiLocale" ||
+  // New bucket keys: hs:endless:… / hs:timeAttack:…
+  key.startsWith("hs:endless:") ||
+  key.startsWith("hs:timeAttack:") ||
+  // Legacy 3-key layout (residual cleanup)
   key === "highScore_endless" ||
   key.startsWith("highScore_endless_") ||
   key.startsWith("highScore_timeAttack_");

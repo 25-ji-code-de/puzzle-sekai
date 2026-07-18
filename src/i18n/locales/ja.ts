@@ -27,6 +27,7 @@ export const ja = {
     highScore: {
       endless: "エンドレス",
       timeAttack: "タイムアタック",
+      tapToSwitch: "タップで記録切替",
     },
   },
   display: {

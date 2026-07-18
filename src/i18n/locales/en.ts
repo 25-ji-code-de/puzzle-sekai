@@ -27,6 +27,7 @@ export const en = {
     highScore: {
       endless: "Endless",
       timeAttack: "Time Attack",
+      tapToSwitch: "Tap to switch records",
     },
   },
   display: {

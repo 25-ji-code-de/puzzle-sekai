@@ -27,6 +27,7 @@ export const zh = {
     highScore: {
       endless: "无尽模式",
       timeAttack: "限时挑战",
+      tapToSwitch: "点击切换纪录",
     },
   },
   display: {

@@ -8,7 +8,12 @@ import { STAGE_WIDTH, STAGE_HEIGHT } from "../../config";
 import { playMenuBgm } from "../../audio/session";
 import { clearAppCaches } from "../../settings";
 import { t, onLocaleChange } from "../../i18n";
-import { highScoreRowHtml, refreshHighScoreRow } from "../menu-utils";
+import {
+  highScoreRowHtml,
+  refreshHighScoreRow,
+  resetHighScoreViewState,
+  handleHighScoreRowEvent,
+} from "../menu-utils";
 import { showSettingsPanel, disposeSettingsPanel } from "../../settings/panel";
 import {
   showControlsOverlay,
@@ -89,10 +94,13 @@ const buildMenu = () => {
   const footer = document.createElement("div");
   footer.className = "menu-footer";
 
+  resetHighScoreViewState();
   const highScoreRow = document.createElement("div");
   highScoreRow.id = "high-score-row";
   highScoreRow.className = "menu-highscore";
   highScoreRow.innerHTML = highScoreRowHtml();
+  highScoreRow.addEventListener("click", handleHighScoreRowEvent);
+  highScoreRow.addEventListener("keydown", handleHighScoreRowEvent);
   footer.appendChild(highScoreRow);
 
   const btnContainer = document.createElement("div");

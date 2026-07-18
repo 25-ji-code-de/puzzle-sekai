@@ -1,9 +1,12 @@
 import {
   getCurrentSettings,
-  loadHighScoreRecord,
+  loadBestHighScoreRecord,
+  listHighScoreRecords,
   getDifficultyLabel,
   getDifficultyColor,
   DifficultyLevel,
+  GameMode,
+  HighScoreRecord,
 } from "../settings";
 import { t } from "../i18n";
 
@@ -16,9 +19,83 @@ export const diffColorStyle = (level: number): string => {
   return c ? `color:${c};` : "";
 };
 
+// --- view state for cycling high-score buckets on the welcome menu ---
+let endlessCursor: number | null = null;
+let timeAttackCursor: number | null = null;
+let timeAttackCursorDuration: number | null = null;
+
+/** Reset cycle cursors (call on full menu rebuild). */
+export const resetHighScoreViewState = () => {
+  endlessCursor = null;
+  timeAttackCursor = null;
+  timeAttackCursorDuration = null;
+};
+
+const recordsEqual = (a: HighScoreRecord, b: HighScoreRecord): boolean =>
+  a.score === b.score &&
+  a.difficultyLevel === b.difficultyLevel &&
+  a.entertainment === b.entertainment;
+
+const recordForColumn = (
+  mode: GameMode,
+  cursor: number | null,
+): HighScoreRecord => {
+  const settings = getCurrentSettings();
+  const list = listHighScoreRecords(mode, settings);
+  if (cursor != null && cursor >= 0 && cursor < list.length) {
+    return list[cursor];
+  }
+  return loadBestHighScoreRecord(mode, settings);
+};
+
+/** Advance the cycle cursor for a mode column. */
+export const cycleHighScoreColumn = (mode: GameMode): void => {
+  const settings = getCurrentSettings();
+  const list = listHighScoreRecords(mode, settings);
+  if (list.length <= 1) return;
+
+  if (mode === "timeAttack") {
+    const duration = settings.timeAttackDuration;
+    if (timeAttackCursorDuration !== duration) {
+      timeAttackCursor = null;
+      timeAttackCursorDuration = duration;
+    }
+    let next: number;
+    if (timeAttackCursor == null) {
+      const best = loadBestHighScoreRecord(mode, settings);
+      const i = list.findIndex((r) => recordsEqual(r, best));
+      next = ((i >= 0 ? i : 0) + 1) % list.length;
+    } else {
+      next = (timeAttackCursor + 1) % list.length;
+    }
+    timeAttackCursor = next;
+    timeAttackCursorDuration = duration;
+  } else {
+    let next: number;
+    if (endlessCursor == null) {
+      const best = loadBestHighScoreRecord(mode, settings);
+      const i = list.findIndex((r) => recordsEqual(r, best));
+      next = ((i >= 0 ? i : 0) + 1) % list.length;
+    } else {
+      next = (endlessCursor + 1) % list.length;
+    }
+    endlessCursor = next;
+  }
+};
+
 /** HTML for the main-menu high-score row (endless + time attack). */
 export const highScoreRowHtml = (): string => {
   const settings = getCurrentSettings();
+
+  // Invalidate TA cursor if duration changed since last paint
+  if (
+    timeAttackCursor != null &&
+    timeAttackCursorDuration !== settings.timeAttackDuration
+  ) {
+    timeAttackCursor = null;
+    timeAttackCursorDuration = settings.timeAttackDuration;
+  }
+
   const formatRecord = (score: number, diff: number, ent: boolean) => {
     const scoreStr = score.toString().padStart(6, "0");
     const star =
@@ -28,8 +105,9 @@ export const highScoreRowHtml = (): string => {
     const entTag = ent ? ` · ${t("hsTags.entertainment")}` : "";
     return { scoreStr, star, entTag, diff };
   };
-  const endless = loadHighScoreRecord("endless");
-  const timeAttack = loadHighScoreRecord("timeAttack", settings);
+
+  const endless = recordForColumn("endless", endlessCursor);
+  const timeAttack = recordForColumn("timeAttack", timeAttackCursor);
   const endlessHs = formatRecord(
     endless.score,
     endless.difficultyLevel,
@@ -41,12 +119,14 @@ export const highScoreRowHtml = (): string => {
     timeAttack.entertainment,
   );
 
+  const tip = t("menu.highScore.tapToSwitch");
   const column = (
+    mode: GameMode,
     label: string,
     scoreColor: string,
     record: ReturnType<typeof formatRecord>,
   ) => `
-    <div class="hs-col">
+    <div class="hs-col" data-mode="${mode}" role="button" tabindex="0" title="${tip}" aria-label="${tip}">
       <div class="hs-label font-caption">${label}</div>
       <div class="hs-value font-numeric-strong" style="color:${scoreColor}">${
         record.scoreStr
@@ -56,7 +136,13 @@ export const highScoreRowHtml = (): string => {
       )}">${record.star}${record.entTag}</div>
     </div>`;
 
-  return `${column(t("menu.highScore.endless"), "#ff6b8a", endlessHs)}${column(
+  return `${column(
+    "endless",
+    t("menu.highScore.endless"),
+    "#ff6b8a",
+    endlessHs,
+  )}${column(
+    "timeAttack",
     t("menu.highScore.timeAttack"),
     "#44ff88",
     timeAttackHs,
@@ -67,4 +153,23 @@ export const refreshHighScoreRow = () => {
   const row = document.getElementById("high-score-row");
   if (!row) return;
   row.innerHTML = highScoreRowHtml();
+};
+
+/** Handle click / keyboard on a high-score column (delegated). */
+export const handleHighScoreRowEvent = (e: Event): void => {
+  const target = e.target as HTMLElement | null;
+  if (!target) return;
+  const col = target.closest(".hs-col") as HTMLElement | null;
+  if (!col) return;
+
+  if (e.type === "keydown") {
+    const ke = e as KeyboardEvent;
+    if (ke.key !== "Enter" && ke.key !== " ") return;
+    ke.preventDefault();
+  }
+
+  const mode = col.dataset.mode as GameMode | undefined;
+  if (mode !== "endless" && mode !== "timeAttack") return;
+  cycleHighScoreColumn(mode);
+  refreshHighScoreRow();
 };
