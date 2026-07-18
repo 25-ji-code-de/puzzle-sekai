@@ -1,8 +1,32 @@
 /**
- * Play state machine: start / spawn / land / pause / game-over / menu return.
+ * Match lifecycle controller.
+ *
+ * Authority split (do not invent another "is playing" flag outside these):
+ *
+ * | Concern                 | Source of truth                                      |
+ * |-------------------------|------------------------------------------------------|
+ * | Session semantics       | PlayPhase (menu / playing / paused / gameOver)       |
+ * | Async land / spawn race | matchOpen (sync gate; closed the moment end begins)  |
+ * | Piece fall / board VFX  | gameTicker                                           |
+ * | Shell per-frame work    | MainLoopFn via setState — boot welcome / end flourish|
+ * |                         | only. Gameplay never rides the main loop.            |
+ *
+ * Transition table:
+ *
+ * | Event           | PlayPhase | gameTicker | matchOpen | main loop        |
+ * |-----------------|-----------|------------|-----------|------------------|
+ * | start()         | playing   | start      | open      | park             |
+ * | pausePlay()     | paused    | stop       | keep      | keep (parked)    |
+ * | resumePlay()    | playing   | start      | keep      | keep (parked)    |
+ * | topOut / timeUp | gameOver  | keep (VFX) | close     | flourish → park  |
+ * | returnToMenu()  | menu      | reset      | close     | park             |
+ *
+ * Spawn is an explicit pump (`requestSpawn`), not a main-loop state.
+ * There is no "falling" main-loop state — fall logic lives on gameTicker.
  */
 import * as PIXI from "pixi.js-legacy";
 import { app, gameTicker, resetGameTicker, setState } from "../runtime";
+import type { MainLoopFn } from "../runtime";
 import {
   createavatarSan,
   avatarFlyDown,
@@ -67,13 +91,20 @@ export { addDropScore } from "../score";
 export { type SpriteData, sprites, setSprites } from "./board-state";
 export { playMenuBgm, stopBgm } from "../audio/session";
 
+/** Main-loop no-op: match play never advances on app.ticker. */
+const parkMain: MainLoopFn = () => {};
+
+const parkMainLoop = () => {
+  setState(parkMain);
+};
+
 /** Timeout id for curtain / flourish; also used as "end already started" latch. */
 let endAnimation: number | undefined;
 /** True once an end path has begun (sync, before any await). */
 let ending = false;
 let avatarStab: PIXI.AnimatedSprite;
 let nextPiece: PIXI.Sprite | undefined;
-/** Latch so create is not re-entered while a spawn cycle is in flight. */
+/** Latch so requestSpawn is not re-entered while a spawn cycle is in flight. */
 let creating = false;
 let timeAttackInterval: number | undefined;
 
@@ -93,7 +124,7 @@ const startTimeAttackTimer = () => {
     const isTimeUp = decrementTime();
     if (isTimeUp) {
       stopTimeAttackTimer();
-      setState(endTimeAttack);
+      void endTimeAttack();
     }
   }, 1000);
 };
@@ -154,7 +185,16 @@ const unlockCreate = () => {
   creating = false;
 };
 
-const create = async () => {
+/**
+ * Explicit spawn pump. Call when the board is ready for the next piece —
+ * never install this as a MainLoopFn (it is not a per-frame state).
+ */
+const requestSpawn = () => {
+  if (creating || ending || !isMatchOpen()) return;
+  void runSpawn();
+};
+
+const runSpawn = async () => {
   if (creating || ending || !isMatchOpen()) return;
   creating = true;
   try {
@@ -169,30 +209,32 @@ const create = async () => {
         // Close immediately so concurrent land handlers bail before end runs.
         closeMatch();
         unlockCreate();
-        setState(end);
+        void endTopOut();
       },
       onSpawnComplete: () => {
         unlockCreate();
-        if (isMatchOpen() && !ending) setState(create);
+        if (isMatchOpen() && !ending) requestSpawn();
       },
-      onFalling: () => setState(falling),
+      // Piece is now on gameTicker; main loop stays parked (no "falling" state).
+      onFalling: () => {
+        parkMainLoop();
+      },
       onSpawnAborted: () => {
         unlockCreate();
       },
     });
   } catch (e) {
-    console.warn("[create] spawn failed", e);
+    console.warn("[spawn] failed", e);
     unlockCreate();
   }
 };
 
-const falling = () => {};
-
-const start = () => {
-  // `setState(start)` is driven every frame by the main ticker. Switch off
-  // immediately so clearStage / initRNG are not re-run while async boot awaits
-  // textures / Rapier — otherwise every frame wipes the just-spawned board.
-  setState(falling);
+/**
+ * Begin a match. Invoked directly from UI / hotkeys — not via setState.
+ * Parks the main loop immediately so async boot cannot be re-entered by tickMain.
+ */
+export const start = () => {
+  parkMainLoop();
 
   clearStage();
   setBgmSessionPaused(false);
@@ -236,7 +278,7 @@ const start = () => {
       leaveVisualCritical();
     }
     if (!isMatchOpen() || ending) return;
-    setState(create);
+    requestSpawn();
   };
   void boot();
 
@@ -249,8 +291,6 @@ const start = () => {
   setPlayPhase({ type: "playing", mode });
   showPauseButton();
 };
-
-export { start };
 
 export const pausePlay = () => {
   // User often leaves or refreshes while paused — checkpoint now.
@@ -282,7 +322,7 @@ export const returnToMenu = () => {
   disposePauseMenu();
   disposeGameOverMenu();
   hidePauseButton();
-  setState(() => {});
+  parkMainLoop();
   enterMenu();
 };
 
@@ -307,7 +347,7 @@ const beginGameOver = (cause: "topOut" | "timeUp") => {
   void playGameOverBgm();
 };
 
-/** Always reach curtain → ended → menu. */
+/** Reach curtain → game-over menu once. Main loop stays parked. */
 const finishWithCurtain = () => {
   if (nextPiece) {
     app.stage.removeChild(nextPiece);
@@ -315,11 +355,13 @@ const finishWithCurtain = () => {
   }
   createBarrel();
   gameOverCurtain(() => {
-    setState(ended);
+    parkMainLoop();
+    showGameOverMenu();
   });
 };
 
-const end = async () => {
+/** One-shot top-out end path (not a MainLoopFn). */
+const endTopOut = async () => {
   if (ending) return;
   beginGameOver("topOut");
 
@@ -350,7 +392,8 @@ const end = async () => {
       endAnimation = window.setTimeout(() => {
         app.ticker.remove(moveDown);
         gameOverCurtain(() => {
-          setState(ended);
+          parkMainLoop();
+          showGameOverMenu();
         });
       }, 2000);
       return;
@@ -364,14 +407,11 @@ const end = async () => {
   }, 0);
 };
 
+/** One-shot time-up end path (not a MainLoopFn). */
 const endTimeAttack = async () => {
   if (ending) return;
   beginGameOver("timeUp");
   endAnimation = window.setTimeout(() => {
     finishWithCurtain();
   }, 0);
-};
-
-const ended = () => {
-  showGameOverMenu();
 };

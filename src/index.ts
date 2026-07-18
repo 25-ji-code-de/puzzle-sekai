@@ -56,7 +56,7 @@ window.addEventListener("resize", () => {
   (main as HTMLDivElement).style.height = window.innerHeight + "px";
 });
 
-// Initial main-loop state (boot shell only — not the match FSM)
+// Shell main-loop entry only (boot welcome). Match control is never a MainLoopFn.
 setState(welcome);
 
 // Shell pack only — play textures load via ensurePlayPack after ready / on Start.
@@ -89,9 +89,9 @@ app.loader
     window.addEventListener("keydown", (event) => {
       const key = event.key.toLowerCase();
       if (key === "r") {
-        // Restart only after game chunk is available
-        void import("./application/play-session").then(({ getStartState }) => {
-          void getStartState().then((start) => setState(start));
+        // Direct start() — never install match control as a MainLoopFn.
+        void import("./application/play-session").then(({ start }) => {
+          start();
         });
       } else if (key === "escape" || key === "p") {
         event.preventDefault();

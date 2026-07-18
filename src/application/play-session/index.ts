@@ -1,7 +1,10 @@
 /**
  * Play-session control surface for UI and boot.
- * Phase is sync/local; match control loads game/states on demand so the
- * heavy board/piece graph is not in the initial JS parse path.
+ *
+ * Session semantics: PlayPhase (this module).
+ * Match control loads game/states on demand so the heavy board/piece graph is
+ * not in the initial JS parse path. start() is a direct call — never install
+ * it as a MainLoopFn via setState.
  */
 export {
   getPlayPhase,
@@ -20,7 +23,7 @@ type StatesMod = typeof import("../../game/states");
 let statesMod: StatesMod | null = null;
 let statesPromise: Promise<StatesMod> | null = null;
 
-/** Load (or reuse) the match state machine chunk. */
+/** Load (or reuse) the match lifecycle chunk. */
 export const loadGameStates = (): Promise<StatesMod> => {
   if (statesMod) return Promise.resolve(statesMod);
   if (!statesPromise) {
@@ -55,6 +58,7 @@ export const preloadGame = (): void => {
   });
 };
 
+/** Begin a match (direct call; not a main-loop state). */
 export const start = (): void => {
   // Do not await the full play pack — that made Restart wait for every group PNG.
   warmPlayPack();
@@ -71,14 +75,4 @@ export const resumePlay = (): void => {
 
 export const returnToMenu = (): void => {
   void loadGameStates().then((m) => m.returnToMenu());
-};
-
-/**
- * Resolve the ticker entry for starting a match (used by start-game / R).
- * Only waits for the game chunk. Textures load on demand via loadTexture;
- * ensurePlayPack keeps warming in the background.
- */
-export const getStartState = (): Promise<(delta: number) => void> => {
-  warmPlayPack();
-  return loadGameStates().then((m) => m.start as (delta: number) => void);
 };

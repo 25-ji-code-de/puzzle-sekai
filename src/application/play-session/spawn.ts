@@ -40,7 +40,10 @@ export type SpawnDeps = {
   setNextPiece: (s: PIXI.Sprite) => void;
   onTopOut: () => void;
   onSpawnComplete: () => void;
-  /** Set falling ticker state while piece is in the air. */
+  /**
+   * Piece is airborne on gameTicker. Caller should keep the main loop parked
+   * (there is no "falling" MainLoopFn — fall logic is not on app.ticker).
+   */
   onFalling: () => void;
   /** Spawn could not start a piece (caller should unlock create latch). */
   onSpawnAborted?: () => void;

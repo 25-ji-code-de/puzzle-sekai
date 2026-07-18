@@ -126,7 +126,11 @@ export const resetGameTicker = () => {
   gameTicker = new PIXI.Ticker();
 };
 
-/** Main-loop phase callback (driven by app.ticker). */
+/**
+ * Shell per-frame callback on app.ticker (boot welcome, rare end flourish).
+ * Match session semantics live in PlayPhase; piece fall / board VFX use
+ * gameTicker. Do not reintroduce gameplay as a MainLoopFn.
+ */
 export type MainLoopFn = (delta: number) => void;
 
 let state: MainLoopFn = () => {};
@@ -135,7 +139,7 @@ export const setState = (nextState: MainLoopFn) => {
 };
 export const getState = (): MainLoopFn => state;
 
-/** Advance the main FSM one frame (called from boot after wiring). */
+/** Advance the shell main-loop callback one frame (wired from boot). */
 export const tickMain = (delta: number) => {
   state(delta);
 };

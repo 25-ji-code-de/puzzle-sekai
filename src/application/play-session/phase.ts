@@ -1,5 +1,10 @@
 /**
- * Typed play-session phase — single source of match lifecycle state.
+ * Typed play-session phase — session-semantics authority for the match.
+ *
+ * Pair with matchOpen (async land/spawn race) and gameTicker (fall / VFX).
+ * The app.ticker MainLoopFn is only for shell work (boot welcome / rare
+ * flourish); it is not a second lifecycle enum.
+ * See game/states.ts header for the transition table.
  */
 import type { GameMode } from "../../settings/types";
 

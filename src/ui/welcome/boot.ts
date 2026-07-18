@@ -307,8 +307,8 @@ export const markWelcomeReady = () => {
 };
 
 /**
- * Game-state entry used by the ticker. The real shell is shown earlier via
- * {@link showBootWelcome}; this is a no-op once that has run.
+ * Shell main-loop entry (boot only). The real shell is shown earlier via
+ * {@link showBootWelcome}; this is a no-op once that has run. Not a match state.
  */
 export const welcome = () => {
   showBootWelcome();

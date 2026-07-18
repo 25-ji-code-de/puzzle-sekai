@@ -1,9 +1,8 @@
 /**
- * Start-match flow: fullscreen, landscape gate, hand off to play state machine.
+ * Start-match flow: fullscreen, landscape gate, hand off to play-session.start().
  */
-import { setState } from "../../runtime";
 import {
-  getStartState,
+  start,
   pausePlay,
   resumePlay,
   preloadGame,
@@ -65,6 +64,6 @@ export const startGame = (mode: GameMode) => {
         });
       },
     });
-    void getStartState().then((start) => setState(start));
+    start();
   });
 };
