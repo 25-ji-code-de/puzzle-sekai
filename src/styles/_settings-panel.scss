@@ -116,6 +116,8 @@
     flex: 1;
     min-width: 80px;
     text-align: center;
+    /* Unit names include JP (e.g. 25時、ナイトコードで。) in every locale. */
+    font-family: var(--font-brand);
 
     &.active {
       background: var(--ui-accent-group);

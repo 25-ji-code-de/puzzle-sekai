@@ -12,8 +12,7 @@ export const ja = {
     subtitle: "～ Puzzle × SEKAI ～",
     desc: "Project SEKAIのメンバーを集めて<br>ブロックを消し、ハイスコアを目指そう！",
     click: "タップ／クリックで続ける",
-    disclaimer:
-      "非公式のファン作品です。SEGA / Colorful Palette / Crypton とは無関係。無料のブラウザゲーム。",
+    disclaimer: "セカイは、パズルになった。 · By 1806",
     howto: "遊び方",
     howtoClose: "閉じる",
   },

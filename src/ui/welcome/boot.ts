@@ -158,8 +158,11 @@ const enhanceBootShell = (shell: HTMLDivElement) => {
     ".welcome-subtitle",
   ) as HTMLElement | null;
   const desc = shell.querySelector(".welcome-desc") as HTMLElement | null;
+  const disc = shell.querySelector(".welcome-disclaimer") as HTMLElement | null;
   title?.classList.add("font-brand");
   subtitle?.classList.add("font-brand");
+  // Disclaimer is Japanese in every locale — force brand (NishikiTeki).
+  disc?.classList.add("font-brand");
   desc?.classList.add("font-body");
   clickPromptEl?.classList.add("font-action");
 };
@@ -189,7 +192,7 @@ const createBootShellFallback = (): HTMLDivElement => {
         "welcome.howto",
       )}</button>
     </div>
-    <p class="welcome-disclaimer">${t(
+    <p class="welcome-disclaimer font-brand">${t(
       "welcome.disclaimer",
     )} · <a class="welcome-disclaimer__link" href="https://github.com/25-ji-code-de/puzzle-sekai" target="_blank" rel="noopener noreferrer">GitHub</a></p>
   `;
