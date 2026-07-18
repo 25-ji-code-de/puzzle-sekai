@@ -17,6 +17,7 @@ import { getGrid, sprites } from "../../game/board-state";
 import { getCurrentSettings, getItemDropChance } from "../../settings";
 import { playLoadedSfx } from "../../audio/sfx";
 import { app } from "../../runtime";
+import { chance, takeRandom } from "../../domain/prng";
 import { handleItemLand, handleCharacterLand } from "./land";
 import { isMatchOpen } from "./match-gate";
 import type { CharacterData } from "../../characters/data";
@@ -81,7 +82,7 @@ export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
   }
   const settings = getCurrentSettings();
 
-  if (maxHeight < 5 && Math.random() < getItemDropChance(settings)) {
+  if (maxHeight < 5 && chance(getItemDropChance(settings))) {
     const itemFile = getRandomItem();
     const dropped = [false, false];
     const finished = [false, false];
@@ -115,7 +116,7 @@ export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
     await Promise.all([
       createItem(
         itemFile,
-        positions.splice(Math.floor(Math.random() * positions.length))[0],
+        takeRandom(positions)!,
         onDropped(0),
       ).then((item) => {
         if (!sprites.some((s) => s.sprite === item)) {
@@ -125,7 +126,7 @@ export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
       }),
       createItem(
         itemFile,
-        positions.splice(Math.floor(Math.random() * positions.length))[0],
+        takeRandom(positions)!,
         onDropped(1),
       ).then((item) => {
         if (!sprites.some((s) => s.sprite === item)) {

@@ -248,6 +248,7 @@ export const start = () => {
   bindHighScoreLifecycle();
   resetScore();
   initScoreDisplay();
+  // Seed match PRNG + piece bag (omit arg for fresh seed; pass seed for daily/repro).
   initRNG();
   resetFunEffects();
   openMatch();

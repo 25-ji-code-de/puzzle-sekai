@@ -56,10 +56,12 @@ export const FRIES_ITEMS: readonly string[] = itemGroups[1];
 export const isFriesItem = (file: string): boolean =>
   FRIES_ITEMS.includes(file);
 
-// Get a random item - first select group, then select variant
+import { randomInt } from "../domain/prng";
+
+// Get a random item — match PRNG (seeded with the piece bag).
 export const getRandomItem = (): string => {
-  const group = itemGroups[Math.floor(Math.random() * itemGroups.length)];
-  return group[Math.floor(Math.random() * group.length)];
+  const group = itemGroups[randomInt(itemGroups.length)];
+  return group[randomInt(group.length)];
 };
 
 // Flat list of all items (for the boot loader)

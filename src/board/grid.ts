@@ -74,9 +74,18 @@ export const isAdjacentToAny = (
     others.some(([mx, my]) => manhattan(ex, ey, mx, my) === 1),
   );
 
-export const shuffleInPlace = <T>(list: T[]): T[] => {
+import { random as matchRandom } from "../domain/prng";
+
+/**
+ * Fisher–Yates shuffle. Defaults to the match PRNG so wonder-blast / gameplay
+ * shuffles follow the match seed; pass a custom rand for tests.
+ */
+export const shuffleInPlace = <T>(
+  list: T[],
+  rand: () => number = matchRandom,
+): T[] => {
   for (let i = list.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rand() * (i + 1));
     const tmp = list[i];
     list[i] = list[j];
     list[j] = tmp;

@@ -55,6 +55,7 @@ import {
 } from "../board/dynamics";
 
 export { nextCharacter, initRNG, randomCharacter } from "./rng";
+export { getMatchSeed } from "../domain/prng";
 export { fly, showNextPiece } from "./preview";
 export { createNeneRobo, neneRoboFall } from "./nenerobo";
 
