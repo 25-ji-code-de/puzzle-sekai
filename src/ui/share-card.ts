@@ -17,9 +17,11 @@ import {
 } from "../score";
 import { getDifficultyColor, getGroupDisplayColor } from "../settings";
 
-const CARD_W = 720;
-const CARD_H = 1020;
-const PAD = 52;
+// Portrait share image. Content is sized to fill most of the canvas
+// (not sparse type on a big empty plate) so chat thumbnails still read.
+const CARD_W = 1080;
+const CARD_H = 1440;
+const PAD = 48;
 
 /**
  * Draw zero-padded number with dim leading zeros. Returns total width.
@@ -155,45 +157,44 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
 
   const glow = ctx.createRadialGradient(
     CARD_W * 0.5,
-    200,
-    20,
+    CARD_H * 0.32,
+    40,
     CARD_W * 0.5,
-    200,
-    380,
+    CARD_H * 0.32,
+    CARD_W * 0.55,
   );
-  glow.addColorStop(0, "rgba(100, 200, 255, 0.14)");
+  glow.addColorStop(0, "rgba(100, 200, 255, 0.16)");
   glow.addColorStop(1, "rgba(100, 200, 255, 0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, CARD_W, CARD_H);
 
   ctx.strokeStyle = "rgba(100, 200, 255, 0.45)";
-  ctx.lineWidth = 3;
-  roundRect(ctx, 18, 18, CARD_W - 36, CARD_H - 36, 28);
+  ctx.lineWidth = 5;
+  roundRect(ctx, 18, 18, CARD_W - 36, CARD_H - 36, 32);
   ctx.stroke();
 
   const display = displayFontFamily();
   const mono = monoFontFamily();
-  let y = PAD + 10;
+  const leftX = PAD;
+  const rightX = CARD_W - PAD;
+  let y = PAD + 4;
 
-  // Brand
+  // —— Compact header: brand + mode ——
   ctx.fillStyle = "#ffffff";
-  ctx.font = `400 34px ${display}`;
+  ctx.font = `400 40px ${display}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   ctx.fillText(t("menu.title"), CARD_W / 2, y);
-  y += 48;
+  y += 52;
 
-  // Mode subtitle
-  ctx.fillStyle = "rgba(220, 240, 255, 0.55)";
-  ctx.font = `400 18px ${display}`;
+  ctx.fillStyle = "rgba(220, 240, 255, 0.62)";
+  ctx.font = `400 26px ${display}`;
   const modeText =
     summary.mode === "timeAttack" ? t("menu.timeAttack") : t("menu.endless");
   ctx.fillText(modeText, CARD_W / 2, y);
-  y += 50;
+  y += 52;
 
-  // Top row: difficulty ×mult  |  rank
-  const leftX = PAD + 8;
-  const rightX = CARD_W - PAD - 8;
+  // —— Difficulty row (left) ——
   const diffColor =
     summary.difficulty >= 1 && summary.difficulty <= 7
       ? getDifficultyColor(summary.difficulty)
@@ -202,71 +203,73 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
 
   ctx.textAlign = "left";
   ctx.fillStyle = diffColor;
-  ctx.font = `400 36px ${display}`;
+  ctx.font = `400 56px ${display}`;
   ctx.fillText(summary.difficultyLabel, leftX, y);
-
   const diffW = ctx.measureText(summary.difficultyLabel).width;
-  ctx.fillStyle = "rgba(220, 240, 255, 0.85)";
-  ctx.font = `400 20px ${mono}`;
-  ctx.fillText(multText, leftX + diffW + 12, y + 10);
+
+  ctx.fillStyle = "rgba(220, 240, 255, 0.92)";
+  ctx.font = `600 32px ${mono}`;
+  ctx.fillText(multText, leftX + diffW + 18, y + 16);
 
   if (summary.entertainment) {
     const ent = t("hsTags.entertainment");
-    ctx.font = `400 16px ${display}`;
-    const entW = ctx.measureText(ent).width + 18;
-    const entX =
-      leftX + diffW + 12 + ctx.measureText(multText).width + 14;
+    ctx.font = `600 32px ${mono}`;
+    const multW = ctx.measureText(multText).width;
+    ctx.font = `400 24px ${display}`;
+    const entW = ctx.measureText(ent).width + 28;
+    const entX = leftX + diffW + 18 + multW + 18;
     ctx.fillStyle = "rgba(255, 220, 140, 0.12)";
-    ctx.strokeStyle = "rgba(255, 220, 140, 0.4)";
-    ctx.lineWidth = 1;
-    roundRect(ctx, entX, y + 6, entW, 24, 12);
+    ctx.strokeStyle = "rgba(255, 220, 140, 0.45)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, entX, y + 12, entW, 38, 18);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "rgba(255, 220, 140, 0.95)";
-    ctx.fillText(ent, entX + 9, y + 10);
+    ctx.fillText(ent, entX + 14, y + 18);
   }
 
+  // —— Rank (right, large) ——
+  const RANK_PX = 148;
+  const rankTop = y - 18;
   ctx.textAlign = "right";
   if (summary.scoreRank) {
-    // Flat fill (SSS+ uses gradient start pink — canvas text gradient not worth the complexity).
     const rankLetter = summary.scoreRank;
     ctx.fillStyle = getScoreRankColor(rankLetter);
-    ctx.font = `400 56px ${display}`;
+    ctx.font = `400 ${RANK_PX}px ${display}`;
     ctx.shadowColor = getScoreRankGlow(rankLetter);
-    ctx.shadowBlur = 16;
-    ctx.fillText(rankLetter, rightX, y - 6);
+    ctx.shadowBlur = 28;
+    ctx.fillText(rankLetter, rightX, rankTop);
     ctx.shadowBlur = 0;
 
-    // Decorative "SCORERANK" under the letter — Roboto SemiBold, uniform scale.
     const letterW = ctx.measureText(rankLetter).width;
     const letterLeft = rightX - letterW;
     const caption = "SCORERANK";
-    ctx.font = `600 12px ${mono}`;
+    // Size caption to sit under the letter without anisotropic squash.
+    ctx.font = `600 28px ${mono}`;
     const capW = ctx.measureText(caption).width;
-    // Target ~72% of letter width; scale X+Y so glyphs stay proportional.
-    const targetW = letterW * 0.72;
+    const targetW = letterW * 0.9;
     const s = capW > 0 ? Math.min(1, targetW / capW) : 1;
-    const capCenterX = letterLeft + letterW / 2;
-    const capY = y - 6 + 56 + 6;
     ctx.save();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.42)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
     ctx.textAlign = "center";
-    ctx.translate(capCenterX, capY);
+    ctx.translate(letterLeft + letterW / 2, rankTop + RANK_PX + 6);
     ctx.scale(s, s);
     ctx.fillText(caption, 0, 0);
     ctx.restore();
   } else {
     ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
-    ctx.font = `400 34px ${display}`;
-    ctx.fillText("—", rightX, y);
+    ctx.font = `400 72px ${display}`;
+    ctx.fillText("—", rightX, rankTop + 20);
   }
-  y += 78;
 
-  // Center score — SemiBold (600)
+  // Clear the rank block before hero score.
+  y = Math.max(y + 70, rankTop + RANK_PX + 44);
+
+  // —— Hero score (dominates the card) ——
   ctx.textAlign = "center";
-  ctx.font = `600 88px ${mono}`;
-  ctx.shadowColor = "rgba(255, 107, 138, 0.3)";
-  ctx.shadowBlur = 18;
+  ctx.font = `600 168px ${mono}`;
+  ctx.shadowColor = "rgba(255, 107, 138, 0.35)";
+  ctx.shadowBlur = 28;
   fillPaddedNumber(
     ctx,
     summary.score,
@@ -278,22 +281,22 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
     { strong: true },
   );
   ctx.shadowBlur = 0;
-  y += 96;
+  y += 180;
 
-  // High score: CJK label on display face; digits on Roboto SemiBold
+  // High score under hero
   const highLab = `${t("gameOver.highScore")} `;
-  ctx.font = `400 18px ${display}`;
+  ctx.font = `400 32px ${display}`;
   const highLabW = ctx.measureText(highLab).width;
-  ctx.font = `600 18px ${mono}`;
+  ctx.font = `600 32px ${mono}`;
   const highNumW = ctx.measureText(
     padDigits(summary.highScore, SCORE_PAD),
   ).width;
   const highStart = CARD_W / 2 - (highLabW + highNumW) / 2;
   ctx.textAlign = "left";
-  ctx.font = `400 18px ${display}`;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+  ctx.font = `400 32px ${display}`;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.52)";
   ctx.fillText(highLab, highStart, y);
-  ctx.font = `600 18px ${mono}`;
+  ctx.font = `600 32px ${mono}`;
   fillPaddedNumber(
     ctx,
     summary.highScore,
@@ -301,82 +304,94 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
     highStart + highLabW,
     y,
     "left",
-    "rgba(255, 255, 255, 0.92)",
+    "rgba(255, 255, 255, 0.94)",
     { strong: true },
   );
-  y += 34;
+  y += 52;
 
   if (summary.isNewRecord) {
+    ctx.textAlign = "center";
     ctx.fillStyle = "#ffd76a";
-    ctx.font = `400 24px ${display}`;
-    ctx.shadowColor = "rgba(255, 215, 106, 0.45)";
-    ctx.shadowBlur = 12;
+    ctx.font = `400 40px ${display}`;
+    ctx.shadowColor = "rgba(255, 215, 106, 0.5)";
+    ctx.shadowBlur = 16;
     ctx.fillText(t("gameOver.newRecord"), CARD_W / 2, y);
     ctx.shadowBlur = 0;
-    y += 36;
+    y += 52;
   }
 
   // Divider
-  y += 10;
-  ctx.strokeStyle = "rgba(100, 200, 255, 0.18)";
-  ctx.lineWidth = 1;
+  y += 12;
+  ctx.strokeStyle = "rgba(100, 200, 255, 0.22)";
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(PAD + 20, y);
-  ctx.lineTo(CARD_W - PAD - 20, y);
+  ctx.moveTo(PAD + 12, y);
+  ctx.lineTo(CARD_W - PAD - 12, y);
   ctx.stroke();
-  y += 28;
+  y += 36;
 
-  // Bottom: groups | combo
+  // —— Bottom band: groups (left) | combo (right) ——
+  // Stretch this band toward the footer so the card doesn't feel top-heavy.
   const groups = groupsForSummary(summary);
-  const leftColX = PAD + 8;
-  const rightColX = CARD_W - PAD - 8;
-  const comboTop = y;
+  const footerReserve = 56;
+  const bottomTop = y;
+  const bottomBottom = CARD_H - PAD - footerReserve;
+  const comboTop = bottomTop;
+
+  const groupCount = Math.max(1, groups.length);
+  const groupRowH = Math.min(
+    64,
+    Math.max(48, Math.floor((bottomBottom - bottomTop - 8) / groupCount)),
+  );
+  const groupCountX = leftX + Math.floor(CARD_W * 0.48);
 
   ctx.textAlign = "left";
   if (groups.length === 0) {
-    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-    ctx.font = `400 20px ${display}`;
-    ctx.fillText("—", leftColX, y);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.32)";
+    ctx.font = `400 36px ${display}`;
+    ctx.fillText("—", leftX, bottomTop);
   } else {
+    let gy = bottomTop;
     for (const g of groups) {
       ctx.fillStyle = getGroupDisplayColor(g);
-      ctx.font = `400 18px ${display}`;
+      ctx.font = `400 36px ${display}`;
       ctx.textAlign = "left";
-      ctx.fillText(g, leftColX, y);
-      ctx.font = `600 22px ${mono}`;
+      ctx.fillText(g, leftX, gy);
+      ctx.font = `600 44px ${mono}`;
       fillPaddedNumber(
         ctx,
         summary.groupClears[g] ?? 0,
         GROUP_CLEAR_PAD,
-        leftColX + 340,
-        y,
+        groupCountX,
+        gy,
         "left",
         "#ffffff",
         { strong: true },
       );
-      y += 34;
+      gy += groupRowH;
     }
   }
 
   ctx.textAlign = "right";
-  ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
-  ctx.font = `400 16px ${display}`;
-  ctx.fillText(t("gameOver.maxCombo"), rightColX, comboTop);
-  ctx.font = `600 48px ${mono}`;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+  ctx.font = `400 28px ${display}`;
+  ctx.fillText(t("gameOver.maxCombo"), rightX, comboTop);
+  ctx.font = `600 108px ${mono}`;
   fillPaddedNumber(
     ctx,
     summary.maxCombo,
     COMBO_PAD,
-    rightColX,
-    comboTop + 28,
+    rightX,
+    comboTop + 48,
     "right",
     "#ffffff",
     { strong: true },
   );
 
+  // Footer subtitle pinned to bottom
   ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(255, 255, 255, 0.32)";
-  ctx.font = `400 18px ${display}`;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+  ctx.font = `400 26px ${display}`;
   ctx.fillText(t("menu.subtitle"), CARD_W / 2, CARD_H - PAD - 10);
 
   return canvas;
