@@ -7,6 +7,7 @@
  * only one bottom column supported - rotate 90deg over the support edge.
  */
 
+import { prefersReducedMotion } from "../a11y";
 import { gameTicker } from "../runtime";
 import { COLUMNS, ROWS } from "../config";
 import { SpriteData, getBoardModel } from "../game/board-state";
@@ -31,6 +32,8 @@ import { placeSpriteAtAnchor } from "../presentation/placement";
 
 /** Slightly slower than a snap so the pry-up arc reads clearly. */
 const TIP_ROTATE_FRAMES = 18;
+/** Reduced-motion: still rotate (gameplay), but nearly instant. */
+const TIP_ROTATE_FRAMES_REDUCED = 3;
 
 type TipMember = { sp: SpriteData; index: number };
 
@@ -361,10 +364,13 @@ const animateTip = (plan: TipPlan): Promise<void> => {
 
   return new Promise((resolve) => {
     let frame = 0;
+    const duration = prefersReducedMotion()
+      ? TIP_ROTATE_FRAMES_REDUCED
+      : TIP_ROTATE_FRAMES;
     const tick = (delta: number) => {
       // Clamp so a long hitch can't skip the end snap / resolve forever
       frame += Math.min(delta, 3);
-      const t = Math.min(1, frame / TIP_ROTATE_FRAMES);
+      const t = Math.min(1, frame / duration);
       // Ease-in: slow at balance, then accelerates (gravity on the lever)
       const e = t * t;
       const theta = angleEnd * e;

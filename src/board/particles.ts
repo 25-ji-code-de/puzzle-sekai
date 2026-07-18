@@ -1,8 +1,10 @@
 /**
  * Clear / blast particle burst VFX.
  * Pooled Graphics + one shared ticker callback to avoid long-match GC thrash.
+ * No-op when prefers-reduced-motion is set.
  */
 import * as PIXI from "pixi.js-legacy";
+import { prefersReducedMotion } from "../a11y";
 import { app, gameTicker } from "../runtime";
 import type { SpriteData } from "../game/board-state";
 
@@ -72,6 +74,7 @@ const ensureTicker = (): void => {
 };
 
 export const createParticles = (list: SpriteData[]) => {
+  if (prefersReducedMotion()) return;
   for (const sp of list) {
     const { x, y } = sp.sprite;
     for (let i = 0; i < PARTICLE_COUNT; i++) {

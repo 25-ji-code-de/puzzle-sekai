@@ -1,7 +1,12 @@
 /**
  * Shared modal primitives used by pause / game-over / overlays.
  * Styles live in styles/_dialog.scss — assign classes only.
+ *
+ * Focus: callers should `trapFocus(overlay, …)` after mounting, and release
+ * the handle when the dialog is closed (see pause-menu / game-over-menu).
  */
+import { trapFocus, type FocusTrapHandle } from "../a11y";
+
 export type DialogButtonVariant = "primary" | "neutral" | "danger";
 
 export const buildDialogButton = (
@@ -46,8 +51,26 @@ export const buildDialogShell = (opts: {
 
   const title = document.createElement("div");
   title.className = "ui-dialog__title";
+  title.id = `${opts.id}-title`;
   title.textContent = opts.title;
+  overlay.setAttribute("aria-labelledby", title.id);
   card.appendChild(title);
   overlay.appendChild(card);
   return { overlay, card, title };
 };
+
+/**
+ * After `document.body.appendChild(overlay)`, call this to trap focus.
+ * Prefer focusing the primary action when provided.
+ */
+export const armDialogFocus = (
+  overlay: HTMLElement,
+  opts?: {
+    initialFocus?: HTMLElement | null;
+    onEscape?: () => void;
+  },
+): FocusTrapHandle =>
+  trapFocus(overlay, {
+    initialFocus: opts?.initialFocus ?? null,
+    onEscape: opts?.onEscape,
+  });

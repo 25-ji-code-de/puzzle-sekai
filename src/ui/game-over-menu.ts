@@ -5,18 +5,26 @@
 import { t } from "../i18n";
 import { getScoreSummary } from "../score";
 import { start, returnToMenu } from "../application/play-session";
-import { buildDialogButton, buildDialogShell } from "./dialog-button";
+import type { FocusTrapHandle } from "../a11y";
+import {
+  armDialogFocus,
+  buildDialogButton,
+  buildDialogShell,
+} from "./dialog-button";
 import { buildGameOverSummary } from "./game-over-summary";
 import { shareScoreCard } from "./share-card";
 
 const GAME_OVER_OVERLAY_ID = "game-over-overlay";
 
 let overlay: HTMLDivElement | null = null;
+let focusTrap: FocusTrapHandle | null = null;
 
 export const isGameOverMenuOpen = (): boolean => !!overlay;
 
 /** Hard remove overlay (locale rebuild / teardown / start / returnToMenu). */
 export const disposeGameOverMenu = (): void => {
+  focusTrap?.release({ restore: false });
+  focusTrap = null;
   overlay?.remove();
   overlay = null;
 };
@@ -72,11 +80,17 @@ export const showGameOverMenu = (): void => {
     returnToMenu();
   };
 
-  actions.appendChild(
-    buildDialogButton(t("gameOver.restart"), "primary", restart),
+  const restartBtn = buildDialogButton(
+    t("gameOver.restart"),
+    "primary",
+    restart,
   );
+  actions.appendChild(restartBtn);
   actions.appendChild(buildDialogButton(t("gameOver.menu"), "danger", quit));
   card.appendChild(actions);
 
   document.body.appendChild(overlay);
+  focusTrap = armDialogFocus(overlay, {
+    initialFocus: restartBtn,
+  });
 };

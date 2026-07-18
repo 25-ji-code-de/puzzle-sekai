@@ -2,6 +2,7 @@
  * Settings side panel — shell + section composition.
  * Styles: styles/_settings-panel.scss
  */
+import { prefersReducedMotion, trapFocus, type FocusTrapHandle } from "../../a11y";
 import { getCurrentSettings } from "../store";
 import { t } from "../../i18n";
 import type { SettingsSectionCtx } from "./widgets";
@@ -28,9 +29,15 @@ export interface SettingsPanelOptions {
 
 let settingsContainer: HTMLDivElement | null = null;
 let onClosedCallback: (() => void) | null = null;
+let focusTrap: FocusTrapHandle | null = null;
+
+const PANEL_CLOSE_MS = 300;
+const PANEL_CLOSE_MS_REDUCED = 0;
 
 /** Immediately tear down the panel (no animation). Used on locale rebuild. */
 export const disposeSettingsPanel = () => {
+  focusTrap?.release({ restore: false });
+  focusTrap = null;
   settingsContainer?.remove();
   settingsContainer = null;
   onClosedCallback = null;
@@ -42,16 +49,21 @@ export const closeSettingsPanel = () => {
   const settingsPanel = settingsContainer.querySelector(
     ".settings-panel",
   ) as HTMLElement | null;
-  if (settingsPanel) {
+  const delay = prefersReducedMotion()
+    ? PANEL_CLOSE_MS_REDUCED
+    : PANEL_CLOSE_MS;
+  if (settingsPanel && delay > 0) {
     settingsPanel.classList.add("is-closing");
   }
+  focusTrap?.release();
+  focusTrap = null;
   setTimeout(() => {
     settingsContainer?.remove();
     settingsContainer = null;
     const cb = onClosedCallback;
     onClosedCallback = null;
     cb?.();
-  }, 300);
+  }, delay);
 };
 
 const refreshSettingsPanel = () => {
@@ -59,6 +71,8 @@ const refreshSettingsPanel = () => {
   const opts: SettingsPanelOptions = {
     onClosed: onClosedCallback ?? undefined,
   };
+  focusTrap?.release({ restore: false });
+  focusTrap = null;
   settingsContainer.remove();
   settingsContainer = null;
   onClosedCallback = opts.onClosed ?? null;
@@ -73,6 +87,8 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
 
   settingsContainer = document.createElement("div");
   settingsContainer.className = "settings-root";
+  settingsContainer.setAttribute("role", "dialog");
+  settingsContainer.setAttribute("aria-modal", "true");
 
   const backdrop = document.createElement("div");
   backdrop.className = "settings-backdrop";
@@ -86,12 +102,15 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
   header.className = "settings-header";
   const title = document.createElement("div");
   title.className = "settings-title";
+  title.id = "settings-panel-title";
   title.textContent = t("settings.title");
+  settingsContainer.setAttribute("aria-labelledby", title.id);
   header.appendChild(title);
 
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
   closeBtn.className = "settings-close";
+  closeBtn.setAttribute("aria-label", t("controls.close"));
   closeBtn.textContent = "✕";
   closeBtn.onclick = () => closeSettingsPanel();
   header.appendChild(closeBtn);
@@ -116,4 +135,8 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
 
   settingsContainer.appendChild(settingsPanel);
   document.body.appendChild(settingsContainer);
+  focusTrap = trapFocus(settingsContainer, {
+    initialFocus: closeBtn,
+    onEscape: () => closeSettingsPanel(),
+  });
 };

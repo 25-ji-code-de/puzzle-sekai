@@ -16,6 +16,7 @@ import { fallChunk } from "./core";
 import { findClearChunk } from "./clear-rules";
 import { playClearAnimation } from "./clear-vfx";
 import { spritesInChunk } from "./mutate";
+import { prefersReducedMotion } from "../a11y";
 import { playLoadedSfx } from "../audio/sfx";
 import { CHAR } from "../characters/ids";
 import {
@@ -179,8 +180,11 @@ export const clearSprites = async (
   }
 
   if (groupVoiceKey) {
+    // Full pad lets the unit voice finish before the next cascade; reduced
+    // motion shortens the wait so the board keeps moving sooner.
+    const padMs = prefersReducedMotion() ? 400 : 2200;
     const elapsed = performance.now() - voiceStart;
-    const remaining = 2200 - elapsed;
+    const remaining = padMs - elapsed;
     if (remaining > 0) {
       await new Promise((r) => setTimeout(r, remaining));
     }

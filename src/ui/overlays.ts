@@ -1,22 +1,44 @@
 import { t } from "../i18n";
-import { buildDialogButton, buildDialogShell } from "./dialog-button";
+import type { FocusTrapHandle } from "../a11y";
+import {
+  armDialogFocus,
+  buildDialogButton,
+  buildDialogShell,
+} from "./dialog-button";
 
 const CONTROLS_OVERLAY_ID = "controls-overlay";
 const ABOUT_OVERLAY_ID = "about-overlay";
 
+const traps = new Map<string, FocusTrapHandle>();
+
+const releaseTrap = (id: string, restore = true) => {
+  const h = traps.get(id);
+  if (!h) return;
+  h.release({ restore });
+  traps.delete(id);
+};
+
+const closeOverlay = (overlay: HTMLDivElement, restore = true) => {
+  releaseTrap(overlay.id, restore);
+  overlay.remove();
+};
+
 /** Drop ephemeral menu overlays (e.g. on locale change). */
 export const disposeMenuOverlays = () => {
+  releaseTrap(ABOUT_OVERLAY_ID, false);
+  releaseTrap(CONTROLS_OVERLAY_ID, false);
   document.getElementById(ABOUT_OVERLAY_ID)?.remove();
   document.getElementById(CONTROLS_OVERLAY_ID)?.remove();
 };
 
-const attachDismiss = (overlay: HTMLDivElement) => {
-  const closeBtn = overlay.querySelector(
-    ".overlay-close-btn",
-  ) as HTMLButtonElement | null;
-  if (closeBtn) closeBtn.onclick = () => overlay.remove();
+const attachDismiss = (
+  overlay: HTMLDivElement,
+  closeBtn: HTMLButtonElement | null,
+) => {
+  const dismiss = () => closeOverlay(overlay);
+  if (closeBtn) closeBtn.onclick = dismiss;
   overlay.onclick = (e) => {
-    if (e.target === overlay) overlay.remove();
+    if (e.target === overlay) dismiss();
   };
 };
 
@@ -49,6 +71,7 @@ const appendEmphasizedText = (parent: HTMLElement, raw: string): void => {
 const stripTags = (s: string): string => s.replace(/<[^>]*>/g, "");
 
 export const showControlsOverlay = () => {
+  releaseTrap(CONTROLS_OVERLAY_ID, false);
   document.getElementById(CONTROLS_OVERLAY_ID)?.remove();
 
   const { overlay, card, title } = buildDialogShell({
@@ -96,17 +119,25 @@ export const showControlsOverlay = () => {
   const footer = document.createElement("div");
   footer.className = "ui-dialog__footer";
   const close = buildDialogButton(t("controls.close"), "neutral", () =>
-    overlay.remove(),
+    closeOverlay(overlay),
   );
   close.classList.add("ui-btn--compact", "overlay-close-btn");
   footer.appendChild(close);
   card.appendChild(footer);
 
-  attachDismiss(overlay);
+  attachDismiss(overlay, close);
   document.body.appendChild(overlay);
+  traps.set(
+    CONTROLS_OVERLAY_ID,
+    armDialogFocus(overlay, {
+      initialFocus: close,
+      onEscape: () => closeOverlay(overlay),
+    }),
+  );
 };
 
 export const showAboutOverlay = () => {
+  releaseTrap(ABOUT_OVERLAY_ID, false);
   document.getElementById(ABOUT_OVERLAY_ID)?.remove();
 
   const link = (text: string, href: string) => {
@@ -234,12 +265,19 @@ export const showAboutOverlay = () => {
   const footer = document.createElement("div");
   footer.className = "ui-dialog__footer";
   const close = buildDialogButton(t("controls.close"), "neutral", () =>
-    overlay.remove(),
+    closeOverlay(overlay),
   );
   close.classList.add("ui-btn--compact", "overlay-close-btn");
   footer.appendChild(close);
   card.appendChild(footer);
 
-  attachDismiss(overlay);
+  attachDismiss(overlay, close);
   document.body.appendChild(overlay);
+  traps.set(
+    ABOUT_OVERLAY_ID,
+    armDialogFocus(overlay, {
+      initialFocus: close,
+      onEscape: () => closeOverlay(overlay),
+    }),
+  );
 };

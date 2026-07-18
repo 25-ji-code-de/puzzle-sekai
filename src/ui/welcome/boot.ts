@@ -2,6 +2,7 @@
  * Boot welcome shell: static HTML adopt, load progress, click-to-continue.
  * Layout for #boot-welcome lives in index.html (LCP). Fallback uses same classes.
  */
+import { prefersReducedMotion, trapFocus, type FocusTrapHandle } from "../../a11y";
 import { t, getLocale, onLocaleChange } from "../../i18n";
 import { unlockAudio } from "../../audio/bgm";
 import { playMenuBgm } from "../../audio/session";
@@ -17,6 +18,7 @@ let bootLocaleListening = false;
 let lastLoadProgress = 0;
 let howtoWired = false;
 let howtoOpen = false;
+let howtoFocusTrap: FocusTrapHandle | null = null;
 
 /** Called after the boot shell is dismissed (audio unlocked, menu should open). */
 let onBootContinue: (() => void) | null = null;
@@ -70,6 +72,8 @@ const closeHowtoPanel = () => {
   const panel = document.getElementById("boot-howto-panel");
   if (!panel) return;
   howtoOpen = false;
+  howtoFocusTrap?.release();
+  howtoFocusTrap = null;
   panel.classList.remove("is-open");
   panel.hidden = true;
   panel.setAttribute("aria-hidden", "true");
@@ -85,7 +89,14 @@ const openHowtoPanel = (e?: Event) => {
   panel.hidden = false;
   panel.classList.add("is-open");
   panel.setAttribute("aria-hidden", "false");
-  document.getElementById("boot-howto-close")?.focus();
+  const closeBtn = document.getElementById(
+    "boot-howto-close",
+  ) as HTMLElement | null;
+  howtoFocusTrap?.release({ restore: false });
+  howtoFocusTrap = trapFocus(panel, {
+    initialFocus: closeBtn,
+    onEscape: () => closeHowtoPanel(),
+  });
 };
 
 const wireHowtoUi = () => {
@@ -253,7 +264,9 @@ export const markWelcomeReady = () => {
   welcomeReady = true;
   if (clickPromptEl) {
     clickPromptEl.textContent = t("welcome.click");
-    clickPromptEl.style.animation = "promptPulse 1.8s ease-in-out infinite";
+    if (!prefersReducedMotion()) {
+      clickPromptEl.style.animation = "promptPulse 1.8s ease-in-out infinite";
+    }
   }
   if (modalEl) {
     modalEl.style.cursor = "pointer";
@@ -273,9 +286,12 @@ export const markWelcomeReady = () => {
 
     closeHowtoPanel();
 
+    const fadeMs = prefersReducedMotion() ? 0 : 400;
     if (dimOverlayEl) dimOverlayEl.style.opacity = "0";
     modalEl.style.opacity = "0";
-    modalEl.style.transition = "opacity 0.4s ease";
+    if (fadeMs > 0) {
+      modalEl.style.transition = `opacity ${fadeMs}ms ease`;
+    }
     const shell = modalEl;
     setTimeout(() => {
       shell?.remove();
@@ -285,7 +301,7 @@ export const markWelcomeReady = () => {
       // Keep how-to panel node for potential re-entry is unnecessary after boot.
       document.getElementById("boot-howto-panel")?.remove();
       onBootContinue?.();
-    }, 400);
+    }, fadeMs);
   };
 
   const onClick = (e: MouseEvent) => continueOnce(e);

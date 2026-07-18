@@ -2,8 +2,11 @@
  * Clear presentation: white flash → glow → particles → remove from board.
  * ColorMatrixFilter desaturate+brightness is the intended look (white flash).
  * Tint alone cannot wash character textures to white.
+ *
+ * prefers-reduced-motion: skip glow tween + particles; brief flash then remove.
  */
 import * as PIXI from "pixi.js-legacy";
+import { prefersReducedMotion } from "../a11y";
 import { gameTicker } from "../runtime";
 import type { SpriteData } from "../game/board-state";
 import { removeSpritesFromBoard } from "./mutate";
@@ -22,6 +25,16 @@ export const playClearAnimation = async (
     colorMatrix.brightness(3, false);
     sp.sprite.filters = [colorMatrix];
   });
+
+  if (prefersReducedMotion()) {
+    // One short flash so the clear still reads, then remove — no glow/particles.
+    await new Promise((r) => setTimeout(r, 40));
+    toRemove.forEach((sp) => {
+      sp.sprite.filters = [];
+    });
+    removeSpritesFromBoard(toRemove);
+    return;
+  }
 
   await new Promise((r) => setTimeout(r, 150));
 

@@ -10,19 +10,27 @@ import {
   returnToMenu,
   isPlayActive,
 } from "../application/play-session";
+import type { FocusTrapHandle } from "../a11y";
 import { isPortrait } from "./display";
-import { buildDialogButton, buildDialogShell } from "./dialog-button";
+import {
+  armDialogFocus,
+  buildDialogButton,
+  buildDialogShell,
+} from "./dialog-button";
 
 const PAUSE_OVERLAY_ID = "pause-overlay";
 const PAUSE_BTN_ID = "pause-button";
 
 let overlay: HTMLDivElement | null = null;
 let pauseBtn: HTMLButtonElement | null = null;
+let focusTrap: FocusTrapHandle | null = null;
 
 export const isPauseMenuOpen = (): boolean => !!overlay;
 
 /** Hard remove overlay (locale rebuild / teardown / returnToMenu). */
 export const disposePauseMenu = (): void => {
+  focusTrap?.release({ restore: false });
+  focusTrap = null;
   overlay?.remove();
   overlay = null;
 };
@@ -76,7 +84,8 @@ export const showPauseMenu = (): void => {
     returnToMenu();
   };
 
-  card.appendChild(buildDialogButton(t("pause.resume"), "primary", resume));
+  const resumeBtn = buildDialogButton(t("pause.resume"), "primary", resume);
+  card.appendChild(resumeBtn);
   card.appendChild(buildDialogButton(t("pause.restart"), "neutral", restart));
   card.appendChild(buildDialogButton(t("pause.menu"), "danger", quit));
 
@@ -84,9 +93,15 @@ export const showPauseMenu = (): void => {
     if (e.target === overlay) resume();
   };
   document.body.appendChild(overlay);
+  focusTrap = armDialogFocus(overlay, {
+    initialFocus: resumeBtn,
+    onEscape: resume,
+  });
 };
 
 export const hidePauseMenu = (): void => {
+  focusTrap?.release();
+  focusTrap = null;
   overlay?.remove();
   overlay = null;
 };
