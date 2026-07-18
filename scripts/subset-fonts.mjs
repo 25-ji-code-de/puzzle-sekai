@@ -6,7 +6,7 @@
  * .woff2 imports via the plugin in vite.config.ts (same idea as assets-to-webp).
  *
  * Licenses: MaokenAssortedSans + Nishiki-teki are SIL OFL 1.1 (subsetting OK);
- * DroidSansMono is Apache-2.0 and already tiny, so it is left intact.
+ * Roboto is Apache-2.0 and already tiny (latin subset), so it is left intact.
  *
  * Usage:
  *   yarn fonts:subset          # write report + sample files under .cache/font-subset

@@ -21,11 +21,9 @@ const PAD = 52;
 
 /**
  * Draw zero-padded number with dim leading zeros. Returns total width.
- *
- * DroidSansMono is a single Regular master — no Bold file. Canvas does not
- * apply browser synthetic bold on font-weight:700, so strong solid digits
- * get a 1px horizontal double-draw (classic canvas faux-bold, only on the
- * significant half; pad zeros stay single-stroke Regular).
+ * Roboto is registered at 400 + 600 — pad zeros use Regular, significant
+ * digits use SemiBold when `strong` is set (700 heavy, 500 light). Digit
+ * advances match under tabular figures.
  */
 const fillPaddedNumber = (
   ctx: CanvasRenderingContext2D,
@@ -41,17 +39,28 @@ const fillPaddedNumber = (
   const strong = opts?.strong ?? false;
   const { pad, solid } = splitPaddedNumber(n, len);
 
-  // Always measure/draw as 400 — only one face exists.
   const baseFont = ctx.font;
   const sizeFamily = baseFont.replace(/^(?:\d{3}|bold|normal)\s+/i, "");
   const regularFont = `400 ${sizeFamily}`;
-  ctx.font = regularFont;
+  const strongFont = `600 ${sizeFamily}`;
 
+  // Prefer tabular figures so pad-aligned scores line up (Roboto is not mono).
+  const prevVariant = (ctx as CanvasRenderingContext2D & {
+    fontVariantNumeric?: string;
+  }).fontVariantNumeric;
+  try {
+    (
+      ctx as CanvasRenderingContext2D & { fontVariantNumeric?: string }
+    ).fontVariantNumeric = "tabular-nums";
+  } catch {
+    /* older browsers */
+  }
+
+  ctx.font = regularFont;
   const grayW = pad ? ctx.measureText(pad).width : 0;
+  ctx.font = strong ? strongFont : regularFont;
   const solidW = solid ? ctx.measureText(solid).width : 0;
-  // Faux-bold adds ~1px visual width; include it so centering doesn't shift.
-  const solidDrawW = solidW + (strong && solid ? 1 : 0);
-  const total = grayW + solidDrawW;
+  const total = grayW + solidW;
 
   let cursor =
     align === "center"
@@ -61,24 +70,28 @@ const fillPaddedNumber = (
         : x;
   const prevAlign = ctx.textAlign;
   ctx.textAlign = "left";
-  ctx.font = regularFont;
 
   if (pad) {
+    ctx.font = regularFont;
     ctx.fillStyle = padColor;
     ctx.fillText(pad, cursor, y);
     cursor += grayW;
   }
   if (solid) {
+    ctx.font = strong ? strongFont : regularFont;
     ctx.fillStyle = solidColor;
     ctx.fillText(solid, cursor, y);
-    if (strong) {
-      // 1px horizontal double-draw ≈ Chromium-ish synthetic bold weight.
-      ctx.fillText(solid, cursor + 1, y);
-    }
   }
 
   ctx.textAlign = prevAlign;
   ctx.font = baseFont;
+  try {
+    (
+      ctx as CanvasRenderingContext2D & { fontVariantNumeric?: string }
+    ).fontVariantNumeric = prevVariant ?? "";
+  } catch {
+    /* ignore */
+  }
   return total;
 };
 
@@ -91,7 +104,7 @@ const displayFontFamily = (): string => {
 };
 
 const monoFontFamily = (): string =>
-  "DroidSansMono, ui-monospace, Menlo, Consolas, monospace";
+  "Roboto, Arial, Helvetica, sans-serif";
 
 const waitFonts = async (): Promise<void> => {
   try {
@@ -226,9 +239,9 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
   }
   y += 70;
 
-  // Center score
+  // Center score — SemiBold (600)
   ctx.textAlign = "center";
-  ctx.font = `400 88px ${mono}`;
+  ctx.font = `600 88px ${mono}`;
   ctx.shadowColor = "rgba(255, 107, 138, 0.3)";
   ctx.shadowBlur = 18;
   fillPaddedNumber(
@@ -244,19 +257,20 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
   ctx.shadowBlur = 0;
   y += 96;
 
-  // High score: CJK label on display face; digits on Droid (faux-bold solids)
+  // High score: CJK label on display face; digits on Roboto SemiBold
   const highLab = `${t("gameOver.highScore")} `;
   ctx.font = `400 18px ${display}`;
   const highLabW = ctx.measureText(highLab).width;
-  ctx.font = `400 18px ${mono}`;
-  const highNumW =
-    ctx.measureText(padDigits(summary.highScore, SCORE_PAD)).width + 1;
+  ctx.font = `600 18px ${mono}`;
+  const highNumW = ctx.measureText(
+    padDigits(summary.highScore, SCORE_PAD),
+  ).width;
   const highStart = CARD_W / 2 - (highLabW + highNumW) / 2;
   ctx.textAlign = "left";
   ctx.font = `400 18px ${display}`;
   ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
   ctx.fillText(highLab, highStart, y);
-  ctx.font = `400 18px ${mono}`;
+  ctx.font = `600 18px ${mono}`;
   fillPaddedNumber(
     ctx,
     summary.highScore,
@@ -306,7 +320,7 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
       ctx.font = `400 18px ${display}`;
       ctx.textAlign = "left";
       ctx.fillText(g, leftColX, y);
-      ctx.font = `400 22px ${mono}`;
+      ctx.font = `600 22px ${mono}`;
       fillPaddedNumber(
         ctx,
         summary.groupClears[g] ?? 0,
@@ -325,7 +339,7 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
   ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
   ctx.font = `400 16px ${display}`;
   ctx.fillText(t("gameOver.maxCombo"), rightColX, comboTop);
-  ctx.font = `400 48px ${mono}`;
+  ctx.font = `600 48px ${mono}`;
   fillPaddedNumber(
     ctx,
     summary.maxCombo,

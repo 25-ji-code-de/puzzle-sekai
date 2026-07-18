@@ -33,6 +33,10 @@ let timerText: PIXI.Container;
 let multBadge: PIXI.Container | undefined;
 
 const SCORE_X = 1700;
+const SCORE_FONT_SIZE = 48;
+const HIGH_SCORE_FONT_SIZE = 32;
+const COMBO_FONT_SIZE = 44;
+const TIMER_FONT_SIZE = 48;
 const pad = (n: number, len: number) => String(n).padStart(len, "0");
 
 const makePaddedText = (
@@ -79,8 +83,6 @@ const formatTime = (seconds: number): string => {
   const secs = seconds % 60;
   return `${mins}:${pad(secs, 2)}`;
 };
-
-const TIMER_FONT_SIZE = 48;
 
 const makeTimeText = (seconds: number, fontSize: number) => {
   const timeStr = formatTime(seconds);
@@ -178,17 +180,22 @@ const makeMultiplierBadge = (mult: number, hsDiff: number, hsEnt: boolean) => {
 
 export const updateScoreDisplay = () => {
   if (scoreText) {
-    const newScore = makePaddedText(getScore(), 8, 0xff6b8a, 44);
+    const newScore = makePaddedText(getScore(), 8, 0xff6b8a, SCORE_FONT_SIZE);
     newScore.pivot.x = newScore.width / 2;
     scoreText = replaceDisplay(scoreText, newScore);
   }
   if (highScoreText) {
-    const newHigh = makePaddedText(getHighScore(), 8, 0xffffff, 36);
+    const newHigh = makePaddedText(
+      getHighScore(),
+      8,
+      0xffffff,
+      HIGH_SCORE_FONT_SIZE,
+    );
     newHigh.pivot.x = newHigh.width / 2;
     highScoreText = replaceDisplay(highScoreText, newHigh);
   }
   if (comboText) {
-    const newCombo = makePaddedText(getCombo(), 4, 0xffffff, 42);
+    const newCombo = makePaddedText(getCombo(), 4, 0xffffff, COMBO_FONT_SIZE);
     newCombo.pivot.x = newCombo.width / 2;
     comboText = replaceDisplay(comboText, newCombo);
   }
@@ -256,13 +263,18 @@ export const initScoreDisplay = () => {
 
   loadMatchHighScore();
 
-  scoreText = makePaddedText(getScore(), 8, 0xff6b8a, 44);
+  scoreText = makePaddedText(getScore(), 8, 0xff6b8a, SCORE_FONT_SIZE);
   scoreText.x = SCORE_X;
-  scoreText.y = 660;
+  scoreText.y = 655;
   scoreText.pivot.x = scoreText.width / 2;
   app.stage.addChild(scoreText);
 
-  highScoreText = makePaddedText(getHighScore(), 8, 0xffffff, 36);
+  highScoreText = makePaddedText(
+    getHighScore(),
+    8,
+    0xffffff,
+    HIGH_SCORE_FONT_SIZE,
+  );
   highScoreText.x = SCORE_X;
   highScoreText.y = 745;
   highScoreText.pivot.x = highScoreText.width / 2;
@@ -277,7 +289,7 @@ export const initScoreDisplay = () => {
   multBadge.y = 798;
   app.stage.addChild(multBadge);
 
-  comboText = makePaddedText(getCombo(), 4, 0xffffff, 42);
+  comboText = makePaddedText(getCombo(), 4, 0xffffff, COMBO_FONT_SIZE);
   comboText.x = SCORE_X;
   comboText.y = 900;
   comboText.pivot.x = comboText.width / 2;
@@ -287,7 +299,7 @@ export const initScoreDisplay = () => {
     seedTimeRemaining(settings.timeAttackDuration);
     timerText = makeTimeText(getTimeRemaining(), TIMER_FONT_SIZE);
     timerText.x = SCORE_X + 50;
-    timerText.y = 135;
+    timerText.y = 130;
     timerText.pivot.x = timerText.width / 2;
     app.stage.addChild(timerText);
   }

@@ -1,22 +1,23 @@
 import { getLocale, onLocaleChange, type Locale } from "../i18n";
 import maokenFontUrl from "../assets/fonts/MaokenAssortedSans-Lite.woff2";
 import nishikiFontUrl from "../assets/fonts/nishiki-teki.woff2";
-import droidSansMonoFontUrl from "../assets/fonts/DroidSansMono.woff2";
+import robotoRegularUrl from "../assets/fonts/Roboto-Regular.woff2";
+import robotoSemiBoldUrl from "../assets/fonts/Roboto-SemiBold.woff2";
 
 /**
  * Centralized font schemes. Every text surface picks a scheme; stacks adapt
  * to locale so Chinese hanzi never render in NishikiTeki's Japanese forms.
  *
  * Policy: all UI copy uses the locale's cartoon/display face (Maoken for zh,
- * NishikiTeki for ja/en). Mono is reserved for pad-aligned digits only.
+ * NishikiTeki for ja/en). Scores / timers use Roboto with tabular figures
+ * (digit widths match; letters stay proportional) so pad-aligned scores work
+ * without a mono face — Regular 400 + SemiBold 600 for strong digits.
  *
  * Families
  *  - brand   : fixed パズル⭐︎セカ → NishikiTeki
  *  - display : large/short UI (and, under all-cartoon policy, body/caption too)
  *  - body    : same stack as display (settings, captions, descriptions, credits)
- *  - mono    : DroidSansMono for scores / timers / pure factors
- *              (single master — DOM 700 uses browser synthetic bold;
- *              canvas share-card fakes strong digits itself)
+ *  - mono    : Roboto (400 + 600) for numeric surfaces only
  *
  * Fallback faces (`* Fallback`, `* Fallback Latin`) are local()-only @font-face
  * rules with metric overrides (and size-adjust where needed) so font-display
@@ -37,7 +38,7 @@ export type FontScheme =
 
 export interface ResolvedFontScheme {
   fontFamily: string;
-  fontWeight: "400" | "700";
+  fontWeight: "400" | "500" | "600" | "700";
 }
 
 // Adjusted local fallback family names (defined in FALLBACK_FACE_CSS).
@@ -45,7 +46,7 @@ const MAOKEN_FB = "MaokenAssortedSans Fallback";
 const MAOKEN_FB_LATIN = "MaokenAssortedSans Fallback Latin";
 const NISHIKI_FB = "NishikiTeki Fallback";
 const NISHIKI_FB_LATIN = "NishikiTeki Fallback Latin";
-const MONO_FB = "DroidSansMono Fallback";
+const MONO_FB = "Roboto Fallback";
 
 // Per-locale display stacks; body reuses the same string (all-cartoon policy).
 // Order: web face → metric-matched CJK local → metric-matched Latin local → generic.
@@ -53,7 +54,7 @@ const DISPLAY_ZH = `'MaokenAssortedSans','${MAOKEN_FB}','${MAOKEN_FB_LATIN}',san
 const DISPLAY_JA = `'NishikiTeki','${NISHIKI_FB}','${NISHIKI_FB_LATIN}',sans-serif`;
 const DISPLAY_EN = `'NishikiTeki','${NISHIKI_FB}','${NISHIKI_FB_LATIN}',sans-serif`;
 const BRAND_STACK = `'NishikiTeki','${NISHIKI_FB}','${NISHIKI_FB_LATIN}',sans-serif`;
-const MONO_STACK = `'DroidSansMono','${MONO_FB}',monospace`;
+const MONO_STACK = `'Roboto','${MONO_FB}',sans-serif`;
 
 const FAMILY_STACKS: Record<Locale, Record<FontFamilyRole, string>> = {
   zh: {
@@ -78,7 +79,7 @@ const FAMILY_STACKS: Record<Locale, Record<FontFamilyRole, string>> = {
 
 const SCHEMES: Record<
   FontScheme,
-  { family: FontFamilyRole; fontWeight: "400" | "700" }
+  { family: FontFamilyRole; fontWeight: "400" | "500" | "600" | "700" }
 > = {
   brand: { family: "brand", fontWeight: "400" },
   heading: { family: "display", fontWeight: "400" },
@@ -86,7 +87,7 @@ const SCHEMES: Record<
   body: { family: "body", fontWeight: "400" },
   caption: { family: "body", fontWeight: "400" },
   numeric: { family: "mono", fontWeight: "400" },
-  numericStrong: { family: "mono", fontWeight: "700" },
+  numericStrong: { family: "mono", fontWeight: "600" },
 };
 
 const CSS_VARIABLES: Record<FontFamilyRole, string> = {
@@ -103,7 +104,7 @@ const CSS_VARIABLES: Record<FontFamilyRole, string> = {
  * CJK system faces (YaHei / Yu Gothic / PingFang) already share full-width
  * advance with our display faces → size-adjust 100%, metrics-only.
  * Latin Arial is narrower → size-adjust + rescaled overrides.
- * Courier New matches DroidSansMono advance exactly.
+ * System Roboto / Arial stand in for our Roboto numeric face.
  */
 const FALLBACK_FACE_CSS = `
 @font-face {
@@ -141,9 +142,9 @@ const FALLBACK_FACE_CSS = `
 }
 @font-face {
   font-family: "${MONO_FB}";
-  src: local("Courier New"), local("Consolas"), local("Menlo"), local("Monaco");
-  ascent-override: 105.615%;
-  descent-override: 27.1%;
+  src: local("Roboto"), local("Arial"), local("Helvetica Neue"), local("Helvetica");
+  ascent-override: 92.773%;
+  descent-override: 24.414%;
   line-gap-override: 0%;
 }
 `.trim();
@@ -186,7 +187,7 @@ const injectFallbackFaces = () => {
 const loadFace = async (
   family: string,
   url: string,
-  weight: "400" | "700" = "400",
+  weight: "400" | "500" | "600" | "700" = "400",
 ): Promise<void> => {
   // Register the face immediately with font-display: swap so the stack can
   // paint metric-matched local fallbacks while the woff2 downloads, then
@@ -212,7 +213,7 @@ const loadedFaces = new Set<string>();
 const ensureFace = async (
   family: string,
   url: string,
-  weight: "400" | "700" = "400",
+  weight: "400" | "500" | "600" | "700" = "400",
 ): Promise<void> => {
   const key = `${family}:${weight}`;
   if (loadedFaces.has(key)) return;
@@ -224,11 +225,12 @@ const ensureFace = async (
   }
 };
 
-/** Load mono + brand (Nishiki) + the locale display face. */
+/** Load numeric Roboto (400+600) + brand (Nishiki) + the locale display face. */
 const loadFontsForLocale = async (locale: Locale): Promise<void> => {
   const display = displayFaceFor(locale);
   await Promise.allSettled([
-    ensureFace("DroidSansMono", droidSansMonoFontUrl, "400"),
+    ensureFace("Roboto", robotoRegularUrl, "400"),
+    ensureFace("Roboto", robotoSemiBoldUrl, "600"),
     ensureFace("NishikiTeki", nishikiFontUrl), // brand always
     ensureFace(display.family, display.url),
   ]);
