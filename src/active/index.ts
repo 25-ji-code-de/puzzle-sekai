@@ -104,7 +104,7 @@ export const fall = (
   let timer: number | undefined;
   const cleanup = () => {
     gameTicker.remove(checkOffset);
-    onFall && onFall(sprite);
+    onFall?.(sprite);
   };
 
   const checkOffset = (delta: number) => {

@@ -70,8 +70,10 @@ export const applyBgmVolume = (): void => {
 export { playSfxPreview, playVoicePreview } from "./sfx";
 export const unlockAudio = (): void => {
   try {
-    const ctx = (sound as any).context?.audioContext as
-      AudioContext | undefined;
+    const pixiSound = sound as typeof sound & {
+      context?: { audioContext?: AudioContext };
+    };
+    const ctx = pixiSound.context?.audioContext;
     if (ctx && ctx.state === "suspended") {
       void ctx.resume();
     }

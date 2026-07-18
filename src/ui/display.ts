@@ -10,12 +10,17 @@ export const isPortrait = (): boolean =>
   window.matchMedia("(orientation: portrait)").matches;
 
 /** True when the document is currently in a fullscreen element. */
-export const isFullscreen = (): boolean =>
-  !!(
-    document.fullscreenElement ||
-    (document as any).webkitFullscreenElement ||
-    (document as any).msFullscreenElement
+export const isFullscreen = (): boolean => {
+  const doc = document as Document & {
+    webkitFullscreenElement?: Element | null;
+    msFullscreenElement?: Element | null;
+  };
+  return !!(
+    doc.fullscreenElement ||
+    doc.webkitFullscreenElement ||
+    doc.msFullscreenElement
   );
+};
 
 /**
  * Request fullscreen on the document element. Must be called from a

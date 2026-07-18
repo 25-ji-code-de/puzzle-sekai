@@ -92,17 +92,18 @@ export const playGameOverBgm = async () => {
   gameOverIntroOnEnd = onEnd;
 
   const result = intro.play({ loop: false, volume: BGM_BASE_VOLUME });
-  const attach = (inst: {
+  type PlayInstance = {
     on: (e: string, fn: () => void) => void;
     stop?: () => void;
-  }) => {
+  };
+  const attach = (inst: PlayInstance) => {
     gameOverIntroInst = inst;
     inst.on("end", onEnd);
   };
   if (result instanceof Promise) {
-    result.then((inst) => attach(inst as any));
+    void result.then((inst) => attach(inst as PlayInstance));
   } else if (result) {
-    attach(result as any);
+    attach(result as PlayInstance);
   }
 };
 

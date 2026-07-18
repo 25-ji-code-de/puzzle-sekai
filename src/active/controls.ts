@@ -54,24 +54,24 @@ export const bindPieceControls = (
     let handled = true;
     switch (event.key.toLowerCase()) {
       case "arrowleft":
-        swapped ? actions.moveRight() : actions.moveLeft();
+        (swapped ? actions.moveRight : actions.moveLeft)();
         break;
       case "arrowright":
-        swapped ? actions.moveLeft() : actions.moveRight();
+        (swapped ? actions.moveLeft : actions.moveRight)();
         break;
       case "arrowup":
         if (event.shiftKey && actions.tryLift) {
           actions.tryLift();
           break;
         }
-        swapped ? actions.rotateCCW() : actions.rotateCW();
+        (swapped ? actions.rotateCCW : actions.rotateCW)();
         break;
       case "x":
-        swapped ? actions.rotateCCW() : actions.rotateCW();
+        (swapped ? actions.rotateCCW : actions.rotateCW)();
         break;
       case "z":
       case "control":
-        swapped ? actions.rotateCW() : actions.rotateCCW();
+        (swapped ? actions.rotateCW : actions.rotateCCW)();
         break;
       case "arrowdown":
         actions.softDrop();
@@ -105,9 +105,9 @@ export const bindPieceControls = (
   const handleTap = (e: HammerInput) => {
     const leftHalf = isLeftHalfOfCanvas(e.center.x);
     if (isControlsSwapped()) {
-      leftHalf ? actions.rotateCW() : actions.rotateCCW();
+      (leftHalf ? actions.rotateCW : actions.rotateCCW)();
     } else {
-      leftHalf ? actions.rotateCCW() : actions.rotateCW();
+      (leftHalf ? actions.rotateCCW : actions.rotateCW)();
     }
   };
 
