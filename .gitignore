@@ -36,5 +36,10 @@ out/
 /dist/
 .cache/
 
+# Local env (keep .env.example)
+.env
+.env.local
+.env.*.local
+
 # Audio
 *.m4a
