@@ -19,6 +19,18 @@ import {
   danMessageKey,
   getDanSummary,
 } from "../../score";
+import {
+  displayNameOf,
+  getAuthSnapshot,
+  isAuthConfigured,
+  logout,
+  onAuthChange,
+  startLogin,
+} from "../../auth";
+import {
+  getSyncStatus,
+  onSyncStatus,
+} from "../../sync";
 import type { MessageKey } from "../../i18n";
 import { showSettingsPanel, disposeSettingsPanel } from "../../settings/panel";
 import {
@@ -36,8 +48,14 @@ import { setPlayPhase } from "../../application/play-session";
 let welcomeSprite: PIXI.Sprite;
 let menuOverlay: HTMLDivElement | null = null;
 let localeListening = false;
+let unsubAuth: (() => void) | null = null;
+let unsubSync: (() => void) | null = null;
 
 const teardownMenu = () => {
+  unsubAuth?.();
+  unsubAuth = null;
+  unsubSync?.();
+  unsubSync = null;
   if (menuOverlay) {
     menuOverlay.remove();
     menuOverlay = null;
@@ -161,6 +179,59 @@ const buildMenu = () => {
     },
   );
   toolbar.appendChild(clearCacheBtn);
+
+  // Compact account CTA on the settings / toolbar row.
+  const authChip = document.createElement("button");
+  authChip.type = "button";
+  authChip.className = "menu-auth menu-tool-btn";
+  authChip.setAttribute("data-boot-interactive", "1");
+
+  const paintAuthChip = () => {
+    const snap = getAuthSnapshot();
+    const sync = getSyncStatus();
+    authChip.classList.toggle("menu-auth--guest", !snap.loggedIn);
+    authChip.classList.toggle("menu-auth--user", snap.loggedIn);
+    if (!snap.loggedIn) {
+      authChip.textContent = t("auth.loginShort");
+      authChip.title = isAuthConfigured()
+        ? t("auth.login")
+        : t("auth.notConfigured");
+      authChip.disabled = !isAuthConfigured();
+      return;
+    }
+    const name = displayNameOf(snap.user);
+    let suffix = "";
+    if (sync === "syncing") suffix = ` · ${t("auth.syncing")}`;
+    else if (sync === "error") suffix = ` · ${t("auth.syncFailed")}`;
+    authChip.textContent = name + suffix;
+    authChip.title = t("auth.logout");
+    authChip.disabled = false;
+  };
+
+  authChip.onclick = () => {
+    const snap = getAuthSnapshot();
+    if (!snap.loggedIn) {
+      if (!isAuthConfigured()) {
+        window.alert(t("auth.notConfigured"));
+        return;
+      }
+      void startLogin().then((r) => {
+        if (!r.ok && r.reason === "not_configured") {
+          window.alert(t("auth.notConfigured"));
+        }
+      });
+      return;
+    }
+    if (window.confirm(t("auth.logout"))) {
+      logout();
+      paintAuthChip();
+    }
+  };
+
+  paintAuthChip();
+  unsubAuth = onAuthChange(() => paintAuthChip());
+  unsubSync = onSyncStatus(() => paintAuthChip());
+  toolbar.appendChild(authChip);
   footer.appendChild(toolbar);
 
   menuOverlay.appendChild(footer);

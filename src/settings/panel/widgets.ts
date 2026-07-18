@@ -80,3 +80,11 @@ export const makeDangerButton = (label: string): HTMLButtonElement => {
   btn.textContent = label;
   return btn;
 };
+
+export const makeNeutralButton = (label: string): HTMLButtonElement => {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "setting-opt";
+  btn.textContent = label;
+  return btn;
+};

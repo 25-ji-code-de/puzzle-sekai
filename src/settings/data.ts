@@ -10,6 +10,8 @@ const isAppStorageKey = (key: string): boolean =>
   key === "puzzleSekaiLocale" ||
   // Account dan run log (B30 + R10 + A)
   key === "puzzleSekaiDan" ||
+  // Sync version meta (keep tokens — auth keys intentionally excluded)
+  key === "puzzleSekaiSyncMeta" ||
   // New bucket keys: hs:endless:… / hs:timeAttack:…
   key.startsWith("hs:endless:") ||
   key.startsWith("hs:timeAttack:") ||
@@ -17,6 +19,7 @@ const isAppStorageKey = (key: string): boolean =>
   key === "highScore_endless" ||
   key.startsWith("highScore_endless_") ||
   key.startsWith("highScore_timeAttack_");
+// Note: puzzleSekaiAuth is intentionally NOT cleared so login survives "clear data".
 
 export function clearAppData(): void {
   try {

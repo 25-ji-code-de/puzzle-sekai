@@ -33,6 +33,7 @@ import {
   bindHighScoreLifecycle,
   finalizeRunForDan,
 } from "../score";
+import { scheduleSyncPush } from "../sync";
 import { getCurrentGameMode, getCurrentSettings } from "../settings";
 import { resetFunEffects, isFunModeOn } from "../fun/effects";
 import { setPlayPhase, isPausedPhase } from "../application/play-session/phase";
@@ -294,6 +295,8 @@ const beginGameOver = (cause: "topOut" | "timeUp") => {
   flushHighScoreIfNeeded();
   // Account dan: one append per match (latched).
   finalizeRunForDan();
+  // Cloud sync (no-op when logged out).
+  scheduleSyncPush();
   setPlayPhase({
     type: "gameOver",
     cause,

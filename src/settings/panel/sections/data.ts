@@ -1,6 +1,12 @@
 import { clearAppData, clearAppCaches } from "../../data";
+import { getAuthSnapshot, logout } from "../../../auth";
 import { t } from "../../../i18n";
-import { makeDangerButton, makeOptionsRow, makeSettingGroup } from "../widgets";
+import {
+  makeDangerButton,
+  makeNeutralButton,
+  makeOptionsRow,
+  makeSettingGroup,
+} from "../widgets";
 
 export const appendDataSection = (panel: HTMLElement): void => {
   const group = makeSettingGroup(t("settings.data.label"));
@@ -9,6 +15,16 @@ export const appendDataSection = (panel: HTMLElement): void => {
 
   const status = document.createElement("div");
   status.className = "setting-status";
+
+  if (getAuthSnapshot().loggedIn) {
+    const logoutBtn = makeNeutralButton(t("auth.logout"));
+    logoutBtn.onclick = () => {
+      if (!window.confirm(t("auth.logout"))) return;
+      logout();
+      status.textContent = t("auth.logout");
+    };
+    options.appendChild(logoutBtn);
+  }
 
   const clearCacheBtn = makeDangerButton(t("settings.data.clearCache"));
   const clearDataBtn = makeDangerButton(t("settings.data.clearData"));
