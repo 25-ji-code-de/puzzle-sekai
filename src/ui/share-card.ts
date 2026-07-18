@@ -6,6 +6,8 @@ import { getLocale, t } from "../i18n";
 import {
   COMBO_PAD,
   formatMultiplier,
+  getScoreRankColor,
+  getScoreRankGlow,
   GROUP_CLEAR_PAD,
   groupsForSummary,
   padDigits,
@@ -226,18 +228,39 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
 
   ctx.textAlign = "right";
   if (summary.scoreRank) {
-    ctx.fillStyle = "#ffd76a";
-    ctx.font = `400 44px ${display}`;
-    ctx.shadowColor = "rgba(255, 215, 106, 0.4)";
-    ctx.shadowBlur = 14;
-    ctx.fillText(summary.scoreRank, rightX, y - 4);
+    // Flat fill (SSS+ uses gradient start pink — canvas text gradient not worth the complexity).
+    const rankLetter = summary.scoreRank;
+    ctx.fillStyle = getScoreRankColor(rankLetter);
+    ctx.font = `400 56px ${display}`;
+    ctx.shadowColor = getScoreRankGlow(rankLetter);
+    ctx.shadowBlur = 16;
+    ctx.fillText(rankLetter, rightX, y - 6);
     ctx.shadowBlur = 0;
+
+    // Decorative "SCORERANK" under the letter — Roboto SemiBold, uniform scale.
+    const letterW = ctx.measureText(rankLetter).width;
+    const letterLeft = rightX - letterW;
+    const caption = "SCORERANK";
+    ctx.font = `600 12px ${mono}`;
+    const capW = ctx.measureText(caption).width;
+    // Target ~72% of letter width; scale X+Y so glyphs stay proportional.
+    const targetW = letterW * 0.72;
+    const s = capW > 0 ? Math.min(1, targetW / capW) : 1;
+    const capCenterX = letterLeft + letterW / 2;
+    const capY = y - 6 + 56 + 6;
+    ctx.save();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.42)";
+    ctx.textAlign = "center";
+    ctx.translate(capCenterX, capY);
+    ctx.scale(s, s);
+    ctx.fillText(caption, 0, 0);
+    ctx.restore();
   } else {
     ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
     ctx.font = `400 34px ${display}`;
     ctx.fillText("—", rightX, y);
   }
-  y += 70;
+  y += 78;
 
   // Center score — SemiBold (600)
   ctx.textAlign = "center";

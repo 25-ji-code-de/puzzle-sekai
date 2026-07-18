@@ -8,6 +8,7 @@ import {
   GROUP_CLEAR_PAD,
   groupsForSummary,
   SCORE_PAD,
+  scoreRankColorStyle,
   splitPaddedNumber,
   type ScoreSummary,
 } from "../score";
@@ -79,8 +80,21 @@ export const buildGameOverSummary = (
 
   const rank = document.createElement("div");
   rank.className = "go-summary__rank";
-  rank.textContent = summary.scoreRank ?? "—";
-  if (!summary.scoreRank) rank.classList.add("go-summary__rank--empty");
+  const rankLetter = document.createElement("div");
+  rankLetter.className = "go-summary__rank-letter";
+  if (summary.scoreRank) {
+    rankLetter.textContent = summary.scoreRank;
+    rankLetter.style.cssText = scoreRankColorStyle(summary.scoreRank);
+    const caption = document.createElement("div");
+    caption.className = "go-summary__rank-caption";
+    caption.textContent = "SCORERANK";
+    rank.appendChild(rankLetter);
+    rank.appendChild(caption);
+  } else {
+    rankLetter.textContent = "—";
+    rank.classList.add("go-summary__rank--empty");
+    rank.appendChild(rankLetter);
+  }
 
   top.appendChild(diffSide);
   top.appendChild(rank);

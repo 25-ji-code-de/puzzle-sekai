@@ -14,6 +14,7 @@ import {
   saveHighScore,
   type GroupName,
 } from "../settings";
+import { computeScoreRank } from "./rank";
 
 let _score = 0;
 let _highScore = 0;
@@ -191,8 +192,12 @@ export const getScoreSummary = () => {
     isNewRecord: _isNewRecord,
     groupClears: { ..._groupClears } as Partial<Record<GroupName, number>>,
     selectedGroups: [...settings.selectedGroups] as GroupName[],
-    // Deferred: ScoreRank formula/UI not designed yet.
-    scoreRank: null as string | null,
+    scoreRank: computeScoreRank({
+      score: _score,
+      multiplier: getScoreMultiplier(settings),
+      mode: getCurrentGameMode(),
+      timeAttackDuration: settings.timeAttackDuration,
+    }),
   };
 };
 

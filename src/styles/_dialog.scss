@@ -127,7 +127,7 @@
 
 .go-summary__top {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
@@ -165,20 +165,53 @@
   background: rgba(255, 220, 140, 0.08);
 }
 
+// Rank column: big letter on top, narrow "SCORERANK" caption under it.
+// Caption is absolute so its natural text width never expands the column;
+// uniform scale keeps glyph proportions while sitting under the letter.
 .go-summary__rank {
-  font-family: var(--font-display);
-  font-size: 28px;
-  letter-spacing: 1px;
-  color: #ffd76a;
-  text-shadow: 0 0 14px rgba(255, 215, 106, 0.35);
+  position: relative;
+  display: inline-block;
   flex-shrink: 0;
   line-height: 1;
+  font-family: var(--font-display);
+  // Room for the absolutely positioned caption.
+  padding-bottom: 14px;
 
   &--empty {
-    color: rgba(255, 255, 255, 0.22);
-    text-shadow: none;
-    font-size: 22px;
+    padding-bottom: 0;
+
+    .go-summary__rank-letter {
+      color: rgba(255, 255, 255, 0.22);
+      text-shadow: none;
+      font-size: 28px;
+    }
   }
+}
+
+.go-summary__rank-letter {
+  display: block;
+  font-size: 42px;
+  letter-spacing: 1px;
+  line-height: 1;
+  // Color + glow injected inline via scoreRankColorStyle (per-rank palette).
+}
+
+.go-summary__rank-caption {
+  position: absolute;
+  left: 50%;
+  top: calc(100% - 12px);
+  // Uniform scale (not scaleX) so Roboto stays proportionally compressed.
+  transform: translateX(-50%) scale(0.72);
+  transform-origin: center top;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.42);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
 }
 
 .go-summary__score-block {

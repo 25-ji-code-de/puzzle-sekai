@@ -31,6 +31,18 @@ export {
 } from "./summary-format";
 
 export {
+  computeScoreRank,
+  getScoreRankColor,
+  getScoreRankCssColor,
+  scoreRankColorStyle,
+  getScoreRankGlow,
+  SCORE_RANKS,
+  SCORE_RANK_COLORS,
+  SCORE_RANK_SSS_PLUS_GRADIENT,
+} from "./rank";
+export type { ScoreRank, ComputeScoreRankInput } from "./rank";
+
+export {
   initScoreDisplay,
   updateScoreDisplay,
   updateTimerDisplay,
