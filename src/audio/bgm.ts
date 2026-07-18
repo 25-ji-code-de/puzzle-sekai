@@ -84,44 +84,99 @@ export const unlockAudio = (): void => {
 /** Menu BGM may load during visual-critical; play/over tracks wait. */
 const isPlayOrOverKey = (key: BgmKey): boolean => key !== "bgm161";
 
+/**
+ * Wait for an in-flight Sound to finish preloading without calling play()/load()
+ * again. Re-entering load() on the same WebAudioMedia assigns buffer twice and
+ * throws InvalidStateError from AudioBufferSourceNode.
+ */
+const waitUntilLoaded = (
+  key: BgmKey,
+  s: PIXI.sound.Sound,
+): Promise<PIXI.sound.Sound | null> =>
+  new Promise((resolve) => {
+    if (s.isLoaded) {
+      resolve(s);
+      return;
+    }
+    const t0 = Date.now();
+    const tick = () => {
+      try {
+        if (s.isLoaded) {
+          resolve(s);
+          return;
+        }
+      } catch {
+        resolve(null);
+        return;
+      }
+      if (Date.now() - t0 > 60_000) {
+        console.warn(`Timed out waiting for BGM ${key}`);
+        resolve(null);
+        return;
+      }
+      setTimeout(tick, 32);
+    };
+    tick();
+  });
+
 const startLoad = (key: BgmKey): Promise<PIXI.sound.Sound | null> => {
   const hit = cache.get(key);
   if (hit?.isLoaded) return Promise.resolve(hit);
   const pending = inflight.get(key);
   if (pending) return pending;
-  const promise = new Promise<PIXI.sound.Sound | null>((resolve) => {
-    // Prefer an already-registered alias (e.g. a previous partial load).
-    if (sound.exists(key)) {
-      const existing = sound.find(key);
-      if (existing?.isLoaded) {
-        cache.set(key, existing);
-        resolve(existing);
-        return;
-      }
-    }
-    const s = sound.add(key, {
-      url: BGM_URLS[key],
-      preload: true,
-      // singleInstance keeps pause/resume predictable for looping menu tracks.
-      singleInstance: true,
-      loaded: (err, loadedSound) => {
-        inflight.delete(key);
-        if (err || !loadedSound) {
-          console.warn(`Failed to load BGM ${key}:`, err);
-          resolve(null);
-          return;
+  const promise = (async (): Promise<PIXI.sound.Sound | null> => {
+    try {
+      // Prefer an already-registered alias — even if still decoding.
+      // Never sound.add() over a partial load: that orphans the first decode
+      // and can still race the shared AudioContext path.
+      if (sound.exists(key)) {
+        const existing = sound.find(key);
+        if (existing) {
+          const ready = await waitUntilLoaded(key, existing);
+          if (ready?.isLoaded) {
+            cache.set(key, ready);
+            return ready;
+          }
+          // Stale / broken alias — drop and re-add below.
+          try {
+            sound.remove(key);
+          } catch {
+            /* ignore */
+          }
         }
-        cache.set(key, loadedSound);
-        resolve(loadedSound);
-      },
-    });
-    // If the library already had it fully loaded, resolve sync-style.
-    if (s.isLoaded) {
+      }
+      const s = await new Promise<PIXI.sound.Sound | null>((resolve) => {
+        let settled = false;
+        const done = (value: PIXI.sound.Sound | null) => {
+          if (settled) return;
+          settled = true;
+          resolve(value);
+        };
+        const added = sound.add(key, {
+          url: BGM_URLS[key],
+          preload: true,
+          // singleInstance keeps pause/resume predictable for looping menu tracks.
+          singleInstance: true,
+          loaded: (err, loadedSound) => {
+            if (err || !loadedSound) {
+              console.warn(`Failed to load BGM ${key}:`, err);
+              done(null);
+              return;
+            }
+            done(loadedSound);
+          },
+        });
+        // If the library already had it fully loaded, resolve sync-style.
+        if (added.isLoaded) {
+          done(added);
+        }
+      });
+      if (s?.isLoaded) cache.set(key, s);
+      return s;
+    } finally {
       inflight.delete(key);
-      cache.set(key, s);
-      resolve(s);
     }
-  });
+  })();
   inflight.set(key, promise);
   return promise;
 };

@@ -7,6 +7,33 @@ import * as PIXI from "pixi.js-legacy";
 import * as Hammer from "hammerjs";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./config";
 
+/**
+ * PIXI.TextMetrics samples glyphs via getImageData on a shared offscreen canvas.
+ * Chrome warns when that context was created without willReadFrequently. The
+ * library hard-codes getContext('2d'); swap the canvas once at boot so score HUD
+ * text (and every other PIXI.Text) stays quiet.
+ */
+try {
+  const metrics = PIXI.TextMetrics as unknown as {
+    _canvas?: HTMLCanvasElement;
+    _context?: CanvasRenderingContext2D | null;
+  };
+  const prev = metrics._canvas;
+  const canvas =
+    typeof document !== "undefined" ? document.createElement("canvas") : null;
+  if (canvas) {
+    canvas.width = Math.max(1, prev?.width ?? 10);
+    canvas.height = Math.max(1, prev?.height ?? 10);
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (ctx) {
+      metrics._canvas = canvas;
+      metrics._context = ctx;
+    }
+  }
+} catch {
+  /* older / non-DOM environments */
+}
+
 const { Application } = PIXI;
 
 /** Canvas buffer scale relative to logical stage (1 = full 1920×1080 buffer). */

@@ -59,12 +59,22 @@ export const playBgm = (
   s: PIXI.sound.Sound,
   options: { loop: boolean; volume?: number } = { loop: true },
 ) => {
+  // Never call play() until isLoaded — otherwise pixi-sound re-enters load()
+  // and can throw InvalidStateError on AudioBufferSourceNode.buffer.
+  if (!s.isLoaded) {
+    console.warn("[audio] playBgm called before sound was loaded");
+    return;
+  }
   bgmPlaying = s;
   setLiveBgm(s);
-  bgmPlaying.play({
-    loop: options.loop,
-    volume: options.volume ?? BGM_BASE_VOLUME,
-  });
+  try {
+    bgmPlaying.play({
+      loop: options.loop,
+      volume: options.volume ?? BGM_BASE_VOLUME,
+    });
+  } catch {
+    /* ignore */
+  }
 };
 
 export const playMenuBgm = async () => {
@@ -80,30 +90,35 @@ export const playMenuBgm = async () => {
 export const playGameOverBgm = async () => {
   stopBgm();
   const [intro, loop] = await ensureBgm("bgm182_1", "bgm182_2");
-  if (!intro) return;
+  if (!intro?.isLoaded) return;
 
   bgmPlaying = intro;
   setLiveBgm(intro);
   const onEnd = () => {
     gameOverIntroInst = null;
     gameOverIntroOnEnd = null;
-    if (loop) playBgm(loop, { loop: true });
+    if (loop?.isLoaded) playBgm(loop, { loop: true });
   };
   gameOverIntroOnEnd = onEnd;
 
-  const result = intro.play({ loop: false, volume: BGM_BASE_VOLUME });
-  type PlayInstance = {
-    on: (e: string, fn: () => void) => void;
-    stop?: () => void;
-  };
-  const attach = (inst: PlayInstance) => {
-    gameOverIntroInst = inst;
-    inst.on("end", onEnd);
-  };
-  if (result instanceof Promise) {
-    void result.then((inst) => attach(inst as PlayInstance));
-  } else if (result) {
-    attach(result as PlayInstance);
+  try {
+    const result = intro.play({ loop: false, volume: BGM_BASE_VOLUME });
+    type PlayInstance = {
+      on: (e: string, fn: () => void) => void;
+      stop?: () => void;
+    };
+    const attach = (inst: PlayInstance) => {
+      gameOverIntroInst = inst;
+      inst.on("end", onEnd);
+    };
+    if (result instanceof Promise) {
+      // Should not happen when isLoaded; still guard.
+      void result.then((inst) => attach(inst as PlayInstance));
+    } else if (result) {
+      attach(result as PlayInstance);
+    }
+  } catch {
+    /* ignore */
   }
 };
 
@@ -118,10 +133,14 @@ const playNextBGM = async () => {
       peekBgm(pick) ?? peekBgm(pick === "bgm038" ? "bgm168" : "bgm038");
     // getBgm waits on whenAudioAllowed for play keys (see bgm.ts).
     const s = ready ?? (await getBgm(pick));
-    if (!bgmActive || !s) return;
+    if (!bgmActive || !s?.isLoaded) return;
     bgmPlaying = s;
     setLiveBgm(s);
-    bgmPlaying.play({ loop: false, volume: BGM_BASE_VOLUME });
+    try {
+      bgmPlaying.play({ loop: false, volume: BGM_BASE_VOLUME });
+    } catch {
+      /* ignore */
+    }
     // Warm the rest only after the first piece has claimed the pipe.
     prefetchPlayBgm();
   } finally {

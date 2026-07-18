@@ -5,8 +5,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const play = vi.fn();
 const stop = vi.fn();
-const loaderSound = { play, stop, isPlaying: false };
-const aliasSound = { play, stop, isPlaying: false };
+const loaderSound = { play, stop, isPlaying: false, isLoaded: true };
+const aliasSound = { play, stop, isPlaying: false, isLoaded: true };
 
 const soundExists = vi.fn();
 const soundFind = vi.fn();
@@ -77,12 +77,26 @@ describe("resolveSound / playLoadedSfx", () => {
   });
 
   it("replayLoadedSfx stops before play when already playing", async () => {
-    const busy = { play, stop, isPlaying: true };
+    const busy = { play, stop, isPlaying: true, isLoaded: true };
     soundExists.mockReturnValue(true);
     soundFind.mockReturnValue(busy);
     const mod = await import("./sfx");
     mod.replayLoadedSfx("voice/x", "voice", 0.5);
     expect(stop).toHaveBeenCalled();
     expect(play).toHaveBeenCalled();
+  });
+
+  it("defers play until isLoaded (avoids buffer double-assign)", async () => {
+    vi.useFakeTimers();
+    const late = { play, stop, isPlaying: false, isLoaded: false };
+    soundExists.mockReturnValue(true);
+    soundFind.mockReturnValue(late);
+    const mod = await import("./sfx");
+    mod.playLoadedSfx("voice/late", "voice", 0.5);
+    expect(play).not.toHaveBeenCalled();
+    late.isLoaded = true;
+    await vi.advanceTimersByTimeAsync(40);
+    expect(play).toHaveBeenCalledWith({ volume: 0.4 });
+    vi.useRealTimers();
   });
 });
