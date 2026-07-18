@@ -130,13 +130,25 @@ export async function collectCharset() {
     /\.(ts|tsx|js|jsx|html|scss|css)$/.test(f),
   );
 
+  for (const extra of [
+    path.join(ROOT, "index.html"),
+    path.join(ROOT, "public", "404.html"),
+  ]) {
+    try {
+      await fs.access(extra);
+      files.push(extra);
+    } catch {
+      /* optional path */
+    }
+  }
+
   for (const file of files) {
     const src = await fs.readFile(file, "utf8");
     // i18n / most UI: string literals
     for (const lit of extractStringLiterals(src)) {
       add(unescapeJs(lit));
     }
-    // Also keep raw non-ASCII that appears outside strings only for .html
+    // HTML bodies are not string literals — include raw markup text.
     if (file.endsWith(".html")) add(src);
   }
 
