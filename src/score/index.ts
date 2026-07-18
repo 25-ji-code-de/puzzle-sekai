@@ -77,6 +77,7 @@ export type {
 
 export {
   initScoreDisplay,
+  disposeScoreDisplay,
   updateScoreDisplay,
   updateTimerDisplay,
 } from "./hud";

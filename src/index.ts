@@ -89,9 +89,16 @@ app.loader
     window.addEventListener("keydown", (event) => {
       const key = event.key.toLowerCase();
       if (key === "r") {
-        // Direct start() — never install match control as a MainLoopFn.
-        void import("./application/play-session").then(({ start }) => {
-          start();
+        // Must go through startGame (teardown menu/cover + orientation gate).
+        // Raw start() leaves main-menu DOM and welcome sprite on stage.
+        void import("./application/play-session").then(({ getPlayPhase }) => {
+          if (getPlayPhase().type === "boot") return;
+          void Promise.all([
+            import("./ui/welcome/start-game"),
+            import("./settings"),
+          ]).then(([{ startGame }, { getCurrentGameMode }]) => {
+            startGame(getCurrentGameMode());
+          });
         });
       } else if (key === "escape" || key === "p") {
         event.preventDefault();

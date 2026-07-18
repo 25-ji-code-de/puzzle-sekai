@@ -51,6 +51,7 @@ import { primaryFromSprite } from "../presentation/placement";
 import {
   resetScore,
   initScoreDisplay,
+  disposeScoreDisplay,
   setTimeRemaining,
   decrementTime,
   flushHighScoreIfNeeded,
@@ -315,6 +316,7 @@ export const returnToMenu = () => {
   // Persist before resetScore wipes the run total.
   flushHighScoreIfNeeded();
   clearStage();
+  disposeScoreDisplay();
   resetScore();
   resetFunEffects();
   setBgmSessionPaused(false);

@@ -26,10 +26,10 @@ import {
   seedTimeRemaining,
 } from "./model";
 
-let scoreText: PIXI.Container;
-let highScoreText: PIXI.Container;
-let comboText: PIXI.Container;
-let timerText: PIXI.Container;
+let scoreText: PIXI.Container | undefined;
+let highScoreText: PIXI.Container | undefined;
+let comboText: PIXI.Container | undefined;
+let timerText: PIXI.Container | undefined;
 let multBadge: PIXI.Container | undefined;
 
 const SCORE_X = 1700;
@@ -234,28 +234,27 @@ onLocaleChange(() => {
   multBadge = replaceDisplay(multBadge, next);
 });
 
+/** Remove in-match HUD from the stage (menu / teardown). Safe if never inited. */
+export const disposeScoreDisplay = () => {
+  const drop = (node: PIXI.Container | undefined) => {
+    if (!node) return;
+    if (node.parent) node.parent.removeChild(node);
+    node.destroy({ children: true });
+  };
+  drop(scoreText);
+  drop(highScoreText);
+  drop(comboText);
+  drop(timerText);
+  drop(multBadge);
+  scoreText = undefined;
+  highScoreText = undefined;
+  comboText = undefined;
+  timerText = undefined;
+  multBadge = undefined;
+};
+
 export const initScoreDisplay = () => {
-  if (scoreText) {
-    app.stage.removeChild(scoreText);
-    scoreText.destroy();
-  }
-  if (highScoreText) {
-    app.stage.removeChild(highScoreText);
-    highScoreText.destroy();
-  }
-  if (comboText) {
-    app.stage.removeChild(comboText);
-    comboText.destroy();
-  }
-  if (timerText) {
-    app.stage.removeChild(timerText);
-    timerText.destroy();
-  }
-  if (multBadge) {
-    app.stage.removeChild(multBadge);
-    multBadge.destroy({ children: true });
-    multBadge = undefined;
-  }
+  disposeScoreDisplay();
 
   const mode = getCurrentGameMode();
   const settings = getCurrentSettings();
