@@ -2,7 +2,9 @@
  * Canvas share card: draw PNG from ScoreSummary, then Web Share / download.
  * Presentation numbers/groups come from score/summary-format (shared with DOM UI).
  */
-import { getLocale, t } from "../i18n";
+import QRCode from "qrcode";
+import { getLocale, t, type MessageKey } from "../i18n";
+import { displayNameOf, getAuthSnapshot } from "../auth";
 import {
   COMBO_PAD,
   danMessageKey,
@@ -20,13 +22,21 @@ import {
   type ScoreSummary,
 } from "../score";
 import { getDifficultyColor, getGroupDisplayColor } from "../settings";
-import type { MessageKey } from "../i18n";
 
 // Portrait share image. Content is sized to fill most of the canvas
 // (not sparse type on a big empty plate) so chat thumbnails still read.
 const CARD_W = 1080;
 const CARD_H = 1440;
 const PAD = 48;
+/** Canonical play URL drawn on share cards (QR + text). */
+const SHARE_SITE_URL = "https://pico.nightcord.de5.net/";
+const SHARE_SITE_HOST = "pico.nightcord.de5.net";
+const QR_SIZE = 120;
+/** White padding around the QR modules. */
+const QR_INSET = 12;
+/** Gap between QR plate bottom and host caption. */
+const QR_CAPTION_GAP = 10;
+const QR_CAPTION_H = 20;
 
 /**
  * Draw zero-padded number with dim leading zeros. Returns total width.
@@ -146,7 +156,36 @@ const roundRect = (
   ctx.closePath();
 };
 
-const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
+const loadQrImage = async (
+  url: string,
+  size: number,
+): Promise<HTMLImageElement | null> => {
+  try {
+    const dataUrl = await QRCode.toDataURL(url, {
+      errorCorrectionLevel: "M",
+      margin: 1,
+      width: size,
+      color: {
+        dark: "#0a0d18",
+        light: "#ffffff",
+      },
+    });
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("qr image load failed"));
+      img.src = dataUrl;
+    });
+  } catch (e) {
+    console.warn("[share] qr", e);
+    return null;
+  }
+};
+
+const drawCard = (
+  summary: ScoreSummary,
+  qrImage: HTMLImageElement | null,
+): HTMLCanvasElement => {
   const canvas = document.createElement("canvas");
   canvas.width = CARD_W;
   canvas.height = CARD_H;
@@ -184,7 +223,7 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
   const rightX = CARD_W - PAD;
   let y = PAD + 4;
 
-  // —— Compact header: brand + mode ——
+  // Brand
   ctx.fillStyle = "#ffffff";
   ctx.font = `400 40px ${display}`;
   ctx.textAlign = "center";
@@ -199,18 +238,52 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
   ctx.fillText(modeText, CARD_W / 2, y);
   y += 42;
 
-  // Account dan under mode
+  // Name (left) + dan + rating — same dan color, centered as a group
   const danSnap = getDanSummary();
+  const danColor = getDanColor(danSnap.dan);
+  const danGlow = getDanGlow(danSnap.dan);
   const danLabel = t(danMessageKey(danSnap.dan) as MessageKey);
   const danText = danSnap.ornament
     ? `${danLabel} ${danSnap.ornament}`
     : danLabel;
-  ctx.fillStyle = getDanColor(danSnap.dan);
-  ctx.font = `400 34px ${display}`;
-  ctx.shadowColor = getDanGlow(danSnap.dan);
+  const ratingText = Math.floor(danSnap.total).toLocaleString();
+  const auth = getAuthSnapshot();
+  const playerName = auth.loggedIn ? displayNameOf(auth.user) : "";
+
+  const nameFont = `400 32px ${display}`;
+  const danFont = `400 34px ${display}`;
+  const ratingFont = `600 26px ${mono}`;
+  const gap = 18;
+
+  ctx.font = danFont;
+  const danW = ctx.measureText(danText).width;
+  ctx.font = ratingFont;
+  const ratingW = ctx.measureText(ratingText).width;
+  let nameW = 0;
+  if (playerName) {
+    ctx.font = nameFont;
+    nameW = ctx.measureText(playerName).width;
+  }
+  const totalW =
+    (playerName ? nameW + gap : 0) + danW + gap + ratingW;
+  let cursorX = CARD_W / 2 - totalW / 2;
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = danColor;
+  ctx.shadowColor = danGlow;
   ctx.shadowBlur = 14;
-  ctx.fillText(danText, CARD_W / 2, y);
+  if (playerName) {
+    ctx.font = nameFont;
+    ctx.fillText(playerName, cursorX, y);
+    cursorX += nameW + gap;
+  }
+  ctx.font = danFont;
+  ctx.fillText(danText, cursorX, y);
+  cursorX += danW + gap;
+  ctx.font = ratingFont;
+  ctx.fillText(ratingText, cursorX, y);
   ctx.shadowBlur = 0;
+  ctx.textAlign = "center";
   y += 52;
 
   // —— Difficulty row (left) ——
@@ -350,9 +423,10 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
   y += 36;
 
   // —— Bottom band: groups (left) | combo (right) ——
-  // Stretch this band toward the footer so the card doesn't feel top-heavy.
+  // Leave room for QR plate + host caption in the lower-right corner.
   const groups = groupsForSummary(summary);
-  const footerReserve = 56;
+  const qrPlate = QR_SIZE + QR_INSET * 2;
+  const footerReserve = qrPlate + QR_CAPTION_GAP + QR_CAPTION_H + 12;
   const bottomTop = y;
   const bottomBottom = CARD_H - PAD - footerReserve;
   const comboTop = bottomTop;
@@ -407,11 +481,51 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
     { strong: true },
   );
 
-  // Footer subtitle pinned to bottom
+  // Footer: subtitle bottom-left · QR plate bottom-right · host under plate
+  const plateX = CARD_W - PAD - qrPlate;
+  const plateY = CARD_H - PAD - qrPlate - QR_CAPTION_GAP - QR_CAPTION_H;
+
+  if (qrImage) {
+    // Soft shadow under plate
+    ctx.save();
+    ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = "#ffffff";
+    roundRect(ctx, plateX, plateY, qrPlate, qrPlate, 14);
+    ctx.fill();
+    ctx.restore();
+
+    // Thin cyan rim
+    ctx.strokeStyle = "rgba(100, 200, 255, 0.35)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, plateX, plateY, qrPlate, qrPlate, 14);
+    ctx.stroke();
+
+    ctx.drawImage(
+      qrImage,
+      plateX + QR_INSET,
+      plateY + QR_INSET,
+      QR_SIZE,
+      QR_SIZE,
+    );
+  }
+
+  // Host caption centered under the plate — never overlaps QR
   ctx.textAlign = "center";
-  ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-  ctx.font = `400 26px ${display}`;
-  ctx.fillText(t("menu.subtitle"), CARD_W / 2, CARD_H - PAD - 10);
+  ctx.fillStyle = "rgba(180, 210, 240, 0.55)";
+  ctx.font = `400 16px ${mono}`;
+  ctx.fillText(
+    SHARE_SITE_HOST,
+    plateX + qrPlate / 2,
+    plateY + qrPlate + QR_CAPTION_GAP,
+  );
+
+  // Subtitle bottom-left, clear of QR column
+  ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.38)";
+  ctx.font = `400 22px ${display}`;
+  ctx.fillText(t("menu.subtitle"), leftX, CARD_H - PAD - 6);
 
   return canvas;
 };
@@ -458,9 +572,17 @@ export const shareScoreCard = async (
   summary: ScoreSummary,
 ): Promise<void> => {
   await waitFonts();
-  const canvas = drawCard(summary);
+  const qrImage = await loadQrImage(SHARE_SITE_URL, QR_SIZE * 2);
+  const canvas = drawCard(summary, qrImage);
   const file = await canvasToFile(canvas);
-  const text = t("gameOver.shareText", { score: summary.score });
+  const auth = getAuthSnapshot();
+  const playerName = auth.loggedIn ? displayNameOf(auth.user) : "";
+  const text = playerName
+    ? t("gameOver.shareTextNamed", {
+        name: playerName,
+        score: summary.score,
+      })
+    : t("gameOver.shareText", { score: summary.score });
   const title = t("menu.title");
 
   if (canShareFiles(file)) {
