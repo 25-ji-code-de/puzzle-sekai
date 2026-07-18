@@ -15,6 +15,11 @@ import {
   type GroupName,
 } from "../settings";
 import { computeScoreRank } from "./rank";
+import {
+  recordDanRun,
+  resetDanSessionLatch,
+  type RecordDanRunResult,
+} from "./dan-store";
 
 let _score = 0;
 let _highScore = 0;
@@ -105,7 +110,30 @@ export const resetScore = () => {
   _timeRemaining = 0;
   _isNewRecord = false;
   _groupClears = {};
+  // New match may record a fresh dan run after the next game-over.
+  resetDanSessionLatch();
   onScoreChanged?.();
+};
+
+/**
+ * Append this run to the account dan log (once per match).
+ * Call from beginGameOver after flushHighScoreIfNeeded.
+ */
+export const finalizeRunForDan = (): RecordDanRunResult => {
+  const summary = getScoreSummary();
+  return recordDanRun({
+    mode: summary.mode,
+    timeAttackDuration:
+      summary.mode === "timeAttack"
+        ? getCurrentSettings().timeAttackDuration
+        : undefined,
+    score: summary.score,
+    maxCombo: summary.maxCombo,
+    difficulty: summary.difficulty,
+    entertainment: summary.entertainment,
+    multiplier: summary.multiplier,
+    scoreRank: summary.scoreRank,
+  });
 };
 
 /** Count one completed unit clear event (grid or continuous). */

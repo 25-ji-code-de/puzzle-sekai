@@ -56,6 +56,20 @@ export const zh = {
     restart: "再来一局",
     menu: "回到主界面",
   },
+  dan: {
+    none: "无段位",
+    beginner: "初级",
+    intermediate: "中级",
+    advanced: "高级",
+    expert: "达人",
+    kaiden: "皆传",
+    hiden: "秘传",
+    shinKaiden: "真·皆传",
+    shinHiden: "真·秘传",
+    gokuden: "极传",
+    promoted: "段位上升！",
+    rating: "段位点 {total}",
+  },
   settings: {
     title: "设置",
     speed: {

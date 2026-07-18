@@ -56,6 +56,20 @@ export const en = {
     restart: "Play again",
     menu: "Back to menu",
   },
+  dan: {
+    none: "Unranked",
+    beginner: "Beginner",
+    intermediate: "Intermediate",
+    advanced: "Advanced",
+    expert: "Expert",
+    kaiden: "Kaiden",
+    hiden: "Hiden",
+    shinKaiden: "Shin Kaiden",
+    shinHiden: "Shin Hiden",
+    gokuden: "Gokuden",
+    promoted: "Dan up!",
+    rating: "Rating {total}",
+  },
   settings: {
     title: "Settings",
     speed: {

@@ -56,6 +56,20 @@ export const ja = {
     restart: "もう一度",
     menu: "メニューに戻る",
   },
+  dan: {
+    none: "段位なし",
+    beginner: "初級",
+    intermediate: "中級",
+    advanced: "高級",
+    expert: "達人",
+    kaiden: "皆伝",
+    hiden: "秘伝",
+    shinKaiden: "真・皆伝",
+    shinHiden: "真・秘伝",
+    gokuden: "極伝",
+    promoted: "段位アップ！",
+    rating: "段位点 {total}",
+  },
   settings: {
     title: "設定",
     speed: {

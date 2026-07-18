@@ -31,6 +31,7 @@ import {
   decrementTime,
   flushHighScoreIfNeeded,
   bindHighScoreLifecycle,
+  finalizeRunForDan,
 } from "../score";
 import { getCurrentGameMode, getCurrentSettings } from "../settings";
 import { resetFunEffects, isFunModeOn } from "../fun/effects";
@@ -291,6 +292,8 @@ const beginGameOver = (cause: "topOut" | "timeUp") => {
   stopTimeAttackTimer();
   // Persist as soon as the run ends (before curtain / menu / restart).
   flushHighScoreIfNeeded();
+  // Account dan: one append per match (latched).
+  finalizeRunForDan();
   setPlayPhase({
     type: "gameOver",
     cause,

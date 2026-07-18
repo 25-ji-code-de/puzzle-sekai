@@ -16,6 +16,7 @@ export {
   flushHighScoreIfNeeded,
   bindHighScoreLifecycle,
   getScoreSummary,
+  finalizeRunForDan,
 } from "./model";
 
 export type { ScoreSummary } from "./model";
@@ -41,6 +42,38 @@ export {
   SCORE_RANK_SSS_PLUS_GRADIENT,
 } from "./rank";
 export type { ScoreRank, ComputeScoreRankInput } from "./rank";
+
+export {
+  DAN_IDS,
+  DAN_STORAGE_KEY,
+  danColorStyle,
+  danFromTotal,
+  danOrnament,
+  getDanColor,
+  getDanCssColor,
+  getDanGlow,
+  computeDanRating,
+  compareDan,
+} from "./dan";
+export type {
+  DanId,
+  DanRunEntry,
+  DanState,
+  DanRatingBreakdown,
+} from "./dan";
+
+export {
+  getDanSummary,
+  recordDanRun,
+  resetDanSessionLatch,
+  getLastDanRecordResult,
+  danMessageKey,
+} from "./dan-store";
+export type {
+  DanSummary,
+  RecordDanRunInput,
+  RecordDanRunResult,
+} from "./dan-store";
 
 export {
   initScoreDisplay,

@@ -5,7 +5,11 @@
 import { getLocale, t } from "../i18n";
 import {
   COMBO_PAD,
+  danMessageKey,
   formatMultiplier,
+  getDanColor,
+  getDanGlow,
+  getDanSummary,
   getScoreRankColor,
   getScoreRankGlow,
   GROUP_CLEAR_PAD,
@@ -16,6 +20,7 @@ import {
   type ScoreSummary,
 } from "../score";
 import { getDifficultyColor, getGroupDisplayColor } from "../settings";
+import type { MessageKey } from "../i18n";
 
 // Portrait share image. Content is sized to fill most of the canvas
 // (not sparse type on a big empty plate) so chat thumbnails still read.
@@ -192,6 +197,20 @@ const drawCard = (summary: ScoreSummary): HTMLCanvasElement => {
   const modeText =
     summary.mode === "timeAttack" ? t("menu.timeAttack") : t("menu.endless");
   ctx.fillText(modeText, CARD_W / 2, y);
+  y += 42;
+
+  // Account dan under mode
+  const danSnap = getDanSummary();
+  const danLabel = t(danMessageKey(danSnap.dan) as MessageKey);
+  const danText = danSnap.ornament
+    ? `${danLabel} ${danSnap.ornament}`
+    : danLabel;
+  ctx.fillStyle = getDanColor(danSnap.dan);
+  ctx.font = `400 34px ${display}`;
+  ctx.shadowColor = getDanGlow(danSnap.dan);
+  ctx.shadowBlur = 14;
+  ctx.fillText(danText, CARD_W / 2, y);
+  ctx.shadowBlur = 0;
   y += 52;
 
   // —— Difficulty row (left) ——

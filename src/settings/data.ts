@@ -8,6 +8,8 @@ import { getStoragePort } from "./storage";
 const isAppStorageKey = (key: string): boolean =>
   key === SETTINGS_KEY ||
   key === "puzzleSekaiLocale" ||
+  // Account dan run log (B30 + R10 + A)
+  key === "puzzleSekaiDan" ||
   // New bucket keys: hs:endless:… / hs:timeAttack:…
   key.startsWith("hs:endless:") ||
   key.startsWith("hs:timeAttack:") ||

@@ -14,6 +14,12 @@ import {
   resetHighScoreViewState,
   handleHighScoreRowEvent,
 } from "../menu-utils";
+import {
+  danColorStyle,
+  danMessageKey,
+  getDanSummary,
+} from "../../score";
+import type { MessageKey } from "../../i18n";
 import { showSettingsPanel, disposeSettingsPanel } from "../../settings/panel";
 import {
   showControlsOverlay,
@@ -85,6 +91,17 @@ const buildMenu = () => {
   subtitle.textContent = t("menu.subtitle");
   header.appendChild(title);
   header.appendChild(subtitle);
+
+  const danSnap = getDanSummary();
+  const danChip = document.createElement("div");
+  danChip.className = "menu-dan";
+  const danLabel = t(danMessageKey(danSnap.dan) as MessageKey);
+  danChip.textContent = danSnap.ornament
+    ? `${danLabel} ${danSnap.ornament}`
+    : danLabel;
+  danChip.style.cssText = danColorStyle(danSnap.dan);
+  header.appendChild(danChip);
+
   menuOverlay.appendChild(header);
 
   const spacer = document.createElement("div");

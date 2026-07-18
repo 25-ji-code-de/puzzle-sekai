@@ -1,10 +1,14 @@
 /**
  * DOM builder for the game-over result body (not the dialog shell / buttons).
  */
-import { t } from "../i18n";
+import { t, type MessageKey } from "../i18n";
 import {
   COMBO_PAD,
+  danColorStyle,
+  danMessageKey,
   formatMultiplier,
+  getDanSummary,
+  getLastDanRecordResult,
   GROUP_CLEAR_PAD,
   groupsForSummary,
   SCORE_PAD,
@@ -44,7 +48,7 @@ const makePaddedNumber = (
 /**
  * Layout:
  *   top:    [difficulty ×mult] ........ [rank]
- *   center: big score / small high score
+ *   center: big score / high / dan
  *   bottom: [group clears vertical] | [COMBO]
  */
 export const buildGameOverSummary = (
@@ -124,6 +128,34 @@ export const buildGameOverSummary = (
     badge.className = "go-summary__new-record";
     badge.textContent = t("gameOver.newRecord");
     scoreBlock.appendChild(badge);
+  }
+
+  // Account dan (after this run was finalized in beginGameOver)
+  const danSnap = getLastDanRecordResult()?.after ?? getDanSummary();
+  const promoted = getLastDanRecordResult()?.promoted === true;
+  const danRow = document.createElement("div");
+  danRow.className = "go-summary__dan";
+  const danName = document.createElement("span");
+  danName.className = "go-summary__dan-name";
+  const nameText = t(danMessageKey(danSnap.dan) as MessageKey);
+  danName.textContent = danSnap.ornament
+    ? `${nameText} ${danSnap.ornament}`
+    : nameText;
+  danName.style.cssText = danColorStyle(danSnap.dan);
+  danRow.appendChild(danName);
+  const danRating = document.createElement("span");
+  danRating.className = "go-summary__dan-rating font-numeric-strong";
+  danRating.textContent = t("dan.rating", {
+    total: Math.floor(danSnap.total).toLocaleString(),
+  });
+  danRow.appendChild(danRating);
+  scoreBlock.appendChild(danRow);
+
+  if (promoted) {
+    const promo = document.createElement("div");
+    promo.className = "go-summary__dan-promoted";
+    promo.textContent = t("dan.promoted");
+    scoreBlock.appendChild(promo);
   }
 
   root.appendChild(scoreBlock);

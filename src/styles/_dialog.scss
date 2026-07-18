@@ -269,6 +269,39 @@
   animation: newRecordPulse 1.6s ease-in-out infinite;
 }
 
+.go-summary__dan {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.go-summary__dan-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 1px;
+  line-height: 1.1;
+  // Color + glow from danColorStyle
+}
+
+.go-summary__dan-rating {
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.go-summary__dan-promoted {
+  margin-top: 6px;
+  color: #ffd76a;
+  letter-spacing: 2px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  text-shadow: 0 0 12px rgba(255, 215, 106, 0.45);
+  animation: newRecordPulse 1.6s ease-in-out infinite;
+}
+
 .go-summary__bottom {
   display: grid;
   grid-template-columns: 1fr auto;
