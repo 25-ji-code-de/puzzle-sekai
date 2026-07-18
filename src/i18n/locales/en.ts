@@ -33,6 +33,17 @@ export const en = {
   display: {
     rotateLandscape: "Rotate your device to landscape to play",
   },
+  a11y: {
+    matchStart: "Match started. Mode: {mode}.",
+    score: "Score {score}",
+    scoreCombo: "Score {score}, combo {combo}",
+    timeLow: "Time left {time}",
+    paused: "Paused",
+    resumed: "Resumed",
+    gameOver: "Game over. Final score {score}.",
+    menu: "Main menu",
+    mainMenu: "Main menu",
+  },
   pause: {
     title: "Paused",
     resume: "Continue",

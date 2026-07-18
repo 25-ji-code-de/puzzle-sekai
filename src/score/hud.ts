@@ -1,7 +1,12 @@
 /**
  * In-game score / combo / timer PIXI HUD.
+ * Also drives screen-reader live regions (score / low timer).
  */
 import * as PIXI from "pixi.js-legacy";
+import {
+  announceTimerIfNeeded,
+  scheduleScoreAnnounce,
+} from "../a11y";
 import { app } from "../runtime";
 import {
   DifficultyLevel,
@@ -219,8 +224,14 @@ export const updateTimerDisplay = () => {
 };
 
 bindScoreHud({
-  onScoreChanged: updateScoreDisplay,
-  onTimerChanged: updateTimerDisplay,
+  onScoreChanged: () => {
+    updateScoreDisplay();
+    scheduleScoreAnnounce();
+  },
+  onTimerChanged: () => {
+    updateTimerDisplay();
+    announceTimerIfNeeded();
+  },
 });
 
 onLocaleChange(() => {

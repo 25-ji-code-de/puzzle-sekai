@@ -32,6 +32,7 @@ import {
   onSyncStatus,
 } from "../../sync";
 import type { MessageKey } from "../../i18n";
+import { ensureLiveRegions } from "../../a11y";
 import { showSettingsPanel, disposeSettingsPanel } from "../../settings/panel";
 import {
   showControlsOverlay,
@@ -98,11 +99,14 @@ const buildMenu = () => {
 
   menuOverlay = document.createElement("div");
   menuOverlay.id = "main-menu-overlay";
+  menuOverlay.setAttribute("role", "navigation");
+  menuOverlay.setAttribute("aria-label", t("a11y.mainMenu"));
 
   const header = document.createElement("div");
   header.className = "menu-header";
   const title = document.createElement("div");
   title.className = "menu-title";
+  title.id = "main-menu-title";
   title.textContent = t("menu.title");
   const subtitle = document.createElement("div");
   subtitle.className = "menu-subtitle";
@@ -240,6 +244,7 @@ const buildMenu = () => {
 
 export const showWelcomePage = () => {
   if (menuOverlay) return;
+  ensureLiveRegions();
 
   if (bgSprite && !bgSprite.parent) {
     app.stage.addChild(bgSprite);

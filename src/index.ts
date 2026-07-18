@@ -30,6 +30,7 @@ import {
   markWelcomeReady,
   welcome,
 } from "./ui/welcome";
+import { ensureLiveRegions } from "./a11y";
 import { prefetchMenuBgm } from "./audio/bgm";
 import { preloadGame } from "./application/play-session";
 import { ensurePlayPack } from "./assets/play-pack";
@@ -65,6 +66,7 @@ app.stage.sortableChildren = true;
 
 const fontsReady = initializeFontSystem();
 
+ensureLiveRegions();
 showBootWelcome();
 app.loader.onProgress.add(() => {
   setWelcomeLoadProgress(app.loader.progress);

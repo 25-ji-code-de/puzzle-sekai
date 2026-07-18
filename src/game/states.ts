@@ -62,6 +62,7 @@ import {
   flushHighScoreIfNeeded,
   bindHighScoreLifecycle,
   finalizeRunForDan,
+  getScore,
 } from "../score";
 import { scheduleSyncPush } from "../sync";
 import { getCurrentGameMode, getCurrentSettings } from "../settings";
@@ -73,6 +74,15 @@ import {
   isMatchOpen,
 } from "../application/play-session/match-gate";
 import { spawnNext } from "../application/play-session/spawn";
+import {
+  announceGameOver,
+  announceMatchEnd,
+  announceMatchStart,
+  announceMenu,
+  announcePaused,
+  announceResumed,
+  ensureLiveRegions,
+} from "../a11y";
 import { enterMenu } from "../ui/welcome";
 import {
   disposePauseMenu,
@@ -245,6 +255,7 @@ const runSpawn = async () => {
  */
 export const start = () => {
   parkMainLoop();
+  ensureLiveRegions();
 
   clearStage();
   setBgmSessionPaused(false);
@@ -301,6 +312,7 @@ export const start = () => {
   }
   setPlayPhase({ type: "playing", mode });
   showPauseButton();
+  announceMatchStart(mode);
 };
 
 export const pausePlay = () => {
@@ -311,6 +323,7 @@ export const pausePlay = () => {
   pauseBgmPlayback();
   const mode = getCurrentGameMode();
   setPlayPhase({ type: "paused", reason: "user", mode });
+  announcePaused();
 };
 
 export const resumePlay = () => {
@@ -319,12 +332,15 @@ export const resumePlay = () => {
   if (!gameTicker.started) gameTicker.start();
   const mode = getCurrentGameMode();
   setPlayPhase({ type: "playing", mode });
+  announceResumed();
 };
 
 export const returnToMenu = () => {
   leaveVisualCritical();
   // Persist before resetScore wipes the run total.
   flushHighScoreIfNeeded();
+  // Stop live-region score spam before resetScore fires onScoreChanged.
+  announceMatchEnd();
   clearStage();
   disposeScoreDisplay();
   resetScore();
@@ -335,6 +351,7 @@ export const returnToMenu = () => {
   disposeGameOverMenu();
   hidePauseButton();
   parkMainLoop();
+  announceMenu();
   enterMenu();
 };
 
@@ -359,6 +376,7 @@ const beginGameOver = (cause: "topOut" | "timeUp") => {
   });
   hidePauseButton();
   disposePauseMenu();
+  announceGameOver(getScore());
   void playGameOverBgm();
 };
 

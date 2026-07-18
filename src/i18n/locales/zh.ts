@@ -33,6 +33,17 @@ export const zh = {
   display: {
     rotateLandscape: "请将设备横过来再开始游戏",
   },
+  a11y: {
+    matchStart: "对局开始。模式：{mode}。",
+    score: "分数 {score}",
+    scoreCombo: "分数 {score}，连击 {combo}",
+    timeLow: "剩余时间 {time}",
+    paused: "已暂停",
+    resumed: "已继续",
+    gameOver: "游戏结束。最终分数 {score}。",
+    menu: "主菜单",
+    mainMenu: "主菜单",
+  },
   pause: {
     title: "暂停",
     resume: "继续",

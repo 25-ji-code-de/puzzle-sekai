@@ -33,6 +33,17 @@ export const ja = {
   display: {
     rotateLandscape: "端末を横向きにしてプレイしてください",
   },
+  a11y: {
+    matchStart: "対戦開始。モード：{mode}。",
+    score: "スコア {score}",
+    scoreCombo: "スコア {score}、コンボ {combo}",
+    timeLow: "残り時間 {time}",
+    paused: "一時停止",
+    resumed: "再開",
+    gameOver: "ゲームオーバー。最終スコア {score}。",
+    menu: "メインメニュー",
+    mainMenu: "メインメニュー",
+  },
   pause: {
     title: "一時停止",
     resume: "続ける",
