@@ -44,7 +44,8 @@ export const startGame = (mode: GameMode) => {
   onTeardownMenu?.();
   onRemoveWelcomeSprite?.();
 
-  // Prefetch game chunk while waiting for landscape / fullscreen.
+  // Prefetch game chunk + background-warm play textures while waiting for
+  // landscape / fullscreen. Start does not block on the full pack.
   preloadGame();
 
   // Don't start the match until landscape — otherwise pieces drop while the

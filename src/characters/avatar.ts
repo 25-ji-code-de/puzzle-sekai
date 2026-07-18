@@ -33,7 +33,10 @@ export const createavatarSan = () => {
 export let avatarFlyDown: PIXI.Sprite;
 
 export const createFallingavatar = () => {
-  avatarFlyDown = new PIXI.Sprite(app.loader.resources[avatar].texture);
+  // Prefer loader resource (play-pack registers here); fall back to Texture.from.
+  const texture =
+    app.loader.resources[avatar]?.texture ?? PIXI.Texture.from(avatar);
+  avatarFlyDown = new PIXI.Sprite(texture);
 
   avatarFlyDown.x = (LEFT_BORDER + RIGHT_BORDER) / 2 - BOX_SIZE / 2;
   avatarFlyDown.y = -BOX_SIZE / 2;

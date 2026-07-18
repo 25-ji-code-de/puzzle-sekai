@@ -4,6 +4,11 @@
  *
  * Heavy match code (game/states → board/piece) is not imported here; it loads
  * when the player starts a match (see application/play-session).
+ *
+ * Texture packs:
+ *  - Shell (this file): bg / welcome / basic SFX — gates welcome "ready"
+ *  - Play (`assets/play-pack`): selected-group characters + items + avatar props
+ *    — idle-prewarmed after shell; spawn loads JIT if still missing
  */
 import * as PIXI from "pixi.js-legacy";
 import "./style.scss";
@@ -17,13 +22,7 @@ import emuShrinkSfx from "./assets/sounds/effects/47_004_007.mp3";
 import carrotAkitoSfx from "./assets/sounds/effects/2509_004_002.mp3";
 import carrotEnaSfx from "./assets/sounds/effects/2509_004_003.mp3";
 import bg from "./assets/bg.png";
-import { characterData } from "./characters/data";
-import { avatarTextures } from "./characters/avatar";
-import gameOver from "./assets/gameOver.png";
-import avatar from "./assets/chara/avatar.png";
 import welcomeImg from "./assets/welcome.png";
-import barrelTexture from "./assets/objects/barrel.png";
-import { items } from "./items";
 import { initializeFontSystem } from "./ui/fonts";
 import {
   showBootWelcome,
@@ -33,6 +32,7 @@ import {
 } from "./ui/welcome";
 import { prefetchMenuBgm } from "./audio/bgm";
 import { preloadGame } from "./application/play-session";
+import { ensurePlayPack } from "./assets/play-pack";
 import { app, setState, tickMain, setBgSprite } from "./runtime";
 
 // Re-export runtime for any remaining `from "./index"` consumers.
@@ -59,19 +59,8 @@ window.addEventListener("resize", () => {
 // Initial main-loop state (boot shell only — not the match FSM)
 setState(welcome);
 
-// Register play textures for boot loader.
-// Character fall / group-clear voices are registered lazily in audio/sfx
-// on first play — avoids multi‑MB downloads on the welcome screen.
-characterData.forEach((character) => {
-  app.loader.add(character.file);
-  if (character.preview) {
-    app.loader.add(character.preview);
-  }
-});
-items.forEach((img) => {
-  app.loader.add(img);
-});
-avatarTextures.forEach((t) => app.loader.add(t));
+// Shell pack only — play textures load via ensurePlayPack after ready / on Start.
+// Character fall / group-clear voices stay lazy in audio/sfx.
 app.stage.sortableChildren = true;
 
 const fontsReady = initializeFontSystem();
@@ -82,15 +71,12 @@ app.loader.onProgress.add(() => {
 });
 
 app.loader
-  .add(avatar)
   .add("background", bg)
-  .add(barrelTexture)
   .add("move", move)
   .add("land", land)
   .add("emuShrink", emuShrinkSfx)
   .add("carrotAkito", carrotAkitoSfx)
   .add("carrotEna", carrotEnaSfx)
-  .add("gameOver", gameOver)
   .add("welcome", welcomeImg)
   .load((_loader, resources) => {
     setWelcomeLoadProgress(100);
@@ -119,8 +105,12 @@ app.loader
     markWelcomeReady();
     prefetchMenuBgm();
 
-    // Idle-prewarm match code so first "Start" is snappy without blocking boot parse
-    const warm = () => preloadGame();
+    // Idle-prewarm match code + play textures so first "Start" is snappy
+    // without blocking welcome "ready" on character WebPs.
+    const warm = () => {
+      preloadGame();
+      void ensurePlayPack();
+    };
     if (typeof requestIdleCallback === "function") {
       requestIdleCallback(warm, { timeout: 2500 });
     } else {

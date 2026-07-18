@@ -66,6 +66,10 @@ export const commitAndRefresh = (
 ) => {
   mutate?.();
   updateCurrentSettings(ctx.settings);
+  // Incremental play-pack warm when groups / mikudayo (etc.) change.
+  void import("../../assets/play-pack").then((m) => {
+    void m.ensurePlayPack();
+  });
   ctx.refresh();
 };
 

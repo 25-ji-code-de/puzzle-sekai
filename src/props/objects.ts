@@ -1,12 +1,15 @@
 import { app } from "../runtime";
 import * as PIXI from "pixi.js-legacy";
 import barrelTexture from "../assets/objects/barrel.png";
+import gameOverImg from "../assets/gameOver.png";
 import { avatar_X, avatar_Y, STAGE_HEIGHT } from "../config";
 
 export let curtain: PIXI.Sprite;
 
 export const gameOverCurtain = (onFinish: () => void = () => {}) => {
-  curtain = new PIXI.Sprite(app.loader.resources["gameOver"].texture);
+  const texture =
+    app.loader.resources["gameOver"]?.texture ?? PIXI.Texture.from(gameOverImg);
+  curtain = new PIXI.Sprite(texture);
   curtain.anchor.x = 0;
   curtain.anchor.y = 1;
   curtain.x = 0;
@@ -34,7 +37,10 @@ export const gameOverCurtain = (onFinish: () => void = () => {}) => {
 
 export let barrel: PIXI.Sprite;
 export const createBarrel = () => {
-  barrel = new PIXI.Sprite(app.loader.resources[barrelTexture].texture);
+  const texture =
+    app.loader.resources[barrelTexture]?.texture ??
+    PIXI.Texture.from(barrelTexture);
+  barrel = new PIXI.Sprite(texture);
 
   barrel.x = avatar_X;
   barrel.y = avatar_Y;

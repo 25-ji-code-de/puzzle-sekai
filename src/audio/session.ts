@@ -1,6 +1,9 @@
 /**
  * Match BGM session: menu loop, in-game rotation, game-over stinger chain.
  * Separated from the play state machine so audio concerns stay in audio/.
+ *
+ * Play BGM downloads wait for bandwidth-gate (first piece texture) so they do
+ * not compete with character sprites on slow networks.
  */
 import type * as PIXI from "pixi.js-legacy";
 import { gameTicker } from "../runtime";
@@ -108,13 +111,17 @@ const playNextBGM = async () => {
   bgmSwitching = true;
   try {
     const pick: BgmKey = Math.random() < 0.7 ? "bgm038" : "bgm168";
+    // Prefer already-warm tracks so a cache hit can play during visual-critical
+    // without starting a new multi-MB download.
     const ready =
       peekBgm(pick) ?? peekBgm(pick === "bgm038" ? "bgm168" : "bgm038");
+    // getBgm waits on whenAudioAllowed for play keys (see bgm.ts).
     const s = ready ?? (await getBgm(pick));
     if (!bgmActive || !s) return;
     bgmPlaying = s;
     setLiveBgm(s);
     bgmPlaying.play({ loop: false, volume: BGM_BASE_VOLUME });
+    // Warm the rest only after the first piece has claimed the pipe.
     prefetchPlayBgm();
   } finally {
     bgmSwitching = false;
@@ -132,11 +139,13 @@ const checkBGM = () => {
   }
 };
 
-/** Start in-match BGM rotation (non-loop tracks). */
+/**
+ * Start in-match BGM rotation (non-loop tracks).
+ * Does not fire a 4-track prefetch up front — that raced first piece textures.
+ * Downloads wait for bandwidth-gate via getBgm / prefetchPlayBgm.
+ */
 export const startPlayBgm = () => {
   bgmActive = true;
-  // Warm both play tracks once a match actually starts (not on the menu).
-  prefetchPlayBgm();
   void playNextBGM();
   gameTicker.remove(checkBGM);
   gameTicker.add(checkBGM);

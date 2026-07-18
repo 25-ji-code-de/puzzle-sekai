@@ -17,6 +17,11 @@ import {
 } from "../props/objects";
 import { BOX_SIZE, LEFT_BORDER } from "../config";
 import { initRNG, nextCharacter, showNextPiece } from "../active";
+import {
+  enterVisualCritical,
+  leaveVisualCritical,
+} from "../assets/bandwidth-gate";
+import { loadTexture } from "../assets/load-texture";
 import { rotationToOrientation } from "../domain/types";
 import { primaryFromSprite } from "../presentation/placement";
 import {
@@ -50,10 +55,7 @@ import {
   setBgmSessionPaused,
 } from "../audio/session";
 import { sprites, clearSpritesList, resetGrid } from "./board-state";
-import {
-  ensureContinuousReady,
-  teardownContinuous,
-} from "../board/dynamics";
+import { ensureContinuousReady, teardownContinuous } from "../board/dynamics";
 
 export { welcome } from "../ui/welcome";
 export { isPlayActive } from "../application/play-session/phase";
@@ -183,6 +185,11 @@ const create = async () => {
 const falling = () => {};
 
 const start = () => {
+  // `setState(start)` is driven every frame by the main ticker. Switch off
+  // immediately so clearStage / initRNG are not re-run while async boot awaits
+  // textures / Rapier — otherwise every frame wipes the just-spawned board.
+  setState(falling);
+
   clearStage();
   setBgmSessionPaused(false);
   disposePauseMenu();
@@ -196,21 +203,37 @@ const start = () => {
   openMatch();
   gameTicker.start();
 
+  // Hold play-BGM downloads until the first piece texture is ready (or deadline).
+  enterVisualCritical();
+
+  // Kick the first bag texture ASAP so preview/spawn don't wait behind the
+  // full play-pack warm (which is fire-and-forget from play-session).
+  if (nextCharacter) {
+    void loadTexture(nextCharacter.preview ?? nextCharacter.file);
+  }
+
   const boot = async () => {
-    if (isFunModeOn("truePhysics")) {
-      const ok = await ensureContinuousReady();
-      if (!ok) {
-        console.warn(
-          "[start] truePhysics unavailable; match continues on grid path",
-        );
+    try {
+      if (isFunModeOn("truePhysics")) {
+        const ok = await ensureContinuousReady();
+        if (!ok) {
+          console.warn(
+            "[start] truePhysics unavailable; match continues on grid path",
+          );
+        }
       }
+      // One texture (or cache hit) — not the whole cast.
+      await ensureNextPreview();
+    } finally {
+      // Always release BGM even if preview fails / match closed.
+      leaveVisualCritical();
     }
-    await ensureNextPreview();
     if (!isMatchOpen() || ending) return;
     setState(create);
   };
   void boot();
 
+  // BGM starts immediately but getBgm waits on the gate for uncached tracks.
   startPlayBgm();
   const mode = getCurrentGameMode();
   if (mode === "timeAttack") {
@@ -239,6 +262,7 @@ export const resumePlay = () => {
 };
 
 export const returnToMenu = () => {
+  leaveVisualCritical();
   clearStage();
   resetScore();
   resetFunEffects();

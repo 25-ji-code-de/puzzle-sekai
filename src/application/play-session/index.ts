@@ -32,10 +32,21 @@ export const loadGameStates = (): Promise<StatesMod> => {
   return statesPromise;
 };
 
-/** Idle-prewarm the game chunk (call after boot shell is ready). */
+/** Background-warm play textures (never blocks Start). */
+const warmPlayPack = (): void => {
+  void import("../../assets/play-pack").then((m) => {
+    void m.ensurePlayPack();
+  });
+};
+
+/**
+ * Idle-prewarm the game chunk + play textures (call after boot shell is ready).
+ * Play-pack is best-effort: Start does not await it; spawn uses loadTexture JIT.
+ */
 export const preloadGame = (): void => {
   void loadGameStates();
   void import("../../ui/pause-menu");
+  warmPlayPack();
   // If truePhysics is already enabled in settings, warm Rapier early.
   void import("../../settings").then(({ getCurrentSettings }) => {
     if (getCurrentSettings().funModes?.truePhysics) {
@@ -45,6 +56,8 @@ export const preloadGame = (): void => {
 };
 
 export const start = (): void => {
+  // Do not await the full play pack — that made Restart wait for every group PNG.
+  warmPlayPack();
   void loadGameStates().then((m) => m.start());
 };
 
@@ -60,6 +73,12 @@ export const returnToMenu = (): void => {
   void loadGameStates().then((m) => m.returnToMenu());
 };
 
-/** Resolve the ticker entry for starting a match (used by start-game). */
-export const getStartState = (): Promise<(delta: number) => void> =>
-  loadGameStates().then((m) => m.start as (delta: number) => void);
+/**
+ * Resolve the ticker entry for starting a match (used by start-game / R).
+ * Only waits for the game chunk. Textures load on demand via loadTexture;
+ * ensurePlayPack keeps warming in the background.
+ */
+export const getStartState = (): Promise<(delta: number) => void> => {
+  warmPlayPack();
+  return loadGameStates().then((m) => m.start as (delta: number) => void);
+};
