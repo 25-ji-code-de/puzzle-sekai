@@ -29,6 +29,8 @@ import {
   initScoreDisplay,
   setTimeRemaining,
   decrementTime,
+  flushHighScoreIfNeeded,
+  bindHighScoreLifecycle,
 } from "../score";
 import { getCurrentGameMode, getCurrentSettings } from "../settings";
 import { resetFunEffects, isFunModeOn } from "../fun/effects";
@@ -196,6 +198,9 @@ const start = () => {
   disposeGameOverMenu();
   avatarStab = createavatarSan();
   app.stage.addChild(avatarStab);
+  // Flush previous run (restart / re-entry) before wiping memory.
+  flushHighScoreIfNeeded();
+  bindHighScoreLifecycle();
   resetScore();
   initScoreDisplay();
   initRNG();
@@ -246,6 +251,8 @@ const start = () => {
 export { start };
 
 export const pausePlay = () => {
+  // User often leaves or refreshes while paused — checkpoint now.
+  flushHighScoreIfNeeded();
   gameTicker.stop();
   setBgmSessionPaused(true);
   pauseBgmPlayback();
@@ -263,6 +270,8 @@ export const resumePlay = () => {
 
 export const returnToMenu = () => {
   leaveVisualCritical();
+  // Persist before resetScore wipes the run total.
+  flushHighScoreIfNeeded();
   clearStage();
   resetScore();
   resetFunEffects();
@@ -280,6 +289,8 @@ const beginGameOver = (cause: "topOut" | "timeUp") => {
   closeMatch();
   creating = false;
   stopTimeAttackTimer();
+  // Persist as soon as the run ends (before curtain / menu / restart).
+  flushHighScoreIfNeeded();
   setPlayPhase({
     type: "gameOver",
     cause,

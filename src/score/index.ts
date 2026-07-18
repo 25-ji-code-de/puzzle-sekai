@@ -12,6 +12,8 @@ export {
   addScore,
   resetCombo,
   resetScore,
+  flushHighScoreIfNeeded,
+  bindHighScoreLifecycle,
   getScoreSummary,
 } from "./model";
 
