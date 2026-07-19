@@ -98,4 +98,3 @@ export const startReplay = (entry: ReplayEntry) => {
   queueReplayPlayback(entry);
   startThroughOrientationGate();
 };
-

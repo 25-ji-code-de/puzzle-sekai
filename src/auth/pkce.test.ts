@@ -29,7 +29,11 @@ describe("randomString", () => {
 
 describe("PKCE + state generators", () => {
   it("verifier / state / nonce are non-empty URL-safe strings", () => {
-    for (const s of [generateCodeVerifier(), generateState(), generateNonce()]) {
+    for (const s of [
+      generateCodeVerifier(),
+      generateState(),
+      generateNonce(),
+    ]) {
       expect(s.length).toBeGreaterThan(10);
       expect(s).toMatch(/^[A-Za-z0-9_-]+$/);
     }

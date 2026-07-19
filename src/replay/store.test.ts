@@ -2,7 +2,11 @@ import "../test/dom-shim";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_FUN_MODES } from "../fun/modes";
 import { DEFAULT_SETTINGS, type GroupName } from "../settings/types";
-import { localStoragePort, setStoragePort, type StoragePort } from "../settings/storage";
+import {
+  localStoragePort,
+  setStoragePort,
+  type StoragePort,
+} from "../settings/storage";
 import {
   REPLAY_LIMIT,
   REPLAY_STORAGE_KEY,

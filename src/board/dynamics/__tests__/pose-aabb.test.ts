@@ -47,15 +47,11 @@ describe("poseAabb", () => {
   });
 
   it("prefers local hull points when provided", () => {
-    const aabb = poseAabb(
-      "item",
-      { x: 0, y: 0, rotation: 0 },
-      [
-        { x: 0, y: 0 },
-        { x: 10, y: 0 },
-        { x: 0, y: 5 },
-      ],
-    );
+    const aabb = poseAabb("item", { x: 0, y: 0, rotation: 0 }, [
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      { x: 0, y: 5 },
+    ]);
     expect(aabb).toEqual({ minX: 0, minY: 0, maxX: 10, maxY: 5 });
   });
 });

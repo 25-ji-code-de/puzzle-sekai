@@ -17,15 +17,7 @@ export const REPLAY_STORAGE_KEY = "puzzleSekaiReplays";
 export const REPLAY_VERSION = 1 as const;
 export const REPLAY_LIMIT = 20;
 
-export type ReplayAction =
-  | "L"
-  | "R"
-  | "CW"
-  | "CCW"
-  | "HD"
-  | "SD"
-  | "ND"
-  | "LF";
+export type ReplayAction = "L" | "R" | "CW" | "CCW" | "HD" | "SD" | "ND" | "LF";
 
 export type ReplayInput = {
   /** Match-elapsed ms (pauses excluded). */

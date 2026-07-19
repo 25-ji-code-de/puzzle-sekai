@@ -77,7 +77,11 @@ describe("dailyMatchSettings", () => {
     const user: GameSettings = {
       ...DEFAULT_SETTINGS,
       speedLevel: 5,
-      selectedGroups: ["Leo/need", "MORE MORE JUMP!", "Vivid BAD SQUAD"] as GroupName[],
+      selectedGroups: [
+        "Leo/need",
+        "MORE MORE JUMP!",
+        "Vivid BAD SQUAD",
+      ] as GroupName[],
       funModes: { ...DEFAULT_FUN_MODES, mikudayo: true, truePhysics: true },
       itemDropRate: 30,
       spawnOrientation: "upright",

@@ -15,36 +15,46 @@ describe("footprintCollides", () => {
   });
 
   it("out of horizontal bounds", () => {
-    expect(footprintCollides(emptyGrid(), [cell(-1, 0)], { rows: 4, cols: 4 })).toBe(
-      true,
-    );
-    expect(footprintCollides(emptyGrid(), [cell(4, 0)], { rows: 4, cols: 4 })).toBe(
-      true,
-    );
+    expect(
+      footprintCollides(emptyGrid(), [cell(-1, 0)], { rows: 4, cols: 4 }),
+    ).toBe(true);
+    expect(
+      footprintCollides(emptyGrid(), [cell(4, 0)], { rows: 4, cols: 4 }),
+    ).toBe(true);
   });
 
   it("floor (y >= rows) collides; above board (y < 0) does not", () => {
-    expect(footprintCollides(emptyGrid(), [cell(0, 4)], { rows: 4, cols: 4 })).toBe(
-      true,
-    );
-    expect(footprintCollides(emptyGrid(), [cell(0, -1)], { rows: 4, cols: 4 })).toBe(
-      false,
-    );
+    expect(
+      footprintCollides(emptyGrid(), [cell(0, 4)], { rows: 4, cols: 4 }),
+    ).toBe(true);
+    expect(
+      footprintCollides(emptyGrid(), [cell(0, -1)], { rows: 4, cols: 4 }),
+    ).toBe(false);
   });
 
   it("occupied cell collides", () => {
     const grid = emptyGrid();
     grid[2][1] = "Ichika";
-    expect(footprintCollides(grid, [cell(1, 2)], { rows: 4, cols: 4 })).toBe(true);
-    expect(footprintCollides(grid, [cell(0, 2)], { rows: 4, cols: 4 })).toBe(false);
+    expect(footprintCollides(grid, [cell(1, 2)], { rows: 4, cols: 4 })).toBe(
+      true,
+    );
+    expect(footprintCollides(grid, [cell(0, 2)], { rows: 4, cols: 4 })).toBe(
+      false,
+    );
   });
 });
 
 describe("willCollidePrimary", () => {
   it("NaN / undefined primary always collides", () => {
-    expect(willCollidePrimary(emptyGrid(), { x: Number.NaN, y: 0 }, 0)).toBe(true);
+    expect(willCollidePrimary(emptyGrid(), { x: Number.NaN, y: 0 }, 0)).toBe(
+      true,
+    );
     expect(
-      willCollidePrimary(emptyGrid(), { x: undefined as unknown as number, y: 0 }, 0),
+      willCollidePrimary(
+        emptyGrid(),
+        { x: undefined as unknown as number, y: 0 },
+        0,
+      ),
     ).toBe(true);
   });
 

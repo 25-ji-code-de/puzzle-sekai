@@ -3,11 +3,7 @@
  */
 import "../test/dom-shim";
 import { describe, it, expect } from "vitest";
-import {
-  CHAIN_MULT_CAP,
-  DROP_SCORE_FACTOR,
-  chainMultiplierOf,
-} from "./model";
+import { CHAIN_MULT_CAP, DROP_SCORE_FACTOR, chainMultiplierOf } from "./model";
 
 describe("chainMultiplierOf", () => {
   it("combo 1 is identity", () => {

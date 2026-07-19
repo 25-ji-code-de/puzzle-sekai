@@ -4,7 +4,12 @@
 import { getMatchSeed } from "../domain/prng";
 import { isUtcDateKey } from "../domain/daily";
 import { DEFAULT_FUN_MODES } from "../fun/modes";
-import type { DifficultyLevel, GameMode, GameSettings, GroupName } from "../settings/types";
+import type {
+  DifficultyLevel,
+  GameMode,
+  GameSettings,
+  GroupName,
+} from "../settings/types";
 import {
   getActiveDailyDateKey,
   getCurrentGameMode,
@@ -32,7 +37,9 @@ type ReplayFinishSummary = {
 const nowMs = () =>
   typeof performance !== "undefined" ? performance.now() : Date.now();
 
-const cloneSettingsSnapshot = (settings: GameSettings): ReplaySettingsSnapshot => ({
+const cloneSettingsSnapshot = (
+  settings: GameSettings,
+): ReplaySettingsSnapshot => ({
   speedLevel: settings.speedLevel,
   timeAttackDuration: settings.timeAttackDuration,
   selectedGroups: [...settings.selectedGroups] as GroupName[],
@@ -83,7 +90,9 @@ export const isReplayPlayback = (): boolean => playSession != null;
 export const hasQueuedReplayPlayback = (): boolean => queuedReplayEntry != null;
 export const isReplayRecording = (): boolean => recordSession != null;
 
-export const setReplayLiveControlTarget = (target: ReplayControlTarget | null): void => {
+export const setReplayLiveControlTarget = (
+  target: ReplayControlTarget | null,
+): void => {
   liveControlTarget = target;
 };
 
@@ -227,7 +236,8 @@ export const clearReplayPlayback = (): void => {
   liveControlTarget = null;
 };
 
-export const getReplayPlaybackEntry = (): ReplayEntry | null => playSession?.entry ?? null;
+export const getReplayPlaybackEntry = (): ReplayEntry | null =>
+  playSession?.entry ?? null;
 
 export const pauseReplayPlaybackClock = (): void => {
   if (!playSession || playSession.pausedAt) return;
@@ -240,7 +250,10 @@ export const resumeReplayPlaybackClock = (): void => {
   playSession.pausedAt = 0;
 };
 
-const runReplayAction = (action: ReplayAction, target: ReplayControlTarget): void => {
+const runReplayAction = (
+  action: ReplayAction,
+  target: ReplayControlTarget,
+): void => {
   switch (action) {
     case "L":
       target.moveLeft();
@@ -275,10 +288,18 @@ export const flushReplayPlayback = (): void => {
   if (!target) return;
   const elapsed = elapsedMs(playSession.startedAt, playSession.pausedAccumMs);
   const inputs = playSession.entry.inputs;
-  while (playSession.cursor < inputs.length && inputs[playSession.cursor]!.t <= elapsed) {
+  while (
+    playSession.cursor < inputs.length &&
+    inputs[playSession.cursor]!.t <= elapsed
+  ) {
     const next = inputs[playSession.cursor]!;
     runReplayAction(next.a, target);
-    playSession.pendingSoftDrop = next.a === "SD" ? true : next.a === "ND" ? false : playSession.pendingSoftDrop;
+    playSession.pendingSoftDrop =
+      next.a === "SD"
+        ? true
+        : next.a === "ND"
+          ? false
+          : playSession.pendingSoftDrop;
     playSession.cursor++;
   }
   if (playSession.pendingSoftDrop) {

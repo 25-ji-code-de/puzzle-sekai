@@ -13,11 +13,7 @@ import {
   saveDanState,
   summarizeDanState,
 } from "./dan-store";
-import {
-  DAN_STATE_VERSION,
-  DAN_STORAGE_KEY,
-  emptyDanState,
-} from "./dan";
+import { DAN_STATE_VERSION, DAN_STORAGE_KEY, emptyDanState } from "./dan";
 import {
   localStoragePort,
   setStoragePort,

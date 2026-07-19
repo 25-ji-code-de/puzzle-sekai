@@ -31,9 +31,9 @@ describe("effectiveScore multiplier strip", () => {
     expect(
       effectiveScore({ score: Number.NaN, multiplier: 1, mode: "endless" }),
     ).toBe(0);
-    expect(
-      effectiveScore({ score: -50, multiplier: 1, mode: "endless" }),
-    ).toBe(0);
+    expect(effectiveScore({ score: -50, multiplier: 1, mode: "endless" })).toBe(
+      0,
+    );
   });
 });
 

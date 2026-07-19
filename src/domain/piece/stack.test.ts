@@ -70,18 +70,14 @@ describe("stackHeightForPrimary", () => {
     grid[5][1] = "Haruka";
     grid[4][1] = "Airi";
     // primary at y=3 → only rows > 3
-    expect(
-      stackHeightForPrimary(grid, { x: 1, y: 3 }, 0, "cell2"),
-    ).toBe(2);
+    expect(stackHeightForPrimary(grid, { x: 1, y: 3 }, 0, "cell2")).toBe(2);
   });
 
   it("big2x2 exclusive is primary.y - 1", () => {
     const grid = emptyGrid(6, 4);
     grid[5][2] = "NeneRobo";
     // primary y=4 → exclusive 3 → rows 4,5; row4 empty, row5 occupied → height 1
-    expect(
-      stackHeightForPrimary(grid, { x: 2, y: 4 }, 0, "big2x2"),
-    ).toBe(1);
+    expect(stackHeightForPrimary(grid, { x: 2, y: 4 }, 0, "big2x2")).toBe(1);
   });
 });
 

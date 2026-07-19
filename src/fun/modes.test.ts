@@ -92,7 +92,9 @@ describe("getFunModeMultiplier", () => {
   });
 
   it("clamps product into [0.45, 1.6]", () => {
-    const allOn = Object.fromEntries(FUN_MODE_IDS.map((id) => [id, true])) as FunModeFlags;
+    const allOn = Object.fromEntries(
+      FUN_MODE_IDS.map((id) => [id, true]),
+    ) as FunModeFlags;
     // physics mutual exclusion is only in normalize — product of raw flags can exceed
     const product = getFunModeMultiplier(allOn, 10);
     expect(product).toBeGreaterThanOrEqual(0.45);
@@ -101,6 +103,8 @@ describe("getFunModeMultiplier", () => {
 
   it("FUN_MODE_DEFS covers every id once", () => {
     expect(FUN_MODE_DEFS).toHaveLength(FUN_MODE_IDS.length);
-    expect(new Set(FUN_MODE_DEFS.map((d) => d.id)).size).toBe(FUN_MODE_IDS.length);
+    expect(new Set(FUN_MODE_DEFS.map((d) => d.id)).size).toBe(
+      FUN_MODE_IDS.length,
+    );
   });
 });

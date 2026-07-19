@@ -19,11 +19,7 @@ import {
   APPEND_GRADIENT,
   DIFFICULTY_COLORS,
 } from "./difficulty";
-import {
-  DEFAULT_SETTINGS,
-  type GameSettings,
-  type GroupName,
-} from "./types";
+import { DEFAULT_SETTINGS, type GameSettings, type GroupName } from "./types";
 import { DEFAULT_FUN_MODES } from "../fun/modes";
 
 const settings = (partial: Partial<GameSettings> = {}): GameSettings => ({
@@ -47,13 +43,29 @@ describe("getSpeedMultiplier", () => {
 describe("getDifficultyLevel", () => {
   it("speed + (groups - 3), clamped 1–7", () => {
     // speed 2 + 0 groups-extra = 2
-    expect(getDifficultyLevel(settings({ speedLevel: 2, selectedGroups: threeGroups }))).toBe(2);
+    expect(
+      getDifficultyLevel(
+        settings({ speedLevel: 2, selectedGroups: threeGroups }),
+      ),
+    ).toBe(2);
     // speed 2 + 2 = 4
-    expect(getDifficultyLevel(settings({ speedLevel: 2, selectedGroups: fiveGroups }))).toBe(4);
+    expect(
+      getDifficultyLevel(
+        settings({ speedLevel: 2, selectedGroups: fiveGroups }),
+      ),
+    ).toBe(4);
     // speed 5 + 2 = 7
-    expect(getDifficultyLevel(settings({ speedLevel: 5, selectedGroups: fiveGroups }))).toBe(7);
+    expect(
+      getDifficultyLevel(
+        settings({ speedLevel: 5, selectedGroups: fiveGroups }),
+      ),
+    ).toBe(7);
     // speed 1 + 0 = 1
-    expect(getDifficultyLevel(settings({ speedLevel: 1, selectedGroups: threeGroups }))).toBe(1);
+    expect(
+      getDifficultyLevel(
+        settings({ speedLevel: 1, selectedGroups: threeGroups }),
+      ),
+    ).toBe(1);
   });
 
   it("clamps group count into 3–5 for the formula", () => {

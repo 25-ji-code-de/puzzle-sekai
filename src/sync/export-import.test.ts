@@ -5,11 +5,7 @@ import "../test/dom-shim";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { exportLocalPicoData } from "./export-local";
 import { importLocalPicoData } from "./import-local";
-import {
-  DAN_STORAGE_KEY,
-  emptyDanState,
-  type DanRunEntry,
-} from "../score/dan";
+import { DAN_STORAGE_KEY, emptyDanState, type DanRunEntry } from "../score/dan";
 import { loadDanState, saveDanState } from "../score/dan-store";
 import {
   localStoragePort,

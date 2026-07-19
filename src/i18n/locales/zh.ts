@@ -173,7 +173,8 @@ export const zh = {
       clearData: "清除数据",
       clearCacheConfirm:
         "清除已下载的离线缓存（音频、字体等）？设置与高分不受影响。",
-      clearDataConfirm: "清除本地设置、语言、全部高分记录与回放？此操作不可撤销。",
+      clearDataConfirm:
+        "清除本地设置、语言、全部高分记录与回放？此操作不可撤销。",
       clearCacheDone: "缓存已清除",
       clearDataDone: "数据已清除，页面将刷新",
       clearFailed: "操作失败，请稍后重试",

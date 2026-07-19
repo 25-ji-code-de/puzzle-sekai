@@ -4,11 +4,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { clearAppCaches, clearAppData } from "./data";
 import { SETTINGS_KEY } from "./types";
-import {
-  localStoragePort,
-  setStoragePort,
-  type StoragePort,
-} from "./storage";
+import { localStoragePort, setStoragePort, type StoragePort } from "./storage";
 
 const resetDefaults = vi.fn();
 

@@ -84,7 +84,8 @@ const recomputeRating = (entry: {
   effectiveScore?: number;
 }): { effective: number; rating: number } => {
   const effective =
-    Number.isFinite(entry.effectiveScore) && (entry.effectiveScore as number) > 0
+    Number.isFinite(entry.effectiveScore) &&
+    (entry.effectiveScore as number) > 0
       ? (entry.effectiveScore as number)
       : legacyEffectiveFromRaw(entry.score, entry.multiplier);
   const rating = runRating({

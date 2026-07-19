@@ -13,11 +13,7 @@ import {
   parseRecord,
   saveHighScore,
 } from "./high-score";
-import {
-  DEFAULT_SETTINGS,
-  type GameSettings,
-  type GroupName,
-} from "./types";
+import { DEFAULT_SETTINGS, type GameSettings, type GroupName } from "./types";
 import { DEFAULT_FUN_MODES } from "../fun/modes";
 import { localStoragePort, setStoragePort, type StoragePort } from "./storage";
 
@@ -64,7 +60,12 @@ describe("getHighScoreKey", () => {
 
   it("timeAttack key includes duration", () => {
     expect(
-      getHighScoreKey("timeAttack", 3, false, settings({ timeAttackDuration: 60 })),
+      getHighScoreKey(
+        "timeAttack",
+        3,
+        false,
+        settings({ timeAttackDuration: 60 }),
+      ),
     ).toBe("hs:timeAttack:60:3:std");
   });
 
@@ -107,7 +108,10 @@ describe("parseRecord / emptyRecord", () => {
   });
 
   it("plain number string is legacy score-only", () => {
-    expect(parseRecord("999")).toMatchObject({ score: 999, difficultyLevel: 0 });
+    expect(parseRecord("999")).toMatchObject({
+      score: 999,
+      difficultyLevel: 0,
+    });
   });
 
   it("garbage JSON → empty", () => {
@@ -119,7 +123,10 @@ describe("save / load buckets", () => {
   const s = () =>
     settings({
       speedLevel: 2,
-      selectedGroups: DEFAULT_SETTINGS.selectedGroups.slice(0, 3) as GroupName[],
+      selectedGroups: DEFAULT_SETTINGS.selectedGroups.slice(
+        0,
+        3,
+      ) as GroupName[],
     }); // difficulty = 2
 
   it("save only when score beats current bucket", () => {
@@ -149,13 +156,18 @@ describe("save / load buckets", () => {
     // Entertainment bucket lower score
     const ent = settings({
       speedLevel: 2,
-      selectedGroups: DEFAULT_SETTINGS.selectedGroups.slice(0, 3) as GroupName[],
+      selectedGroups: DEFAULT_SETTINGS.selectedGroups.slice(
+        0,
+        3,
+      ) as GroupName[],
       funModes: { ...DEFAULT_FUN_MODES, mikudayo: true },
     });
     saveHighScore("endless", 150, ent);
 
     const listed = listHighScoreRecords("endless", s());
-    expect(listed.map((r) => r.score).sort((a, b) => a - b)).toEqual([100, 150, 300]);
+    expect(listed.map((r) => r.score).sort((a, b) => a - b)).toEqual([
+      100, 150, 300,
+    ]);
     expect(loadBestHighScoreRecord("endless", s()).score).toBe(300);
   });
 
@@ -167,7 +179,10 @@ describe("save / load buckets", () => {
       "endless",
       settings({
         speedLevel: 3,
-        selectedGroups: DEFAULT_SETTINGS.selectedGroups.slice(0, 3) as GroupName[],
+        selectedGroups: DEFAULT_SETTINGS.selectedGroups.slice(
+          0,
+          3,
+        ) as GroupName[],
       }),
     );
     // difficulty 3 + 0 groups-extra = 3 matches legacy bucket

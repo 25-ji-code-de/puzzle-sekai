@@ -50,9 +50,9 @@ describe("displayNameOf", () => {
 
   it("falls back to username; empty for null", () => {
     expect(displayNameOf({ id: "1", username: "saki" })).toBe("saki");
-    expect(displayNameOf({ id: "1", username: "saki", displayName: "   " })).toBe(
-      "saki",
-    );
+    expect(
+      displayNameOf({ id: "1", username: "saki", displayName: "   " }),
+    ).toBe("saki");
     expect(displayNameOf(null)).toBe("");
   });
 });

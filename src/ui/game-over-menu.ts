@@ -5,7 +5,11 @@
 import { t } from "../i18n";
 import { getScoreSummary } from "../score";
 import { start, returnToMenu } from "../application/play-session";
-import { getReplayPlaybackEntry, isReplayPlayback, queueReplayPlayback } from "../settings";
+import {
+  getReplayPlaybackEntry,
+  isReplayPlayback,
+  queueReplayPlayback,
+} from "../settings";
 import type { FocusTrapHandle } from "../a11y";
 import {
   armDialogFocus,

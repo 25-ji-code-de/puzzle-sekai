@@ -16,8 +16,7 @@ import { emptyRecord } from "../settings/high-score";
 
 type SaveHighScoreFn = typeof import("../settings/high-score").saveHighScore;
 type RecordDanRunFn = typeof import("./dan-store").recordDanRun;
-type ResetDanSessionLatchFn =
-  typeof import("./dan-store").resetDanSessionLatch;
+type ResetDanSessionLatchFn = typeof import("./dan-store").resetDanSessionLatch;
 type RecordDanRunInput = Parameters<RecordDanRunFn>[0];
 type RecordDanRunResult = ReturnType<RecordDanRunFn>;
 
@@ -134,8 +133,7 @@ describe("addScore / combo", () => {
     addScore(3);
     expect(getCombo()).toBe(2);
     const expected =
-      Math.round(50 * 1 * mult) +
-      Math.round(30 * chainMultiplierOf(2) * mult);
+      Math.round(50 * 1 * mult) + Math.round(30 * chainMultiplierOf(2) * mult);
     expect(getScore()).toBe(expected);
 
     const summary = getScoreSummary();

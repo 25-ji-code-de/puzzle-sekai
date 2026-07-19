@@ -50,7 +50,9 @@ const normalizeGroups = (raw: unknown): GroupName[] => {
     : [...GAME_GROUPS];
 };
 
-const normalizeReplaySettings = (raw: unknown): ReplaySettingsSnapshot | null => {
+const normalizeReplaySettings = (
+  raw: unknown,
+): ReplaySettingsSnapshot | null => {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   const speedLevel = isSpeedLevel(o.speedLevel) ? o.speedLevel : null;
@@ -61,7 +63,12 @@ const normalizeReplaySettings = (raw: unknown): ReplaySettingsSnapshot | null =>
   const spawnOrientation = isSpawnOrientation(o.spawnOrientation)
     ? o.spawnOrientation
     : null;
-  if (!speedLevel || !timeAttackDuration || itemDropRate == null || !spawnOrientation) {
+  if (
+    !speedLevel ||
+    !timeAttackDuration ||
+    itemDropRate == null ||
+    !spawnOrientation
+  ) {
     return null;
   }
   return {
@@ -117,13 +124,17 @@ const parseReplay = (raw: unknown): ReplayEntry | null => {
     seed: seed >>> 0,
     mode,
     dailyDateKey:
-      typeof o.dailyDateKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(o.dailyDateKey)
+      typeof o.dailyDateKey === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(o.dailyDateKey)
         ? o.dailyDateKey
         : undefined,
     settings,
     score: Math.max(0, Math.floor(score)),
     maxCombo: Math.max(0, Math.floor(maxCombo)),
-    difficulty: Math.min(7, Math.max(1, Math.floor(difficulty))) as ReplayEntry["difficulty"],
+    difficulty: Math.min(
+      7,
+      Math.max(1, Math.floor(difficulty)),
+    ) as ReplayEntry["difficulty"],
     entertainment: o.entertainment === true,
     multiplier: multiplier > 0 ? multiplier : 1,
     scoreRank: typeof o.scoreRank === "string" ? o.scoreRank : "D",
@@ -142,10 +153,9 @@ export const loadReplayEntries = (): ReplayEntry[] => {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return sortNewestFirst(parsed.map(parseReplay).filter(Boolean) as ReplayEntry[]).slice(
-      0,
-      REPLAY_LIMIT,
-    );
+    return sortNewestFirst(
+      parsed.map(parseReplay).filter(Boolean) as ReplayEntry[],
+    ).slice(0, REPLAY_LIMIT);
   } catch {
     return [];
   }

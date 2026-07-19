@@ -20,7 +20,11 @@ const emptyGrid = (rows = 4, cols = 4): BoardGrid =>
 describe("writeFootprint / clearFootprint", () => {
   it("writes tokens into in-bounds cells only", () => {
     const grid = emptyGrid();
-    writeFootprint(grid, [cell(1, 1), cell(3, 3), cell(-1, 0), cell(0, 9)], "Ichika");
+    writeFootprint(
+      grid,
+      [cell(1, 1), cell(3, 3), cell(-1, 0), cell(0, 9)],
+      "Ichika",
+    );
     expect(grid[1][1]).toBe("Ichika");
     expect(grid[3][3]).toBe("Ichika");
     expect(grid[0][0]).toBeNull();

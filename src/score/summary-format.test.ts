@@ -67,11 +67,7 @@ describe("groupsForSummary", () => {
 
   it("keeps official unit order for selected groups", () => {
     const summary = base({
-      selectedGroups: [
-        "25時、ナイトコードで。",
-        "Leo/need",
-        "Vivid BAD SQUAD",
-      ],
+      selectedGroups: ["25時、ナイトコードで。", "Leo/need", "Vivid BAD SQUAD"],
     });
     expect(groupsForSummary(summary)).toEqual([
       "Leo/need",

@@ -11,12 +11,8 @@ import { cell } from "../types/cell";
 
 describe("footprintFromPrimary", () => {
   it("item / shrunk occupy only the primary cell", () => {
-    expect(footprintFromPrimary({ x: 3, y: 4 }, 0, "item")).toEqual([
-      [3, 4],
-    ]);
-    expect(footprintFromPrimary({ x: 1, y: 2 }, 2, "shrunk")).toEqual([
-      [1, 2],
-    ]);
+    expect(footprintFromPrimary({ x: 3, y: 4 }, 0, "item")).toEqual([[3, 4]]);
+    expect(footprintFromPrimary({ x: 1, y: 2 }, 2, "shrunk")).toEqual([[1, 2]]);
   });
 
   it("big2x2 primary is bottom-right of four cells", () => {
@@ -51,8 +47,7 @@ describe("footprintFromPrimary", () => {
 describe("anchorFromFootprint", () => {
   it("round-trips primary for each cell2 orientation", () => {
     for (const orient of [0, 1, 2, 3] as const) {
-      const primary =
-        orient === 2 ? { x: 2, y: 4 } : { x: 2, y: 5 };
+      const primary = orient === 2 ? { x: 2, y: 4 } : { x: 2, y: 5 };
       const cells = footprintFromPrimary(primary, orient, "cell2");
       expect(anchorFromFootprint(cells, "cell2", orient)).toEqual(primary);
     }

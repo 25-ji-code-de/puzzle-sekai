@@ -197,8 +197,7 @@ export const legacyEffectiveFromRaw = (
   multiplier: number,
 ): number => {
   if (!Number.isFinite(score) || score <= 0) return 0;
-  const mult =
-    Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
+  const mult = Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
   return score / mult;
 };
 

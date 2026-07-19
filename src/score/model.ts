@@ -153,8 +153,32 @@ export const finalizeRunForDan = (): RecordDanRunResult => {
   if (isReplayPlayback()) {
     return {
       recorded: false,
-      before: { total: 0, dan: "none", ornament: "", b30: 0, r10: 0, comboBonus: 0, streakBonus: 0, a: 0, streak: 0, maxComboPeak: 0, runCount: 0 },
-      after: { total: 0, dan: "none", ornament: "", b30: 0, r10: 0, comboBonus: 0, streakBonus: 0, a: 0, streak: 0, maxComboPeak: 0, runCount: 0 },
+      before: {
+        total: 0,
+        dan: "none",
+        ornament: "",
+        b30: 0,
+        r10: 0,
+        comboBonus: 0,
+        streakBonus: 0,
+        a: 0,
+        streak: 0,
+        maxComboPeak: 0,
+        runCount: 0,
+      },
+      after: {
+        total: 0,
+        dan: "none",
+        ornament: "",
+        b30: 0,
+        r10: 0,
+        comboBonus: 0,
+        streakBonus: 0,
+        a: 0,
+        streak: 0,
+        maxComboPeak: 0,
+        runCount: 0,
+      },
       promoted: false,
     };
   }

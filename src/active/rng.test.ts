@@ -2,7 +2,11 @@
  * Character bag RNG — seeded sequence + group / Mikudayo filter.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { DEFAULT_SETTINGS, type GameSettings, type GroupName } from "../settings/types";
+import {
+  DEFAULT_SETTINGS,
+  type GameSettings,
+  type GroupName,
+} from "../settings/types";
 import { DEFAULT_FUN_MODES } from "../fun/modes";
 import { CHAR } from "../characters/ids";
 import { clearMatchRng } from "../domain/prng";
