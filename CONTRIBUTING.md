@@ -81,6 +81,15 @@ git commit -m "fix: 修复聊天消息重复显示的问题"
 git commit -m "docs: 更新 API 文档"
 ```
 
+本仓库会在提交前自动运行本地 Git hooks：
+
+- 对已暂存的 `src/**/*.{ts,tsx}` 文件先执行 `eslint --fix`，再执行 `prettier --write`
+- 对已暂存的 `**/*.{json,md,scss,css,html,yml,yaml}` 文件执行 `prettier --write`
+- hooks 通过 `yarn install` 后可用的依赖进行驱动；如果本地 hook 丢失，可手动执行 `yarn hooks:install`
+- 较重的检查（如完整 `typecheck`、`test`、`build`）仍由你手动运行或交给 CI 负责
+
+如果提交被 hook 拦下，请先查看终端输出，修复剩余无法自动处理的问题后重新 `git add` 并提交。
+
 #### 5. 推送并创建 Pull Request
 
 ```bash

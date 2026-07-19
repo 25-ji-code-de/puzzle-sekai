@@ -10,6 +10,7 @@
     "fonts:subset": "node scripts/subset-fonts.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "hooks:install": "simple-git-hooks",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -22,15 +23,27 @@
     "eslint": "^10.7.0",
     "eslint-plugin-unicorn": "^72.0.0",
     "globals": "^17.7.0",
+    "lint-staged": "^16.2.6",
     "prettier": "^3.6.2",
     "sass": "^1.26.10",
     "sharp": "^0.35.3",
+    "simple-git-hooks": "^2.13.1",
     "subset-font": "^2.5.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.64.0",
     "vite": "^5.0.0",
     "vite-plugin-pwa": "^1.3.0",
     "vitest": "2.1.9"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "yarn exec lint-staged"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "yarn exec eslint --fix",
+      "yarn exec prettier --write"
+    ],
+    "**/*.{json,md,scss,css,html,yml,yaml}": "yarn exec prettier --write"
   },
   "dependencies": {
     "@dimforge/rapier2d-compat": "^0.19.3",
