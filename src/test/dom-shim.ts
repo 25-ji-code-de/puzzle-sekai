@@ -9,22 +9,13 @@ type MetaEl = {
   content: string;
 };
 
+type MetaList = {
+  forEach: (fn: (el: MetaEl) => void) => void;
+};
+
 const metas = new Map<string, MetaEl>();
 
-const g = globalThis as typeof globalThis & {
-  document?: {
-    documentElement: { lang: string };
-    title: string;
-    head: { appendChild: (el: MetaEl) => void };
-    visibilityState?: string;
-    querySelector: (sel: string) => MetaEl | null;
-    querySelectorAll: (sel: string) => { forEach: (fn: (el: never) => void) => void };
-    createElement: (tag: string) => MetaEl;
-    addEventListener?: (...args: unknown[]) => void;
-    removeEventListener?: (...args: unknown[]) => void;
-  };
-  navigator?: { language?: string };
-};
+const g = globalThis as any;
 
 if (typeof g.navigator === "undefined") {
   g.navigator = { language: "en-US" };
@@ -34,6 +25,10 @@ if (typeof g.document === "undefined") {
   g.document = {
     documentElement: { lang: "en" },
     title: "",
+    body: {
+      appendChild: () => {},
+      removeChild: () => {},
+    },
     head: {
       appendChild: (el: MetaEl) => {
         if (el.name) metas.set(el.name, el);
@@ -45,10 +40,10 @@ if (typeof g.document === "undefined") {
       if (!m) return null;
       return metas.get(m[1]!) ?? null;
     },
-    querySelectorAll: () => ({
+    querySelectorAll: (): MetaList => ({
       forEach: () => {},
     }),
-    createElement: () => ({ name: "", content: "" }),
+    createElement: (): MetaEl => ({ name: "", content: "" }),
     addEventListener: () => {},
     removeEventListener: () => {},
   };

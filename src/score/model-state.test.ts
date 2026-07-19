@@ -14,6 +14,27 @@ import {
 import { DEFAULT_FUN_MODES } from "../fun/modes";
 import { emptyRecord } from "../settings/high-score";
 
+type SaveHighScoreFn = typeof import("../settings/high-score").saveHighScore;
+type RecordDanRunFn = typeof import("./dan-store").recordDanRun;
+type ResetDanSessionLatchFn =
+  typeof import("./dan-store").resetDanSessionLatch;
+type RecordDanRunInput = Parameters<RecordDanRunFn>[0];
+type RecordDanRunResult = ReturnType<RecordDanRunFn>;
+
+const mockDanSummary: RecordDanRunResult["before"] = {
+  b30: 0,
+  r10: 0,
+  comboBonus: 0,
+  streakBonus: 0,
+  a: 0,
+  total: 0,
+  streak: 0,
+  dan: "none",
+  ornament: "",
+  maxComboPeak: 0,
+  runCount: 0,
+};
+
 const mockSettings: GameSettings = {
   ...DEFAULT_SETTINGS,
   funModes: { ...DEFAULT_FUN_MODES },
@@ -26,14 +47,14 @@ const mockSettings: GameSettings = {
 
 let mockMode: GameMode = "endless";
 let mockHsRecord: HighScoreRecord = emptyRecord();
-const saveHighScore = vi.fn((): boolean => false);
-const recordDanRun = vi.fn(() => ({
+const saveHighScore = vi.fn<SaveHighScoreFn>(() => false);
+const recordDanRun = vi.fn<RecordDanRunFn>(() => ({
   recorded: true,
-  before: { total: 0, dan: "none" as const, runCount: 0 },
-  after: { total: 100, dan: "none" as const, runCount: 1 },
+  before: { ...mockDanSummary },
+  after: { ...mockDanSummary, total: 100, runCount: 1 },
   promoted: false,
 }));
-const resetDanSessionLatch = vi.fn();
+const resetDanSessionLatch = vi.fn<ResetDanSessionLatchFn>(() => undefined);
 
 vi.mock("../settings", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../settings")>();
@@ -51,7 +72,7 @@ vi.mock("../settings", async (importOriginal) => {
 });
 
 vi.mock("./dan-store", () => ({
-  recordDanRun: (input: unknown) => recordDanRun(input),
+  recordDanRun: (input: RecordDanRunInput) => recordDanRun(input),
   resetDanSessionLatch: () => resetDanSessionLatch(),
 }));
 
@@ -279,13 +300,7 @@ describe("finalizeRunForDan", () => {
     recordGroupClear("MORE MORE JUMP!");
     const result = finalizeRunForDan();
     expect(recordDanRun).toHaveBeenCalledTimes(1);
-    const arg = recordDanRun.mock.calls[0]![0] as {
-      score: number;
-      maxCombo: number;
-      mode: GameMode;
-      multiplier: number;
-      effectiveScore: number;
-    };
+    const arg: RecordDanRunInput = recordDanRun.mock.calls[0]![0];
     expect(arg.score).toBe(getScore());
     expect(arg.maxCombo).toBe(1);
     expect(arg.mode).toBe("endless");

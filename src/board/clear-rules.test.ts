@@ -43,7 +43,7 @@ describe("namesConnected / isGroupComplete", () => {
   });
 
   it("requires all members plus a special or Mikudayo", () => {
-    const leo = new Set([
+    const leo = new Set<string>([
       CHAR.Ichika,
       CHAR.Saki,
       CHAR.Honami,
