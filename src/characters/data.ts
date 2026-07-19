@@ -66,6 +66,8 @@ import nene_1 from "../assets/sounds/chara/nene_1.mp3";
 import nene_2 from "../assets/sounds/chara/nene_2.mp3";
 import rui_1 from "../assets/sounds/chara/rui_1.mp3";
 import rui_2 from "../assets/sounds/chara/rui_2.mp3";
+import rui_3 from "../assets/sounds/chara/rui_3.mp3";
+import rui_4 from "../assets/sounds/chara/rui_4.mp3";
 
 import kanade_1 from "../assets/sounds/chara/kanade_1.mp3";
 import mafuyu_1 from "../assets/sounds/chara/mafuyu_1.mp3";
@@ -261,7 +263,7 @@ export const characterData: CharacterData[] = [
     file: rui,
     group: "Wonderlands×Showtime",
     sounds: {
-      fall: [rui_1, rui_2],
+      fall: [rui_1, rui_2, rui_3, rui_4],
     },
   },
   {
