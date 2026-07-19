@@ -1,6 +1,9 @@
 /**
  * Account dan rating: B30 + R10 + A → 初级…极传.
  * Pure math / colors — persistence lives in dan-store.ts.
+ *
+ * Rating input is effective (skill) score × mild difficulty weight,
+ * not raw mult-scaled score — aligned with ScoreRank philosophy.
  */
 import type { DifficultyLevel, GameMode } from "../settings";
 import type { ScoreRank } from "./rank";
@@ -9,6 +12,9 @@ export const DAN_STORAGE_KEY = "puzzleSekaiDan";
 export const DAN_RUN_CAP = 100;
 export const DAN_B30 = 30;
 export const DAN_R10 = 10;
+
+/** Current on-disk schema; v1 entries are lazily re-rated on load. */
+export const DAN_STATE_VERSION = 2 as const;
 
 export type DanId =
   | "none"
@@ -48,10 +54,14 @@ export type DanRunEntry = {
   multiplier: number;
   scoreRank: ScoreRank;
   rating: number;
+  /** Skill score after mult strip + duration density (optional on legacy). */
+  effectiveScore?: number;
+  /** Wall-clock match length used for endless density (optional). */
+  playedSeconds?: number;
 };
 
 export type DanState = {
-  version: 1;
+  version: typeof DAN_STATE_VERSION | 1;
   runs: DanRunEntry[];
   maxComboPeak: number;
 };
@@ -68,28 +78,38 @@ export type DanRatingBreakdown = {
   ornament: string;
 };
 
-/** Mild weight on top of already mult-scaled score. */
+/**
+ * Mild skill weight on top of already de-multiplied effective score.
+ * Narrow band so high ★ is a light bonus, not a second mult stack.
+ */
 export const DIFFICULTY_WEIGHT: Record<DifficultyLevel, number> = {
-  1: 0.9,
-  2: 0.95,
+  1: 0.95,
+  2: 0.98,
   3: 1.0,
-  4: 1.05,
-  5: 1.12,
-  6: 1.2,
-  7: 1.3,
+  4: 1.02,
+  5: 1.05,
+  6: 1.08,
+  7: 1.12,
 };
 
-/** High → low for first-match. */
+/** Entertainment runs count at 90% toward account rating. */
+export const ENTERTAINMENT_RATING_FACTOR = 0.9;
+
+/**
+ * High → low for first-match (effective-based ratings).
+ * ~30 default-★4 runs: casual→beginner · regular→intermediate ·
+ * skilled→advanced · expert→expert · elite→kaiden.
+ */
 const DAN_THRESHOLDS: readonly { dan: DanId; min: number }[] = [
-  { dan: "gokuden", min: 8_000_000 },
-  { dan: "shinHiden", min: 5_200_000 },
-  { dan: "shinKaiden", min: 3_400_000 },
-  { dan: "hiden", min: 2_200_000 },
-  { dan: "kaiden", min: 1_400_000 },
-  { dan: "expert", min: 850_000 },
-  { dan: "advanced", min: 450_000 },
-  { dan: "intermediate", min: 200_000 },
-  { dan: "beginner", min: 80_000 },
+  { dan: "gokuden", min: 2_100_000 },
+  { dan: "shinHiden", min: 1_400_000 },
+  { dan: "shinKaiden", min: 950_000 },
+  { dan: "hiden", min: 650_000 },
+  { dan: "kaiden", min: 400_000 },
+  { dan: "expert", min: 240_000 },
+  { dan: "advanced", min: 140_000 },
+  { dan: "intermediate", min: 70_000 },
+  { dan: "beginner", min: 25_000 },
   { dan: "none", min: 0 },
 ];
 
@@ -133,7 +153,7 @@ const S_OR_ABOVE: ReadonlySet<ScoreRank> = new Set([
 ]);
 
 export const emptyDanState = (): DanState => ({
-  version: 1,
+  version: DAN_STATE_VERSION,
   runs: [],
   maxComboPeak: 0,
 });
@@ -149,10 +169,37 @@ export const difficultyWeight = (difficulty: number): number => {
   return DIFFICULTY_WEIGHT[d];
 };
 
-/** rating = round(score × weight); non-positive score → 0. */
-export const runRating = (score: number, difficulty: number): number => {
+export type RunRatingInput = {
+  /** De-multiplied, duration-normalized performance score. */
+  effectiveScore: number;
+  difficulty: number;
+  entertainment?: boolean;
+};
+
+/**
+ * rating = round(effective × skillWeight × (ent ? 0.9 : 1)).
+ * Non-positive effective → 0.
+ */
+export const runRating = (input: RunRatingInput): number => {
+  const effective = input.effectiveScore;
+  if (!Number.isFinite(effective) || effective <= 0) return 0;
+  let r = effective * difficultyWeight(input.difficulty);
+  if (input.entertainment) r *= ENTERTAINMENT_RATING_FACTOR;
+  return Math.round(r);
+};
+
+/**
+ * Approximate effective from a legacy stored run (no duration density).
+ * score / mult only — endless AFK inflation is accepted for old rows.
+ */
+export const legacyEffectiveFromRaw = (
+  score: number,
+  multiplier: number,
+): number => {
   if (!Number.isFinite(score) || score <= 0) return 0;
-  return Math.round(score * difficultyWeight(difficulty));
+  const mult =
+    Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
+  return score / mult;
 };
 
 export const danFromTotal = (total: number): DanId => {
@@ -201,7 +248,7 @@ export const danColorStyle = (dan: DanId | string): string => {
 
 export const comboBonusOf = (maxComboPeak: number): number => {
   const peak = Number.isFinite(maxComboPeak) ? Math.max(0, maxComboPeak) : 0;
-  return Math.min(8_000, Math.floor(peak * 25));
+  return Math.min(40_000, Math.floor(peak * 50));
 };
 
 /** Count trailing S+ runs (newest at end of array). */
@@ -216,7 +263,7 @@ export const sStreakOf = (runs: readonly DanRunEntry[]): number => {
 
 export const streakBonusOf = (streak: number): number => {
   const s = Number.isFinite(streak) ? Math.max(0, Math.floor(streak)) : 0;
-  return Math.min(12_000, s * 400);
+  return Math.min(60_000, s * 1_500);
 };
 
 /**

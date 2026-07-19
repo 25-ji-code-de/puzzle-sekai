@@ -56,16 +56,18 @@ export const DEFAULT_FUN_MODES: FunModeFlags = {
 };
 
 export const FUN_MODE_DEFS: FunModeDef[] = [
-  { id: "mikudayo", scoreFactor: 0.85 },
-  { id: "kanadeSlow", scoreFactor: 0.9 },
-  { id: "wonderBlast", scoreFactor: 0.8 },
-  { id: "shizukuSwap", scoreFactor: 1.15 },
-  { id: "itemAllergy", scoreFactor: 1.1, itemLinked: true },
-  { id: "mizukiShift", scoreFactor: 1.12, itemLinked: true },
-  { id: "emuShrink", scoreFactor: 1.08 },
-  // Physics engines — harder (board becomes less predictable)
-  { id: "cantilever", scoreFactor: 1.12 },
-  { id: "truePhysics", scoreFactor: 1.2 },
+  // Easier: wildcards / slows / blasts — keep discounts real but not free
+  { id: "mikudayo", scoreFactor: 0.88 },
+  { id: "kanadeSlow", scoreFactor: 0.92 },
+  { id: "wonderBlast", scoreFactor: 0.82 },
+  // Harder controls / board chaos — tuned from live headed play
+  { id: "shizukuSwap", scoreFactor: 1.12 },
+  { id: "itemAllergy", scoreFactor: 1.12, itemLinked: true },
+  { id: "mizukiShift", scoreFactor: 1.14, itemLinked: true },
+  { id: "emuShrink", scoreFactor: 1.1 },
+  // Physics engines — board becomes much less predictable (truePhysics especially)
+  { id: "cantilever", scoreFactor: 1.15 },
+  { id: "truePhysics", scoreFactor: 1.28 },
 ];
 
 export function normalizeFunModes(raw: unknown): FunModeFlags {

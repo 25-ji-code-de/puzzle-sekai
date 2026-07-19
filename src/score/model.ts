@@ -15,11 +15,18 @@ import {
   type GroupName,
 } from "../settings";
 import { computeScoreRank } from "./rank";
+import { effectiveScore } from "./performance";
 import {
   recordDanRun,
   resetDanSessionLatch,
   type RecordDanRunResult,
 } from "./dan-store";
+
+/** Soft/hard drop contribution factor after the final score mult. */
+export const DROP_SCORE_FACTOR = 0.6;
+
+/** Chain mult cap so endless mega-cascades don't explode. */
+export const CHAIN_MULT_CAP = 4;
 
 let _score = 0;
 let _highScore = 0;
@@ -32,6 +39,8 @@ let _timeRemaining = 0;
 let _isNewRecord = false;
 /** Per-unit clear events this run (not cell counts). Fun-only scores do not increment. */
 let _groupClears: Partial<Record<GroupName, number>> = {};
+/** performance.now() at match start (resetScore); 0 if unset. */
+let _matchStartedAt = 0;
 
 /** Optional UI refresh hooks registered by the HUD module. */
 let onScoreChanged: (() => void) | null = null;
@@ -53,6 +62,12 @@ export const getHighScoreDifficulty = () => _highScoreDifficulty;
 export const getHighScoreEntertainment = () => _highScoreEntertainment;
 export const getCombo = () => _combo;
 export const getTimeRemaining = () => _timeRemaining;
+
+/** Wall-clock seconds since resetScore (0 if clock not started). */
+export const getPlayedSeconds = (): number => {
+  if (!_matchStartedAt || typeof performance === "undefined") return 0;
+  return Math.max(0, (performance.now() - _matchStartedAt) / 1000);
+};
 
 export const setTimeRemaining = (seconds: number) => {
   _timeRemaining = Math.max(0, seconds);
@@ -81,19 +96,29 @@ const maybeRaiseMemoryHigh = () => {
 
 export const addDropScore = (points: number) => {
   const mult = getScoreMultiplier(getCurrentSettings());
-  _score += Math.round(points * mult);
+  _score += Math.round(points * mult * DROP_SCORE_FACTOR);
   maybeRaiseMemoryHigh();
   onScoreChanged?.();
+};
+
+/**
+ * Chain multiplier: combo 1 → ×1; each extra step +0.2, capped at CHAIN_MULT_CAP.
+ * combo 5 → ×1.8; combo 10 → ×2.8; combo 16+ → ×4.
+ */
+export const chainMultiplierOf = (combo: number): number => {
+  const c = Number.isFinite(combo) ? Math.max(1, Math.floor(combo)) : 1;
+  if (c <= 1) return 1;
+  return Math.min(CHAIN_MULT_CAP, 1 + 0.2 * (c - 1));
 };
 
 export const addScore = (piecesCleared: number) => {
   _combo++;
   if (_combo > _maxCombo) _maxCombo = _combo;
   const baseScore = piecesCleared * 10;
-  const comboBonus = _combo > 1 ? _combo * 5 : 0;
+  const chainMult = chainMultiplierOf(_combo);
   const settings = getCurrentSettings();
   const mult = getScoreMultiplier(settings);
-  _score += Math.round((baseScore + comboBonus) * mult);
+  _score += Math.round(baseScore * chainMult * mult);
   maybeRaiseMemoryHigh();
   onScoreChanged?.();
 };
@@ -110,6 +135,8 @@ export const resetScore = () => {
   _timeRemaining = 0;
   _isNewRecord = false;
   _groupClears = {};
+  _matchStartedAt =
+    typeof performance !== "undefined" ? performance.now() : Date.now();
   // New match may record a fresh dan run after the next game-over.
   resetDanSessionLatch();
   onScoreChanged?.();
@@ -133,6 +160,8 @@ export const finalizeRunForDan = (): RecordDanRunResult => {
     entertainment: summary.entertainment,
     multiplier: summary.multiplier,
     scoreRank: summary.scoreRank,
+    effectiveScore: summary.effectiveScore,
+    playedSeconds: summary.playedSeconds,
   });
 };
 
@@ -201,15 +230,25 @@ export const getScoreSummary = () => {
   const settings = getCurrentSettings();
   const difficulty = getDifficultyLevel(settings);
   const entertainment = isEntertainmentMode(settings);
+  const mode = getCurrentGameMode();
+  const multiplier = getScoreMultiplier(settings);
+  const playedSeconds = getPlayedSeconds();
+  const effective = effectiveScore({
+    score: _score,
+    multiplier,
+    mode,
+    timeAttackDuration: settings.timeAttackDuration,
+    playedSeconds,
+  });
   return {
     score: _score,
     maxCombo: _maxCombo,
     timeRemaining: _timeRemaining,
-    mode: getCurrentGameMode(),
+    mode,
     difficulty,
     difficultyLabel: getDifficultyLabel(difficulty),
     entertainment,
-    multiplier: getScoreMultiplier(settings),
+    multiplier,
     highScore: _highScore,
     highScoreDifficulty: _highScoreDifficulty,
     highScoreEntertainment: _highScoreEntertainment,
@@ -220,11 +259,14 @@ export const getScoreSummary = () => {
     isNewRecord: _isNewRecord,
     groupClears: { ..._groupClears } as Partial<Record<GroupName, number>>,
     selectedGroups: [...settings.selectedGroups] as GroupName[],
+    playedSeconds,
+    effectiveScore: effective,
     scoreRank: computeScoreRank({
       score: _score,
-      multiplier: getScoreMultiplier(settings),
-      mode: getCurrentGameMode(),
+      multiplier,
+      mode,
       timeAttackDuration: settings.timeAttackDuration,
+      playedSeconds,
     }),
   };
 };

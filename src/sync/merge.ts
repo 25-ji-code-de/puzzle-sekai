@@ -108,7 +108,11 @@ export const parsePicoSyncData = (raw: unknown): PicoSyncData | null => {
     const playedAt = Number(r.playedAt);
     if (!id || !Number.isFinite(score) || score <= 0) continue;
     if (!Number.isFinite(playedAt) || playedAt <= 0) continue;
-    runs.push({
+    const mult = Number.isFinite(Number(r.multiplier))
+      ? Number(r.multiplier)
+      : 1;
+    const storedEffective = Number(r.effectiveScore);
+    const entry: DanRunEntry = {
       id,
       playedAt,
       mode: r.mode === "timeAttack" ? "timeAttack" : "endless",
@@ -126,12 +130,18 @@ export const parsePicoSyncData = (raw: unknown): PicoSyncData | null => {
         Math.max(1, Math.floor(Number(r.difficulty) || 1)),
       ) as DanRunEntry["difficulty"],
       entertainment: r.entertainment === true,
-      multiplier: Number.isFinite(Number(r.multiplier))
-        ? Number(r.multiplier)
-        : 1,
+      multiplier: mult,
       scoreRank: String(r.scoreRank || "D") as DanRunEntry["scoreRank"],
       rating: Math.max(0, Math.floor(Number(r.rating) || 0)),
-    });
+    };
+    if (Number.isFinite(storedEffective) && storedEffective > 0) {
+      entry.effectiveScore = storedEffective;
+    }
+    const playedSeconds = Number(r.playedSeconds);
+    if (Number.isFinite(playedSeconds) && playedSeconds > 0) {
+      entry.playedSeconds = playedSeconds;
+    }
+    runs.push(entry);
   }
   const hsRaw = isRecord(raw.highScores) ? raw.highScores : {};
   const highScores: Record<string, HighScoreRecord> = {};

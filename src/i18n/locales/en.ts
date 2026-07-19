@@ -138,6 +138,8 @@ export const en = {
       itemLine: "Item Drop {rate}",
       orientLine: "Falling Orientation · {orient}",
       funLineItemLinked: "{name} (item-linked)",
+      starHint:
+        "Your difficulty name (Easy–Append) comes from fall speed and how many units you field. Items, orientation, and fun modes only change the score multiplier — not the difficulty name. Rank and dan grade how you play, so turning the mult down won’t cost you the grade.",
     },
     lang: {
       label: "Language / 言語",

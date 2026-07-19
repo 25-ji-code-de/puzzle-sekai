@@ -65,26 +65,28 @@ export const ITEM_DROP_RATES: ItemDropRate[] = [0, 5, 10, 15, 20, 30];
  * Score factor for item drop rate.
  * More items clutter the board → harder → higher mult.
  * Baseline 10% (legacy default) = ×1.00
+ * Tuned from live play: 0% is a real clean-board advantage; 30% is heavy clutter.
  */
 export const ITEM_DROP_SCORE_FACTORS: Record<ItemDropRate, number> = {
-  0: 0.88,
-  5: 0.94,
+  0: 0.85,
+  5: 0.92,
   10: 1.0,
-  15: 1.06,
-  20: 1.12,
-  30: 1.22,
+  15: 1.08,
+  20: 1.16,
+  30: 1.28,
 };
 
 export const SPAWN_ORIENTATIONS: SpawnOrientation[] = ["inverted", "upright"];
 
 /**
  * Score factor for spawn facing.
- * Upright is easier to read → lower mult. Inverted (classic) = ×1.00.
+ * Upright is much easier to read spatially → lower mult.
+ * Inverted (classic head-down) = ×1.00. Live play: -10% under-priced the ease.
  */
 export const SPAWN_ORIENTATION_SCORE_FACTORS: Record<SpawnOrientation, number> =
   {
     inverted: 1.0,
-    upright: 0.9,
+    upright: 0.85,
   };
 
 export const isSpawnOrientation = (v: unknown): v is SpawnOrientation =>

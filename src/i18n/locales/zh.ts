@@ -136,6 +136,8 @@ export const zh = {
       itemLine: "道具掉落 {rate}",
       orientLine: "下落姿态 · {orient}",
       funLineItemLinked: "{name}（道具率联动）",
+      starHint:
+        "难度名（Easy～Append）由下落速度和出场团数共同决定。道具、朝向、娱乐模式只会改得分倍率，不会改难度名。评级与段位看你的操作表现，调低倍率也不会让评级吃亏。",
     },
     lang: {
       label: "语言 / Language",

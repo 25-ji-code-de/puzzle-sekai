@@ -34,7 +34,7 @@ describe("chainMultiplierOf", () => {
 });
 
 describe("DROP_SCORE_FACTOR", () => {
-  it("halves drop contribution", () => {
-    expect(DROP_SCORE_FACTOR).toBe(0.5);
+  it("slightly dampens drop contribution (not full weight)", () => {
+    expect(DROP_SCORE_FACTOR).toBe(0.6);
   });
 });

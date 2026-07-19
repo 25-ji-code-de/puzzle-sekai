@@ -2,7 +2,7 @@
  * Pure presentation helpers for run score summaries.
  * No DOM / canvas — used by game-over UI and share-card.
  */
-import { GAME_GROUPS, type GroupName } from "../settings";
+import { GAME_GROUPS, type GroupName } from "../settings/types";
 import type { ScoreSummary } from "./model";
 
 export const padDigits = (n: number, len: number): string =>

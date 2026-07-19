@@ -3,6 +3,7 @@
  * Pure — no DOM/canvas. Ranks are Latin letters (no i18n).
  */
 import type { GameMode } from "../settings";
+import { effectiveScore } from "./performance";
 
 export type ScoreRank =
   | "D"
@@ -40,22 +41,25 @@ export const SCORE_RANKS: readonly ScoreRank[] = [
 
 /**
  * Effective-score lower bounds, high → low for first-match.
- * effective = score / mult; TA further × (90 / duration).
+ * effective = score / mult; TA × (90 / duration); Endless × (90 / played).
+ *
+ * 90s TA skill ladder (approx):
+ *   novice→C · casual→B · regular→BBB · skilled→AA · expert→S · elite→SS
  */
 const THRESHOLDS: readonly { rank: ScoreRank; min: number }[] = [
-  { rank: "SSS+", min: 48_000 },
-  { rank: "SSS", min: 36_000 },
-  { rank: "SS+", min: 27_000 },
-  { rank: "SS", min: 20_000 },
-  { rank: "S+", min: 15_000 },
-  { rank: "S", min: 11_000 },
-  { rank: "AAA", min: 8_000 },
-  { rank: "AA", min: 5_800 },
-  { rank: "A", min: 4_000 },
-  { rank: "BBB", min: 2_600 },
-  { rank: "BB", min: 1_600 },
-  { rank: "B", min: 900 },
-  { rank: "C", min: 400 },
+  { rank: "SSS+", min: 18_500 },
+  { rank: "SSS", min: 14_500 },
+  { rank: "SS+", min: 11_500 },
+  { rank: "SS", min: 9_200 },
+  { rank: "S+", min: 7_200 },
+  { rank: "S", min: 5_500 },
+  { rank: "AAA", min: 4_200 },
+  { rank: "AA", min: 3_200 },
+  { rank: "A", min: 2_300 },
+  { rank: "BBB", min: 1_600 },
+  { rank: "BB", min: 1_100 },
+  { rank: "B", min: 700 },
+  { rank: "C", min: 300 },
   { rank: "D", min: 0 },
 ];
 
@@ -90,29 +94,23 @@ export type ComputeScoreRankInput = {
   mode: GameMode;
   /** Required when mode is timeAttack; defaults to 90. */
   timeAttackDuration?: number;
+  /** Endless wall-clock seconds for density normalization. */
+  playedSeconds?: number;
 };
 
 /**
  * Map run performance to a letter rank.
  * Strips score multiplier so difficulty settings don't gate the grade;
- * Time Attack normalizes duration to a 90s baseline.
+ * Time Attack / Endless both normalize to a 90s density baseline.
  */
 export function computeScoreRank(input: ComputeScoreRankInput): ScoreRank {
-  const score = Number.isFinite(input.score) ? Math.max(0, input.score) : 0;
-  const mult =
-    Number.isFinite(input.multiplier) && input.multiplier > 0
-      ? input.multiplier
-      : 0.01;
-  let effective = score / mult;
-
-  if (input.mode === "timeAttack") {
-    const duration =
-      Number.isFinite(input.timeAttackDuration) &&
-      (input.timeAttackDuration as number) > 0
-        ? (input.timeAttackDuration as number)
-        : 90;
-    effective *= 90 / duration;
-  }
+  const effective = effectiveScore({
+    score: input.score,
+    multiplier: input.multiplier,
+    mode: input.mode,
+    timeAttackDuration: input.timeAttackDuration,
+    playedSeconds: input.playedSeconds,
+  });
 
   for (const t of THRESHOLDS) {
     if (effective >= t.min) return t.rank;

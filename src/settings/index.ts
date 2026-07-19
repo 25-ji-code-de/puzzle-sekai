@@ -66,6 +66,7 @@ export {
   getDifficultyCssColor,
   hexToPixi,
   getBaseScoreMultiplier,
+  BASE_SCORE_MULTIPLIERS,
   isEntertainmentMode,
   getFinalScoreMultiplier,
   getScoreMultiplierBreakdown,

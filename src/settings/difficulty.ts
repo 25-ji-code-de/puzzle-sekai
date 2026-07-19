@@ -1,5 +1,9 @@
 /**
  * Difficulty rating and score multiplier breakdown.
+ *
+ * ★ = speedLevel + (groupCount - 3), clamped 1–7.
+ * Final score mult = base(★) × fun × item × orientation (clamped 0.3–4).
+ * Letter rank / dan use effective score (mult stripped) — see score/performance.ts.
  */
 import {
   DEFAULT_FUN_MODES,
@@ -80,10 +84,24 @@ export function hexToPixi(hex: string): number {
   return parseInt(hex.replace("#", ""), 16);
 }
 
-/** Base score multiplier from difficulty only ~0.5 (★1) … ~3.0 (★7) */
+/**
+ * Base score mult by ★ (mild curve; rank/dan strip mult so this is display reward).
+ * ★1 0.55 · ★2 0.85 · ★3 1.15 · ★4 1.50 · ★5 1.95 · ★6 2.50 · ★7 3.00
+ */
+export const BASE_SCORE_MULTIPLIERS: Record<DifficultyLevel, number> = {
+  1: 0.55,
+  2: 0.85,
+  3: 1.15,
+  4: 1.5,
+  5: 1.95,
+  6: 2.5,
+  7: 3.0,
+};
+
+/** Base score multiplier from difficulty only ~0.55 (★1) … ~3.0 (★7) */
 export function getBaseScoreMultiplier(settings: GameSettings): number {
   const d = getDifficultyLevel(settings);
-  return 0.5 + (d - 1) * (2.5 / 6);
+  return BASE_SCORE_MULTIPLIERS[d];
 }
 
 export function isEntertainmentMode(settings: GameSettings): boolean {

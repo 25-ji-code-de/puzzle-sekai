@@ -138,6 +138,8 @@ export const ja = {
       itemLine: "アイテムドロップ {rate}",
       orientLine: "落下の向き · {orient}",
       funLineItemLinked: "{name}（アイテム率連動）",
+      starHint:
+        "難易度名（Easy～Append）は落下速度と出場ユニット数で決まります。アイテム・向き・お楽しみはスコア倍率だけを変え、難易度名自体は変わりません。ランクや段位はプレイの上手さを見るので、倍率を下げても評価は下がりません。",
     },
     lang: {
       label: "言語 / Language",

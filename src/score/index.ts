@@ -6,6 +6,7 @@ export {
   getHighScore,
   getCombo,
   getTimeRemaining,
+  getPlayedSeconds,
   setTimeRemaining,
   decrementTime,
   addDropScore,
@@ -17,9 +18,20 @@ export {
   bindHighScoreLifecycle,
   getScoreSummary,
   finalizeRunForDan,
+  chainMultiplierOf,
+  DROP_SCORE_FACTOR,
+  CHAIN_MULT_CAP,
 } from "./model";
 
 export type { ScoreSummary } from "./model";
+
+export {
+  effectiveScore,
+  PERFORMANCE_BASELINE_SECONDS,
+  ENDLESS_DURATION_MIN,
+  ENDLESS_DURATION_MAX,
+} from "./performance";
+export type { EffectiveScoreInput } from "./performance";
 
 export {
   padDigits,

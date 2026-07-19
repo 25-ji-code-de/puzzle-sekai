@@ -171,16 +171,16 @@ describe("getScoreMultiplierBreakdown", () => {
         itemDropRate: 10,
         funModes: {
           ...DEFAULT_FUN_MODES,
-          mikudayo: true, // 0.85 non-linked
-          itemAllergy: true, // 1.1 item-linked @ 10% → 1.1
+          mikudayo: true, // 0.88 non-linked
+          itemAllergy: true, // 1.12 item-linked @ 10% → 1.12
         },
       }),
     );
     expect(on.lines.length).toBe(off.lines.length + 2);
     const factors = on.lines.slice(3).map((l) => l.factor);
-    expect(factors).toContain(0.85);
-    expect(factors.some((f) => Math.abs(f - 1.1) < 1e-9)).toBe(true);
-    expect(on.fun).toBeCloseTo(0.85 * 1.1);
+    expect(factors).toContain(0.88);
+    expect(factors.some((f) => Math.abs(f - 1.12) < 1e-9)).toBe(true);
+    expect(on.fun).toBeCloseTo(0.88 * 1.12);
   });
 
   it("final clamps into [0.3, 4]", () => {

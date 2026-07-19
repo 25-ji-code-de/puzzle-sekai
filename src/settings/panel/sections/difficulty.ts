@@ -49,6 +49,7 @@ export const appendDifficultySection = (
   tip.className = "diff-card__tip";
   tip.innerHTML = `
     <div class="diff-tip-title">${t("settings.difficulty.breakdownTitle")}</div>
+    <div class="diff-star-hint">${t("settings.difficulty.starHint")}</div>
     ${linesHtml}
     <div class="diff-total">
       <span>${t("settings.difficulty.total")}</span>

@@ -76,19 +76,19 @@ describe("getFunModeMultiplier", () => {
   it("multiplies enabled non-linked factors", () => {
     const flags: FunModeFlags = {
       ...DEFAULT_FUN_MODES,
-      mikudayo: true, // 0.85
-      shizukuSwap: true, // 1.15
+      mikudayo: true, // 0.88
+      shizukuSwap: true, // 1.12
     };
-    expect(getFunModeMultiplier(flags)).toBeCloseTo(0.85 * 1.15);
+    expect(getFunModeMultiplier(flags)).toBeCloseTo(0.88 * 1.12);
   });
 
   it("item-linked factors scale with drop rate", () => {
     const flags: FunModeFlags = {
       ...DEFAULT_FUN_MODES,
-      itemAllergy: true, // base 1.1 item-linked
+      itemAllergy: true, // base 1.12 item-linked
     };
     expect(getFunModeMultiplier(flags, 0)).toBeCloseTo(1);
-    expect(getFunModeMultiplier(flags, 10)).toBeCloseTo(1.1);
+    expect(getFunModeMultiplier(flags, 10)).toBeCloseTo(1.12);
   });
 
   it("clamps product into [0.45, 1.6]", () => {
