@@ -15,18 +15,8 @@ import {
   handleHighScoreRowEvent,
 } from "../menu-utils";
 import { danColorStyle, danMessageKey, getDanSummary } from "../../score";
-import {
-  displayNameOf,
-  getAuthSnapshot,
-  isAuthConfigured,
-  logout,
-  onAuthChange,
-  startLogin,
-} from "../../auth";
-import { getSyncStatus, onSyncStatus } from "../../sync";
 import type { MessageKey } from "../../i18n";
 import { ensureLiveRegions } from "../../a11y";
-import { showSettingsPanel, disposeSettingsPanel } from "../../settings/panel";
 import {
   showControlsOverlay,
   showAboutOverlay,
@@ -44,6 +34,51 @@ let menuOverlay: HTMLDivElement | null = null;
 let localeListening = false;
 let unsubAuth: (() => void) | null = null;
 let unsubSync: (() => void) | null = null;
+let bootstrappedCloudSync = false;
+
+let authMod: typeof import("../../auth") | null = null;
+let authPromise: Promise<typeof import("../../auth")> | null = null;
+let syncMod: typeof import("../../sync") | null = null;
+let syncPromise: Promise<typeof import("../../sync")> | null = null;
+let settingsPanelMod: typeof import("../../settings/panel") | null = null;
+let settingsPanelPromise: Promise<
+  typeof import("../../settings/panel")
+> | null = null;
+
+const ensureAuth = (): Promise<typeof import("../../auth")> => {
+  if (authMod) return Promise.resolve(authMod);
+  if (!authPromise) {
+    authPromise = import("../../auth").then((mod) => {
+      authMod = mod;
+      return mod;
+    });
+  }
+  return authPromise;
+};
+
+const ensureSync = (): Promise<typeof import("../../sync")> => {
+  if (syncMod) return Promise.resolve(syncMod);
+  if (!syncPromise) {
+    syncPromise = import("../../sync").then((mod) => {
+      syncMod = mod;
+      return mod;
+    });
+  }
+  return syncPromise;
+};
+
+const ensureSettingsPanel = (): Promise<
+  typeof import("../../settings/panel")
+> => {
+  if (settingsPanelMod) return Promise.resolve(settingsPanelMod);
+  if (!settingsPanelPromise) {
+    settingsPanelPromise = import("../../settings/panel").then((mod) => {
+      settingsPanelMod = mod;
+      return mod;
+    });
+  }
+  return settingsPanelPromise;
+};
 
 const teardownMenu = () => {
   unsubAuth?.();
@@ -90,6 +125,8 @@ const makeToolbarBtn = (label: string, onClick: () => void) => {
 /** Build (or rebuild) the menu DOM overlay. Sprites are kept across locale changes. */
 const buildMenu = () => {
   if (menuOverlay) return;
+
+  void ensureSettingsPanel();
 
   disposeOrientationGate();
 
@@ -149,9 +186,11 @@ const buildMenu = () => {
   toolbar.className = "menu-toolbar";
 
   toolbar.appendChild(
-    makeToolbarBtn(t("menu.settings"), () =>
-      showSettingsPanel({ onClosed: refreshHighScoreRow }),
-    ),
+    makeToolbarBtn(t("menu.settings"), () => {
+      void ensureSettingsPanel().then(({ showSettingsPanel }) => {
+        showSettingsPanel({ onClosed: refreshHighScoreRow });
+      });
+    }),
   );
   toolbar.appendChild(makeToolbarBtn(t("menu.controls"), showControlsOverlay));
   toolbar.appendChild(makeToolbarBtn(t("menu.about"), showAboutOverlay));
@@ -186,57 +225,103 @@ const buildMenu = () => {
   authChip.type = "button";
   authChip.className = "menu-auth menu-tool-btn";
   authChip.setAttribute("data-boot-interactive", "1");
+  authChip.textContent = t("auth.loginShort");
+  authChip.title = t("auth.login");
+  authChip.disabled = true;
 
-  const paintAuthChip = () => {
-    const snap = getAuthSnapshot();
-    const sync = getSyncStatus();
+  const paintAuthChip = async () => {
+    const auth = await ensureAuth();
+    const snap = auth.getAuthSnapshot();
+    const syncStatus = syncMod?.getSyncStatus() ?? "idle";
     authChip.classList.toggle("menu-auth--guest", !snap.loggedIn);
     authChip.classList.toggle("menu-auth--user", snap.loggedIn);
     if (!snap.loggedIn) {
       authChip.textContent = t("auth.loginShort");
-      authChip.title = isAuthConfigured()
+      authChip.title = auth.isAuthConfigured()
         ? t("auth.login")
         : t("auth.notConfigured");
-      authChip.disabled = !isAuthConfigured();
+      authChip.disabled = !auth.isAuthConfigured();
       return;
     }
-    const name = displayNameOf(snap.user);
+    const name = auth.displayNameOf(snap.user);
     let suffix = "";
-    if (sync === "syncing") suffix = ` · ${t("auth.syncing")}`;
-    else if (sync === "error") suffix = ` · ${t("auth.syncFailed")}`;
+    if (syncStatus === "syncing") suffix = ` · ${t("auth.syncing")}`;
+    else if (syncStatus === "error") suffix = ` · ${t("auth.syncFailed")}`;
     authChip.textContent = name + suffix;
     authChip.title = t("auth.logout");
     authChip.disabled = false;
   };
 
-  authChip.onclick = () => {
-    const snap = getAuthSnapshot();
-    if (!snap.loggedIn) {
-      if (!isAuthConfigured()) {
-        window.alert(t("auth.notConfigured"));
-        return;
-      }
-      void startLogin().then((r) => {
-        if (!r.ok && r.reason === "not_configured") {
-          window.alert(t("auth.notConfigured"));
-        }
+  const attachAuthChip = async () => {
+    const auth = await ensureAuth();
+    if (!unsubAuth) {
+      unsubAuth = auth.onAuthChange(() => {
+        void paintAuthChip();
       });
-      return;
     }
-    if (window.confirm(t("auth.logout"))) {
-      logout();
-      paintAuthChip();
-    }
+    await paintAuthChip();
   };
 
-  paintAuthChip();
-  unsubAuth = onAuthChange(() => paintAuthChip());
-  unsubSync = onSyncStatus(() => paintAuthChip());
+  authChip.onclick = () => {
+    void ensureAuth().then((auth) => {
+      const snap = auth.getAuthSnapshot();
+      if (!snap.loggedIn) {
+        if (!auth.isAuthConfigured()) {
+          window.alert(t("auth.notConfigured"));
+          return;
+        }
+        void auth.startLogin().then((r) => {
+          if (!r.ok && r.reason === "not_configured") {
+            window.alert(t("auth.notConfigured"));
+          }
+        });
+        return;
+      }
+      if (window.confirm(t("auth.logout"))) {
+        auth.logout();
+        void paintAuthChip();
+        return;
+      }
+      void ensureSync().then((sync) => {
+        if (!bootstrappedCloudSync) bootstrappedCloudSync = true;
+        if (!unsubSync) {
+          unsubSync = sync.onSyncStatus(() => {
+            void paintAuthChip();
+          });
+        }
+        void sync.pullMergePush();
+        void paintAuthChip();
+      });
+    });
+  };
+
+  void attachAuthChip();
   toolbar.appendChild(authChip);
   footer.appendChild(toolbar);
 
   menuOverlay.appendChild(footer);
   document.body.appendChild(menuOverlay);
+
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(
+      () => {
+        void ensureAuth().then((auth) => {
+          if (!auth.getAuthSnapshot().loggedIn || bootstrappedCloudSync) return;
+          void ensureSync().then((sync) => {
+            bootstrappedCloudSync = true;
+            if (!unsubSync) {
+              unsubSync = sync.onSyncStatus(() => {
+                void paintAuthChip();
+              });
+            }
+            void sync.pullMergePush();
+            void paintAuthChip();
+          });
+        });
+      },
+      { timeout: 2500 },
+    );
+  }
 };
 
 export const showWelcomePage = () => {
@@ -264,7 +349,9 @@ export const showWelcomePage = () => {
   if (!localeListening) {
     localeListening = true;
     onLocaleChange(() => {
-      disposeSettingsPanel();
+      void ensureSettingsPanel().then(({ disposeSettingsPanel }) => {
+        disposeSettingsPanel();
+      });
       disposeMenuOverlays();
       if (menuOverlay) {
         menuOverlay.remove();
