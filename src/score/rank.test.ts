@@ -16,10 +16,12 @@ import {
 const endless = (
   score: number,
   multiplier = 1,
+  playedSeconds = 90,
 ): Parameters<typeof computeScoreRank>[0] => ({
   score,
   multiplier,
   mode: "endless",
+  playedSeconds,
 });
 
 const ta = (
@@ -41,19 +43,19 @@ describe("computeScoreRank thresholds", () => {
   it("maps exact lower bounds", () => {
     const bounds: [number, ScoreRank][] = [
       [0, "D"],
-      [400, "C"],
-      [900, "B"],
-      [1_600, "BB"],
-      [2_600, "BBB"],
-      [4_000, "A"],
-      [5_800, "AA"],
-      [8_000, "AAA"],
-      [11_000, "S"],
-      [15_000, "S+"],
-      [20_000, "SS"],
-      [27_000, "SS+"],
-      [36_000, "SSS"],
-      [48_000, "SSS+"],
+      [300, "C"],
+      [700, "B"],
+      [1_100, "BB"],
+      [1_600, "BBB"],
+      [2_300, "A"],
+      [3_200, "AA"],
+      [4_200, "AAA"],
+      [5_500, "S"],
+      [7_200, "S+"],
+      [9_200, "SS"],
+      [11_500, "SS+"],
+      [14_500, "SSS"],
+      [18_500, "SSS+"],
     ];
     for (const [min, rank] of bounds) {
       expect(computeScoreRank(endless(min))).toBe(rank);
@@ -61,10 +63,10 @@ describe("computeScoreRank thresholds", () => {
   });
 
   it("one below threshold stays previous rank", () => {
-    expect(computeScoreRank(endless(399))).toBe("D");
-    expect(computeScoreRank(endless(899))).toBe("C");
-    expect(computeScoreRank(endless(1_599))).toBe("B");
-    expect(computeScoreRank(endless(47_999))).toBe("SSS");
+    expect(computeScoreRank(endless(299))).toBe("D");
+    expect(computeScoreRank(endless(699))).toBe("C");
+    expect(computeScoreRank(endless(1_099))).toBe("B");
+    expect(computeScoreRank(endless(18_499))).toBe("SSS");
   });
 
   it("SCORE_RANKS covers every letter once", () => {
@@ -75,10 +77,15 @@ describe("computeScoreRank thresholds", () => {
 
 describe("computeScoreRank multiplier strip", () => {
   it("divides score by multiplier", () => {
-    // 3500 / 1.75 = 2000 → BB
-    expect(computeScoreRank(endless(3500, 1.75))).toBe("BB");
-    // same raw score without mult → higher rank (3500 → BBB)
-    expect(computeScoreRank(endless(3500, 1))).toBe("BBB");
+    // 1925 / 1.75 = 1100 → BB
+    expect(computeScoreRank(endless(1925, 1.75))).toBe("BB");
+    // same raw score without mult → higher rank (1925 → BBB)
+    expect(computeScoreRank(endless(1925, 1))).toBe("BBB");
+  });
+
+  it("same mult-stripped performance shares a rank", () => {
+    expect(computeScoreRank(endless(5_500, 1))).toBe("S");
+    expect(computeScoreRank(endless(16_500, 3))).toBe("S");
   });
 
   it("guards non-positive multiplier", () => {
@@ -94,33 +101,34 @@ describe("computeScoreRank multiplier strip", () => {
 
 describe("computeScoreRank time attack duration", () => {
   it("normalizes to 90s baseline", () => {
-    // raw 3000 @90s → effective 3000 → BBB
-    expect(computeScoreRank(ta(3000, 90))).toBe("BBB");
-    // same raw @60s → effective 3000 * 1.5 = 4500 → A
-    expect(computeScoreRank(ta(3000, 60))).toBe("A");
-    // same raw @180s → effective 3000 * 0.5 = 1500 → B
-    expect(computeScoreRank(ta(3000, 180))).toBe("B");
+    // raw 1500 @90s → effective 1500 → BB
+    expect(computeScoreRank(ta(1500, 90))).toBe("BB");
+    // same raw @60s denser: 1600 * 1.5 = 2400 → A
+    expect(computeScoreRank(ta(1600, 60))).toBe("A");
+    // same raw @180s thinner: 1500 * 0.5 = 750 → B
+    expect(computeScoreRank(ta(1500, 180))).toBe("B");
   });
 
   it("defaults missing duration to 90", () => {
     expect(
       computeScoreRank({
-        score: 3000,
+        score: 1500,
         multiplier: 1,
         mode: "timeAttack",
       }),
-    ).toBe("BBB");
+    ).toBe("BB");
   });
 
-  it("endless ignores duration field", () => {
+  it("endless ignores duration field; uses playedSeconds", () => {
     expect(
       computeScoreRank({
-        score: 3000,
+        score: 2400,
         multiplier: 1,
         mode: "endless",
         timeAttackDuration: 60,
+        playedSeconds: 180,
       }),
-    ).toBe("BBB");
+    ).toBe("BB"); // 2400 * 90/180 = 1200
   });
 });
 

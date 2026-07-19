@@ -56,6 +56,41 @@ describe("big2x2 primary (bottom-right)", () => {
   });
 });
 
+describe("BoardModel write / clear / unsupported", () => {
+  let board: BoardModel;
+
+  beforeEach(() => {
+    board = new BoardModel(6, 8);
+  });
+
+  it("write and clear mutate grid cells", () => {
+    board.write([cell(2, 3), cell(2, 4)], CHAR.Honami);
+    expect(board.grid[3][2]).toBe(CHAR.Honami);
+    expect(board.grid[4][2]).toBe(CHAR.Honami);
+    board.clear([cell(2, 3)]);
+    expect(board.grid[3][2]).toBeNull();
+    expect(board.grid[4][2]).toBe(CHAR.Honami);
+  });
+
+  it("unsupported is true mid-air and false on floor", () => {
+    board.write([cell(0, 2)], CHAR.Shiho);
+    expect(board.unsupported([cell(0, 2)])).toBe(true);
+    expect(board.unsupported([cell(0, 7)])).toBe(false);
+  });
+
+  it("reset clears all cells; load clones source", () => {
+    board.write([cell(1, 1)], CHAR.Minori);
+    board.reset();
+    expect(board.grid.every((row) => row.every((c) => c === null))).toBe(true);
+
+    const src = new BoardModel(6, 8);
+    src.write([cell(4, 5)], CHAR.Haruka);
+    board.load(src.grid);
+    board.grid[5][4] = null;
+    expect(src.grid[5][4]).toBe(CHAR.Haruka);
+  });
+});
+
 describe("BoardModel.planGravity", () => {
   let board: BoardModel;
 
@@ -93,5 +128,13 @@ describe("BoardModel.planGravity", () => {
     board.applyGravityPlans(plans);
     expect(board.grid[1][0]).toBeNull();
     expect(board.grid[7][0]).toBe(CHAR.Emu);
+  });
+
+  it("supported pieces produce no gravity plans", () => {
+    board.write([cell(2, 7)], CHAR.Rui);
+    const plans = board.planGravity([
+      { coords: [cell(2, 7)], token: CHAR.Rui, id: 0 },
+    ]);
+    expect(plans).toEqual([]);
   });
 });

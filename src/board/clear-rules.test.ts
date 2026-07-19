@@ -2,7 +2,13 @@
  * Clear-rules unit tests (pure grid, no PIXI).
  */
 import { describe, it, expect } from "vitest";
-import { findClearChunk } from "./clear-rules";
+import {
+  characterGroupOf,
+  findClearChunk,
+  isGroupComplete,
+  isMikudayoName,
+  namesConnected,
+} from "./clear-rules";
 import { CHAR } from "../characters/ids";
 import { ITEM_TOKEN, type BoardGrid } from "../domain/types";
 import { COLUMNS, ROWS } from "../config";
@@ -11,6 +17,44 @@ const emptyGrid = (): BoardGrid =>
   Array.from({ length: ROWS }, () =>
     Array.from({ length: COLUMNS }, () => null),
   );
+
+describe("characterGroupOf / isMikudayoName", () => {
+  it("maps known characters and rejects empty", () => {
+    expect(characterGroupOf(CHAR.Ichika)).toBe("Leo/need");
+    expect(characterGroupOf(CHAR.An)).toBe("Vivid BAD SQUAD");
+    expect(characterGroupOf(null)).toBeUndefined();
+    expect(characterGroupOf(undefined)).toBeUndefined();
+  });
+
+  it("detects Mikudayo only", () => {
+    expect(isMikudayoName(CHAR.Mikudayo)).toBe(true);
+    expect(isMikudayoName(CHAR.MikuLeo)).toBe(false);
+    expect(isMikudayoName(null)).toBe(false);
+  });
+});
+
+describe("namesConnected / isGroupComplete", () => {
+  it("same group connects; items never; Mikudayo bridges", () => {
+    expect(namesConnected(CHAR.Ichika, CHAR.Saki)).toBe(true);
+    expect(namesConnected(CHAR.Ichika, CHAR.An)).toBe(false);
+    expect(namesConnected(CHAR.Ichika, ITEM_TOKEN)).toBe(false);
+    expect(namesConnected(CHAR.Mikudayo, CHAR.An)).toBe(true);
+    expect(namesConnected(null, CHAR.Saki)).toBe(false);
+  });
+
+  it("requires all members plus a special or Mikudayo", () => {
+    const leo = new Set([
+      CHAR.Ichika,
+      CHAR.Saki,
+      CHAR.Honami,
+      CHAR.Shiho,
+    ]);
+    expect(isGroupComplete("Leo/need", leo, false)).toBe(false);
+    expect(isGroupComplete("Leo/need", leo, true)).toBe(true);
+    leo.add(CHAR.MikuLeo);
+    expect(isGroupComplete("Leo/need", leo, false)).toBe(true);
+  });
+});
 
 describe("findClearChunk", () => {
   it("returns undefined on empty board", () => {

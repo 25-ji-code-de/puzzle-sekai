@@ -3,6 +3,7 @@
  */
 import { describe, it, expect } from "vitest";
 import {
+  ensurePico,
   isBetterHighScore,
   mergeDanStates,
   mergeHighScores,
@@ -117,5 +118,43 @@ describe("mergePicoData / parse", () => {
     expect(p!.dan.runs[0]!.id).toBe("z");
     expect(p!.highScores["hs:endless:1:std"]!.score).toBe(5);
     expect(p!.highScores["nope"]).toBeUndefined();
+  });
+
+  it("parsePicoSyncData keeps effectiveScore / playedSeconds", () => {
+    const p = parsePicoSyncData({
+      schema: 1,
+      dan: {
+        version: 1,
+        runs: [
+          {
+            id: "e",
+            playedAt: 2,
+            score: 2000,
+            multiplier: 2,
+            difficulty: 4,
+            scoreRank: "A",
+            effectiveScore: 900,
+            playedSeconds: 75,
+          },
+        ],
+        maxComboPeak: 0,
+      },
+      highScores: {},
+    });
+    expect(p!.dan.runs[0]!.effectiveScore).toBe(900);
+    expect(p!.dan.runs[0]!.playedSeconds).toBe(75);
+  });
+
+  it("ensurePico clones or returns empty", () => {
+    expect(ensurePico(null).dan.runs).toEqual([]);
+    const src = {
+      schema: 1 as const,
+      dan: { version: 1 as const, runs: [run("a", 1)], maxComboPeak: 2 },
+      highScores: { "hs:endless:1:std": hs(1, 1) },
+    };
+    const out = ensurePico(src);
+    expect(out.dan.runs[0]!.id).toBe("a");
+    out.dan.runs.push(run("b", 2));
+    expect(src.dan.runs).toHaveLength(1);
   });
 });

@@ -71,4 +71,18 @@ describe("match rng session", () => {
     const list2 = ["a", "b", "c", "d"];
     expect(takeRandom(list2)).toBe(picked);
   });
+
+  it("randomInt clamps non-positive max; takeRandom on empty is undefined", () => {
+    initMatchRng(1);
+    expect(randomInt(0)).toBe(0);
+    expect(randomInt(-5)).toBe(0);
+    expect(takeRandom([])).toBeUndefined();
+  });
+
+  it("clearMatchRng forgets the seed", () => {
+    initMatchRng(123);
+    expect(getMatchSeed()).toBe(123);
+    clearMatchRng();
+    expect(getMatchSeed()).toBeUndefined();
+  });
 });
