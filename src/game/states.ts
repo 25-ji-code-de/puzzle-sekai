@@ -59,6 +59,7 @@ import {
   disposeScoreDisplay,
   setTimeRemaining,
   getTimeRemaining,
+  getScoreSummary,
   flushHighScoreIfNeeded,
   bindHighScoreLifecycle,
   finalizeRunForDan,
@@ -69,13 +70,25 @@ import {
   beginMatchSettingsOverride,
   clearActiveDailyDateKey,
   clearMatchSettingsOverride,
+  consumeQueuedReplayPlayback,
+  activateReplayPlayback,
+  beginReplayRecording,
+  clearReplayPlayback,
+  finishReplayRecording,
+  flushReplayPlayback,
   getActiveDailyDateKey,
   getCurrentGameMode,
   getCurrentSettings,
   getUserSettings,
+  isReplayPlayback,
+  pauseReplayPlaybackClock,
+  pauseReplayRecordingClock,
+  resumeReplayPlaybackClock,
+  resumeReplayRecordingClock,
 } from "../settings";
 import { dailyMatchSettings, dailySeed, utcDateKey } from "../domain/daily";
 import { resetFunEffects, isFunModeOn } from "../fun/effects";
+import { ensurePlayPack } from "../assets/play-pack";
 import { setPlayPhase, getPlayPhase } from "../application/play-session/phase";
 import {
   openMatch,
@@ -133,6 +146,10 @@ let avatarStab: PIXI.AnimatedSprite;
 let nextPiece: PIXI.Sprite | undefined;
 /** Latch so requestSpawn is not re-entered while a spawn cycle is in flight. */
 let creating = false;
+
+const tickReplayPlayback = () => {
+  flushReplayPlayback();
+};
 
 /**
  * Time-attack clock: wall-clock deadline via performance.now(), driven by
@@ -266,6 +283,11 @@ const clearStage = () => {
   clearSpritesList();
   // Detach countdown before destroy so we don't leave a stale hook flag.
   stopTimeAttackTimer();
+  try {
+    gameTicker.remove(tickReplayPlayback);
+  } catch {
+    /* ignore */
+  }
   resetGameTicker();
   teardownContinuous();
   if (endAnimation) {
@@ -367,21 +389,38 @@ export const start = () => {
   bindHighScoreLifecycle();
   resetScore();
 
-  const mode = getCurrentGameMode();
-  // Daily: freeze gameplay rules + shared seed so all players share the day.
-  if (mode === "daily") {
-    beginMatchSettingsOverride(dailyMatchSettings(getUserSettings()));
-    const dateKey = getActiveDailyDateKey() ?? utcDateKey();
-    initRNG(dailySeed(dateKey));
+  const queuedReplay = consumeQueuedReplayPlayback();
+  if (queuedReplay) {
+    activateReplayPlayback(queuedReplay);
+    beginMatchSettingsOverride({
+      ...getUserSettings(),
+      ...queuedReplay.settings,
+      selectedGroups: [...queuedReplay.settings.selectedGroups],
+      funModes: { ...queuedReplay.settings.funModes },
+    });
+    initRNG(queuedReplay.seed);
   } else {
-    // Seed match PRNG + piece bag (omit arg for fresh seed).
-    initRNG();
+    clearReplayPlayback();
+    const mode = getCurrentGameMode();
+    // Daily: freeze gameplay rules + shared seed so all players share the day.
+    if (mode === "daily") {
+      beginMatchSettingsOverride(dailyMatchSettings(getUserSettings()));
+      const dateKey = getActiveDailyDateKey() ?? utcDateKey();
+      initRNG(dailySeed(dateKey));
+    } else {
+      // Seed match PRNG + piece bag (omit arg for fresh seed).
+      initRNG();
+    }
+    beginReplayRecording();
   }
 
   initScoreDisplay();
   resetFunEffects();
   openMatch();
   gameTicker.start();
+  if (isReplayPlayback()) {
+    gameTicker.add(tickReplayPlayback);
+  }
 
   // Hold play-BGM downloads until the first piece texture is ready (or deadline).
   enterVisualCritical();
@@ -402,6 +441,9 @@ export const start = () => {
           );
         }
       }
+      if (isReplayPlayback()) {
+        await ensurePlayPack();
+      }
       // One texture (or cache hit) — not the whole cast.
       await ensureNextPreview();
     } finally {
@@ -415,6 +457,7 @@ export const start = () => {
 
   // BGM starts immediately but getBgm waits on the gate for uncached tracks.
   startPlayBgm();
+  const mode = getCurrentGameMode();
   if (mode === "timeAttack") {
     startTimeAttackTimer();
   }
@@ -426,6 +469,8 @@ export const start = () => {
 export const pausePlay = (reason: "user" | "portrait" | "hidden" = "user") => {
   // User often leaves or refreshes while paused — checkpoint now.
   flushHighScoreIfNeeded();
+  pauseReplayRecordingClock();
+  pauseReplayPlaybackClock();
   // Freeze deadline before stopping the ticker so pause does not burn clock.
   pauseTimeAttackTimer();
   gameTicker.stop();
@@ -439,6 +484,8 @@ export const pausePlay = (reason: "user" | "portrait" | "hidden" = "user") => {
 export const resumePlay = () => {
   resumeBgmPlayback();
   setBgmSessionPaused(false);
+  resumeReplayRecordingClock();
+  resumeReplayPlaybackClock();
   // Re-arm deadline from frozen remaining before ticks resume.
   resumeTimeAttackTimer();
   if (!gameTicker.started) gameTicker.start();
@@ -450,11 +497,14 @@ export const resumePlay = () => {
 export const returnToMenu = () => {
   leaveVisualCritical();
   // Persist before resetScore wipes the run total (while daily lock still applies).
+  const summary = getScoreSummary();
   flushHighScoreIfNeeded();
+  finishReplayRecording(summary);
   // Stop live-region score spam before resetScore fires onScoreChanged.
   announceMatchEnd();
   clearStage();
   clearMatchSettingsOverride();
+  clearReplayPlayback();
   clearActiveDailyDateKey();
   disposeScoreDisplay();
   resetScore();
@@ -477,12 +527,16 @@ const beginGameOver = (cause: "topOut" | "timeUp") => {
   // Drop live controls immediately so post-game key spam cannot drive a
   // still-falling piece (or a piece about to be destroyed on restart).
   disposeAllActivePieces();
+  const summary = getScoreSummary();
   // Persist as soon as the run ends (before curtain / menu / restart).
   flushHighScoreIfNeeded();
+  finishReplayRecording(summary);
   // Account dan: one append per match (latched).
   finalizeRunForDan();
-  // Cloud sync (no-op when logged out).
-  scheduleSyncPush();
+  // Cloud sync (no-op when logged out). Replays themselves are local-only.
+  if (!isReplayPlayback()) {
+    scheduleSyncPush();
+  }
   setPlayPhase({
     type: "gameOver",
     cause,

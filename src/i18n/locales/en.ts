@@ -70,6 +70,9 @@ export const en = {
     restart: "Play again",
     menu: "Back to menu",
   },
+  replay: {
+    watchAgain: "Watch again",
+  },
   dan: {
     none: "Unranked",
     beginner: "Beginner",
@@ -161,6 +164,12 @@ export const en = {
       lowHelp:
         "Half render buffer (~¼ pixels). Looks softer; layout, hitboxes, and controls stay the same.",
     },
+    replays: {
+      label: "Replays",
+      watch: "Watch replay",
+      empty: "No saved replays yet.",
+      help: "Stores the latest 20 non-truePhysics runs locally.",
+    },
     data: {
       label: "Data / Cache",
       clearCache: "Clear cache",
@@ -168,7 +177,7 @@ export const en = {
       clearCacheConfirm:
         "Clear downloaded offline caches (audio, fonts, etc.)? Settings and high scores stay intact.",
       clearDataConfirm:
-        "Clear local settings, language, and all high scores? This cannot be undone.",
+        "Clear local settings, language, all high scores, and saved replays? This cannot be undone.",
       clearCacheDone: "Cache cleared",
       clearDataDone: "Data cleared — reloading",
       clearFailed: "Something went wrong. Please try again.",

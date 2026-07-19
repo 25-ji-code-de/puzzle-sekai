@@ -70,6 +70,9 @@ export const ja = {
     restart: "もう一度",
     menu: "メニューに戻る",
   },
+  replay: {
+    watchAgain: "もう一度見る",
+  },
   dan: {
     none: "段位なし",
     beginner: "初級",
@@ -161,6 +164,12 @@ export const ja = {
       lowHelp:
         "描画バッファを半分（画素は約1/4）。少し柔らかく見えますが、レイアウト・判定・操作範囲は変わりません。",
     },
+    replays: {
+      label: "リプレイ",
+      watch: "リプレイを見る",
+      empty: "見られるリプレイはまだありません。",
+      help: "truePhysics 以外の直近 20 プレイを端末内に保存します。",
+    },
     data: {
       label: "データ / キャッシュ",
       clearCache: "キャッシュを削除",
@@ -168,7 +177,7 @@ export const ja = {
       clearCacheConfirm:
         "オフライン用キャッシュ（音声・フォントなど）を削除しますか？設定とハイスコアは残ります。",
       clearDataConfirm:
-        "ローカル設定・言語・すべてのハイスコアを削除しますか？この操作は取り消せません。",
+        "ローカル設定・言語・すべてのハイスコア・保存済みリプレイを削除しますか？この操作は取り消せません。",
       clearCacheDone: "キャッシュを削除しました",
       clearDataDone: "データを削除しました。再読み込みします",
       clearFailed: "失敗しました。しばらくしてから再試行してください。",

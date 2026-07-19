@@ -22,6 +22,8 @@ import {
   getCurrentSettings,
   getSpeedMultiplier,
   getSpawnRotation,
+  setReplayLiveControlTarget,
+  type ReplayControlTarget,
 } from "../settings";
 import { consumeKanadeSlowForSpawn } from "../fun/effects";
 import {
@@ -199,7 +201,7 @@ export const createNeneRobo = async (
     fall.onMoved();
   };
 
-  const unbind = bindPieceControls({
+  const controls: ReplayControlTarget = {
     moveLeft,
     moveRight,
     rotateCW,
@@ -208,7 +210,10 @@ export const createNeneRobo = async (
     softDrop: fall.softDrop,
     normalSpeed: fall.normalSpeed,
     tryLift: canLift ? tryLift : undefined,
-  });
+  };
+
+  const unbind = bindPieceControls(controls);
+  setReplayLiveControlTarget(controls);
 
   app.stage.addChild(nenerobo);
 
@@ -219,6 +224,7 @@ export const createNeneRobo = async (
   }
 
   const release = registerActivePiece(() => {
+    setReplayLiveControlTarget(null);
     unbind();
     fall.stop();
     if (isContinuousPhysics()) removeActiveBody(nenerobo);

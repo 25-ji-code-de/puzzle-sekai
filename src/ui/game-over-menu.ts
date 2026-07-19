@@ -5,6 +5,7 @@
 import { t } from "../i18n";
 import { getScoreSummary } from "../score";
 import { start, returnToMenu } from "../application/play-session";
+import { getReplayPlaybackEntry, isReplayPlayback, queueReplayPlayback } from "../settings";
 import type { FocusTrapHandle } from "../a11y";
 import {
   armDialogFocus,
@@ -73,6 +74,10 @@ export const showGameOverMenu = (): void => {
 
   const restart = () => {
     disposeGameOverMenu();
+    if (isReplayPlayback()) {
+      const entry = getReplayPlaybackEntry();
+      if (entry) queueReplayPlayback(entry);
+    }
     start();
   };
   const quit = () => {
@@ -81,7 +86,7 @@ export const showGameOverMenu = (): void => {
   };
 
   const restartBtn = buildDialogButton(
-    t("gameOver.restart"),
+    isReplayPlayback() ? t("replay.watchAgain") : t("gameOver.restart"),
     "primary",
     restart,
   );

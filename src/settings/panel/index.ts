@@ -24,6 +24,7 @@ import {
 } from "./sections/items-orientation";
 import { appendFunModesSection } from "./sections/fun-modes";
 import { appendDifficultySection } from "./sections/difficulty";
+import { appendReplaySection } from "./sections/replays";
 import { appendDataSection } from "./sections/data";
 
 export interface SettingsPanelOptions {
@@ -123,6 +124,7 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
   const ctx: SettingsSectionCtx = {
     settings,
     refresh: refreshSettingsPanel,
+    close: closeSettingsPanel,
   };
 
   appendLanguageSection(settingsPanel, ctx);
@@ -135,6 +137,7 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
   appendOrientationSection(settingsPanel, ctx);
   appendFunModesSection(settingsPanel, ctx);
   appendDifficultySection(settingsPanel, ctx);
+  appendReplaySection(settingsPanel, ctx);
   appendDataSection(settingsPanel);
 
   settingsContainer.appendChild(settingsPanel);

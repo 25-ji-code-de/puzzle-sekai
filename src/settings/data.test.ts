@@ -48,6 +48,7 @@ describe("clearAppData", () => {
     memory.set(SETTINGS_KEY, "{}");
     memory.set("puzzleSekaiLocale", "zh");
     memory.set("puzzleSekaiDan", "{}");
+    memory.set("puzzleSekaiReplays", "[]");
     memory.set("puzzleSekaiSyncMeta", "{}");
     memory.set("hs:endless:4:std", '{"score":100}');
     memory.set("hs:timeAttack:90:3:ent", '{"score":50}');
@@ -64,6 +65,7 @@ describe("clearAppData", () => {
     expect(memory.map.has(SETTINGS_KEY)).toBe(false);
     expect(memory.map.has("puzzleSekaiLocale")).toBe(false);
     expect(memory.map.has("puzzleSekaiDan")).toBe(false);
+    expect(memory.map.has("puzzleSekaiReplays")).toBe(false);
     expect(memory.map.has("puzzleSekaiSyncMeta")).toBe(false);
     expect(memory.map.has("hs:endless:4:std")).toBe(false);
     expect(memory.map.has("hs:timeAttack:90:3:ent")).toBe(false);

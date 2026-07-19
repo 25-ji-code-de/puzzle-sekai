@@ -10,6 +10,7 @@ const isAppStorageKey = (key: string): boolean =>
   key === "puzzleSekaiLocale" ||
   // Account dan run log (B30 + R10 + A)
   key === "puzzleSekaiDan" ||
+  key === "puzzleSekaiReplays" ||
   // Sync version meta (keep tokens — auth keys intentionally excluded)
   key === "puzzleSekaiSyncMeta" ||
   // New bucket keys: hs:endless:… / hs:timeAttack:… / hs:daily:…

@@ -1,6 +1,7 @@
 /**
  * Touch half-screen helper (canvas letterbox-aware).
  */
+import "../test/dom-shim";
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("../runtime", () => ({

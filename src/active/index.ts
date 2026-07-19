@@ -28,6 +28,8 @@ import {
   getCurrentSettings,
   getSpeedMultiplier,
   getSpawnRotation,
+  setReplayLiveControlTarget,
+  type ReplayControlTarget,
 } from "../settings";
 import {
   onShihoLanded,
@@ -392,7 +394,7 @@ export const createPiece = async (
     activeFall.onMoved();
   };
 
-  const unbind = bindPieceControls({
+  const controls: ReplayControlTarget = {
     moveLeft: () => moveToAllowedCol(-1),
     moveRight: () => moveToAllowedCol(1),
     rotateCW,
@@ -401,7 +403,10 @@ export const createPiece = async (
     softDrop: activeFall.softDrop,
     normalSpeed: activeFall.normalSpeed,
     tryLift: canLift ? moveUp : undefined,
-  });
+  };
+
+  const unbind = bindPieceControls(controls);
+  setReplayLiveControlTarget(controls);
 
   app.stage.addChild(piece);
 
@@ -414,6 +419,7 @@ export const createPiece = async (
   // Match teardown must unbind / stop fall / drop kinematic body before
   // sprites are destroyed — otherwise key/swipe handlers hit null transform.
   const release = registerActivePiece(() => {
+    setReplayLiveControlTarget(null);
     unbind();
     activeFall.stop();
     if (isContinuousPhysics()) removeActiveBody(piece);

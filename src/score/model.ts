@@ -11,6 +11,7 @@ import {
   getDifficultyLevel,
   getScoreMultiplier,
   isEntertainmentMode,
+  isReplayPlayback,
   loadHighScoreRecord,
   saveHighScore,
   type GroupName,
@@ -149,6 +150,14 @@ export const resetScore = () => {
  * Call from beginGameOver after flushHighScoreIfNeeded.
  */
 export const finalizeRunForDan = (): RecordDanRunResult => {
+  if (isReplayPlayback()) {
+    return {
+      recorded: false,
+      before: { total: 0, dan: "none", ornament: "", b30: 0, r10: 0, comboBonus: 0, streakBonus: 0, a: 0, streak: 0, maxComboPeak: 0, runCount: 0 },
+      after: { total: 0, dan: "none", ornament: "", b30: 0, r10: 0, comboBonus: 0, streakBonus: 0, a: 0, streak: 0, maxComboPeak: 0, runCount: 0 },
+      promoted: false,
+    };
+  }
   const summary = getScoreSummary();
   return recordDanRun({
     mode: summary.mode,
@@ -188,7 +197,7 @@ export const loadMatchHighScore = () => {
  */
 export const flushHighScoreIfNeeded = (): boolean => {
   try {
-    if (_score <= 0) {
+    if (isReplayPlayback() || _score <= 0) {
       _isNewRecord = false;
       return false;
     }
@@ -250,6 +259,7 @@ export const getScoreSummary = () => {
     maxCombo: _maxCombo,
     timeRemaining: _timeRemaining,
     mode,
+    replaying: isReplayPlayback(),
     /** Present when mode is daily — share card / settlement date label. */
     dailyDateKey,
     difficulty,

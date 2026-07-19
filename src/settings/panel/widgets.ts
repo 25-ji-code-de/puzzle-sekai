@@ -8,6 +8,7 @@ import { updateCurrentSettings } from "../store";
 export type SettingsSectionCtx = {
   settings: GameSettings;
   refresh: () => void;
+  close: () => void;
 };
 
 export const makeSettingGroup = (label: string): HTMLDivElement => {

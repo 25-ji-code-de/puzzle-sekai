@@ -4,6 +4,7 @@
  */
 import { app, hammerManager } from "../runtime";
 import { isControlsSwapped } from "../fun/effects";
+import { isReplayPlayback, recordReplayAction } from "../settings";
 
 export type PieceControlActions = {
   moveLeft: () => void;
@@ -46,6 +47,10 @@ const isTypingTarget = (target: EventTarget | null): boolean => {
 export const bindPieceControls = (
   actions: PieceControlActions,
 ): (() => void) => {
+  if (isReplayPlayback()) {
+    return () => {};
+  }
+
   const handleKeyPress = (event: KeyboardEvent) => {
     // Settings / dialogs: don't steal arrows/space from form fields.
     if (isTypingTarget(event.target)) return;
@@ -55,29 +60,37 @@ export const bindPieceControls = (
     switch (event.key.toLowerCase()) {
       case "arrowleft":
         (swapped ? actions.moveRight : actions.moveLeft)();
+        recordReplayAction(swapped ? "R" : "L");
         break;
       case "arrowright":
         (swapped ? actions.moveLeft : actions.moveRight)();
+        recordReplayAction(swapped ? "L" : "R");
         break;
       case "arrowup":
         if (event.shiftKey && actions.tryLift) {
           actions.tryLift();
+          recordReplayAction("LF");
           break;
         }
         (swapped ? actions.rotateCCW : actions.rotateCW)();
+        recordReplayAction(swapped ? "CCW" : "CW");
         break;
       case "x":
         (swapped ? actions.rotateCCW : actions.rotateCW)();
+        recordReplayAction(swapped ? "CCW" : "CW");
         break;
       case "z":
       case "control":
         (swapped ? actions.rotateCW : actions.rotateCCW)();
+        recordReplayAction(swapped ? "CW" : "CCW");
         break;
       case "arrowdown":
         actions.softDrop();
+        recordReplayAction("SD");
         break;
       case " ":
         actions.hardDrop();
+        recordReplayAction("HD");
         break;
       default:
         handled = false;
@@ -92,23 +105,54 @@ export const bindPieceControls = (
     if (event.key === "ArrowDown") {
       event.preventDefault();
       actions.normalSpeed();
+      recordReplayAction("ND");
     }
   };
 
-  const handleSwipeLeft = () =>
-    isControlsSwapped() ? actions.moveRight() : actions.moveLeft();
-  const handleSwipeRight = () =>
-    isControlsSwapped() ? actions.moveLeft() : actions.moveRight();
+  const handleSwipeLeft = () => {
+    if (isControlsSwapped()) {
+      actions.moveRight();
+      recordReplayAction("R");
+      return;
+    }
+    actions.moveLeft();
+    recordReplayAction("L");
+  };
+  const handleSwipeRight = () => {
+    if (isControlsSwapped()) {
+      actions.moveLeft();
+      recordReplayAction("L");
+      return;
+    }
+    actions.moveRight();
+    recordReplayAction("R");
+  };
   const handleSwipeUp = () => {
     actions.tryLift?.();
+    recordReplayAction("LF");
   };
   const handleTap = (e: HammerInput) => {
     const leftHalf = isLeftHalfOfCanvas(e.center.x);
     if (isControlsSwapped()) {
       (leftHalf ? actions.rotateCW : actions.rotateCCW)();
+      recordReplayAction(leftHalf ? "CW" : "CCW");
     } else {
       (leftHalf ? actions.rotateCCW : actions.rotateCW)();
+      recordReplayAction(leftHalf ? "CCW" : "CW");
     }
+  };
+  const handlePress = () => {
+    actions.softDrop();
+    recordReplayAction("SD");
+  };
+  const handlePressUp = () => {
+    actions.normalSpeed();
+    recordReplayAction("ND");
+  };
+
+  const handleHardDrop = () => {
+    actions.hardDrop();
+    recordReplayAction("HD");
   };
 
   window.addEventListener("keydown", handleKeyPress, false);
@@ -116,10 +160,10 @@ export const bindPieceControls = (
 
   hammerManager.on("swipeleft", handleSwipeLeft);
   hammerManager.on("swiperight", handleSwipeRight);
-  hammerManager.on("swipedown", actions.hardDrop);
+  hammerManager.on("swipedown", handleHardDrop);
   hammerManager.on("swipeup", handleSwipeUp);
-  hammerManager.on("press", actions.softDrop);
-  hammerManager.on("pressup", actions.normalSpeed);
+  hammerManager.on("press", handlePress);
+  hammerManager.on("pressup", handlePressUp);
   hammerManager.on("tap", handleTap);
 
   return () => {
@@ -129,9 +173,9 @@ export const bindPieceControls = (
     hammerManager.off("swiperight", handleSwipeRight);
     hammerManager.off("tap", handleTap);
     hammerManager.off("swipeleft", handleSwipeLeft);
-    hammerManager.off("swipedown", actions.hardDrop);
+    hammerManager.off("swipedown", handleHardDrop);
     hammerManager.off("swipeup", handleSwipeUp);
-    hammerManager.off("press", actions.softDrop);
-    hammerManager.off("pressup", actions.normalSpeed);
+    hammerManager.off("press", handlePress);
+    hammerManager.off("pressup", handlePressUp);
   };
 };

@@ -198,6 +198,11 @@ export function clearActiveDailyDateKey(): void {
   activeDailyDateKey = null;
 }
 
+/** Override the active daily key for replay / restoration flows. */
+export function setActiveDailyDateKey(dateKey: string | null): void {
+  activeDailyDateKey = dateKey;
+}
+
 export function setCurrentGameMode(mode: GameMode): void {
   currentGameMode = mode;
   // Always refresh the date key when selecting daily from the menu so a new

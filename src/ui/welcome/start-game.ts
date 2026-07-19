@@ -7,7 +7,13 @@ import {
   resumePlay,
   preloadGame,
 } from "../../application/play-session";
-import { setCurrentGameMode, type GameMode } from "../../settings";
+import {
+  setCurrentGameMode,
+  setActiveDailyDateKey,
+  type GameMode,
+  queueReplayPlayback,
+  type ReplayEntry,
+} from "../../settings";
 import { t } from "../../i18n";
 import {
   requestAppFullscreen,
@@ -33,9 +39,7 @@ export const disposeOrientationGate = () => {
   orientationGate = null;
 };
 
-export const startGame = (mode: GameMode) => {
-  setCurrentGameMode(mode);
-
+const startThroughOrientationGate = () => {
   // Must request fullscreen from this user-gesture stack; fire-and-forget so
   // a browser rejection (e.g. iOS Safari) never blocks game start.
   void requestAppFullscreen();
@@ -80,3 +84,18 @@ export const startGame = (mode: GameMode) => {
     start();
   });
 };
+
+export const startGame = (mode: GameMode) => {
+  setCurrentGameMode(mode);
+  startThroughOrientationGate();
+};
+
+export const startReplay = (entry: ReplayEntry) => {
+  setCurrentGameMode(entry.mode);
+  if (entry.mode === "daily") {
+    setActiveDailyDateKey(entry.dailyDateKey ?? null);
+  }
+  queueReplayPlayback(entry);
+  startThroughOrientationGate();
+};
+

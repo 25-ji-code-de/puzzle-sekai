@@ -10,6 +10,7 @@ import {
   returnToMenu,
   isPlayActive,
 } from "../application/play-session";
+import { getReplayPlaybackEntry, isReplayPlayback, queueReplayPlayback } from "../settings";
 import type { FocusTrapHandle } from "../a11y";
 import { isPortrait } from "./display";
 import {
@@ -77,6 +78,10 @@ export const showPauseMenu = (): void => {
   };
   const restart = () => {
     hidePauseMenu();
+    if (isReplayPlayback()) {
+      const entry = getReplayPlaybackEntry();
+      if (entry) queueReplayPlayback(entry);
+    }
     start();
   };
   const quit = () => {

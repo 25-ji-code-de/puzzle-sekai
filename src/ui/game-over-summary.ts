@@ -119,9 +119,11 @@ export const buildGameOverSummary = (summary: ScoreSummary): HTMLDivElement => {
   high.appendChild(
     makePaddedNumber(summary.highScore, SCORE_PAD, "go-summary__high-num"),
   );
-  scoreBlock.appendChild(high);
+  if (!summary.replaying) {
+    scoreBlock.appendChild(high);
+  }
 
-  if (summary.isNewRecord) {
+  if (summary.isNewRecord && !summary.replaying) {
     const badge = document.createElement("div");
     badge.className = "go-summary__new-record";
     badge.textContent = t("gameOver.newRecord");
@@ -147,9 +149,11 @@ export const buildGameOverSummary = (summary: ScoreSummary): HTMLDivElement => {
     total: Math.floor(danSnap.total).toLocaleString(),
   });
   danRow.appendChild(danRating);
-  scoreBlock.appendChild(danRow);
+  if (!summary.replaying) {
+    scoreBlock.appendChild(danRow);
+  }
 
-  if (promoted) {
+  if (promoted && !summary.replaying) {
     const promo = document.createElement("div");
     promo.className = "go-summary__dan-promoted";
     promo.textContent = t("dan.promoted");
