@@ -3,8 +3,13 @@
  *
  * On disk (v1): `{ version: 1, ...GameSettings }`.
  * Legacy (v0): flat GameSettings without `version` — still accepted and rewritten.
+ *
+ * Match-scoped override: daily freezes gameplay rules without writing storage.
+ * {@link getCurrentSettings} returns the override while a match has one active;
+ * {@link getUserSettings} always returns the persisted prefs.
  */
 import { DEFAULT_FUN_MODES, normalizeFunModes } from "../fun/modes";
+import { utcDateKey } from "../domain/daily";
 import {
   DEFAULT_SETTINGS,
   GAME_GROUPS,
@@ -122,8 +127,32 @@ export function saveSettings(settings: GameSettings): void {
 
 let currentSettings: GameSettings = loadSettings();
 
+/**
+ * Optional per-match overlay (daily locked rules). Not persisted.
+ * Cleared on return-to-menu / non-daily start.
+ */
+let matchSettingsOverride: GameSettings | null = null;
+
+/** Settings used by gameplay / score (override if a match installed one). */
 export function getCurrentSettings(): GameSettings {
+  return matchSettingsOverride ?? currentSettings;
+}
+
+/** Persisted user prefs (ignore match override). Menu / settings panel. */
+export function getUserSettings(): GameSettings {
   return currentSettings;
+}
+
+export function beginMatchSettingsOverride(settings: GameSettings): void {
+  matchSettingsOverride = normalizeSettings(settings);
+}
+
+export function clearMatchSettingsOverride(): void {
+  matchSettingsOverride = null;
+}
+
+export function hasMatchSettingsOverride(): boolean {
+  return matchSettingsOverride != null;
 }
 
 export function updateCurrentSettings(settings: GameSettings): void {
@@ -137,6 +166,7 @@ export function updateCurrentSettings(settings: GameSettings): void {
 
 /** Reset in-memory settings to defaults (after wiping storage). */
 export function resetCurrentSettingsToDefaults(): void {
+  matchSettingsOverride = null;
   currentSettings = defaultSettings();
   void import("../runtime").then(({ applyPerformanceMode }) => {
     applyPerformanceMode(currentSettings.lowPerformance);
@@ -144,11 +174,34 @@ export function resetCurrentSettingsToDefaults(): void {
 }
 
 let currentGameMode: GameMode = "endless";
+/** UTC date key latched when entering daily mode (stable across midnight mid-match). */
+let activeDailyDateKey: string | null = null;
 
 export function getCurrentGameMode(): GameMode {
   return currentGameMode;
 }
 
+/**
+ * Active daily challenge date (`YYYY-MM-DD` UTC), or null outside daily mode.
+ * Latched at {@link setCurrentGameMode}("daily") so a long match keeps one day.
+ */
+export function getActiveDailyDateKey(): string | null {
+  return activeDailyDateKey;
+}
+
+/**
+ * Drop the latched daily date without changing {@link getCurrentGameMode}.
+ * Call on return-to-menu so the high-score column falls back to “today”
+ * (utcDateKey) after the player leaves a match.
+ */
+export function clearActiveDailyDateKey(): void {
+  activeDailyDateKey = null;
+}
+
 export function setCurrentGameMode(mode: GameMode): void {
   currentGameMode = mode;
+  // Always refresh the date key when selecting daily from the menu so a new
+  // day is picked after midnight. Match restart does not call this — mid-match
+  // the latched key stays put even if UTC day rolls over.
+  activeDailyDateKey = mode === "daily" ? utcDateKey() : null;
 }

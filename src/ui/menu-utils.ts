@@ -23,12 +23,14 @@ export const diffColorStyle = (level: number): string => {
 let endlessCursor: number | null = null;
 let timeAttackCursor: number | null = null;
 let timeAttackCursorDuration: number | null = null;
+let dailyCursor: number | null = null;
 
 /** Reset cycle cursors (call on full menu rebuild). */
 export const resetHighScoreViewState = () => {
   endlessCursor = null;
   timeAttackCursor = null;
   timeAttackCursorDuration = null;
+  dailyCursor = null;
 };
 
 const recordsEqual = (a: HighScoreRecord, b: HighScoreRecord): boolean =>
@@ -54,32 +56,27 @@ export const cycleHighScoreColumn = (mode: GameMode): void => {
   const list = listHighScoreRecords(mode, settings);
   if (list.length <= 1) return;
 
+  const advance = (cursor: number | null): number => {
+    if (cursor == null) {
+      const best = loadBestHighScoreRecord(mode, settings);
+      const i = list.findIndex((r) => recordsEqual(r, best));
+      return ((i >= 0 ? i : 0) + 1) % list.length;
+    }
+    return (cursor + 1) % list.length;
+  };
+
   if (mode === "timeAttack") {
     const duration = settings.timeAttackDuration;
     if (timeAttackCursorDuration !== duration) {
       timeAttackCursor = null;
       timeAttackCursorDuration = duration;
     }
-    let next: number;
-    if (timeAttackCursor == null) {
-      const best = loadBestHighScoreRecord(mode, settings);
-      const i = list.findIndex((r) => recordsEqual(r, best));
-      next = ((i >= 0 ? i : 0) + 1) % list.length;
-    } else {
-      next = (timeAttackCursor + 1) % list.length;
-    }
-    timeAttackCursor = next;
+    timeAttackCursor = advance(timeAttackCursor);
     timeAttackCursorDuration = duration;
+  } else if (mode === "daily") {
+    dailyCursor = advance(dailyCursor);
   } else {
-    let next: number;
-    if (endlessCursor == null) {
-      const best = loadBestHighScoreRecord(mode, settings);
-      const i = list.findIndex((r) => recordsEqual(r, best));
-      next = ((i >= 0 ? i : 0) + 1) % list.length;
-    } else {
-      next = (endlessCursor + 1) % list.length;
-    }
-    endlessCursor = next;
+    endlessCursor = advance(endlessCursor);
   }
 };
 
@@ -108,6 +105,7 @@ export const highScoreRowHtml = (): string => {
 
   const endless = recordForColumn("endless", endlessCursor);
   const timeAttack = recordForColumn("timeAttack", timeAttackCursor);
+  const daily = recordForColumn("daily", dailyCursor);
   const endlessHs = formatRecord(
     endless.score,
     endless.difficultyLevel,
@@ -117,6 +115,11 @@ export const highScoreRowHtml = (): string => {
     timeAttack.score,
     timeAttack.difficultyLevel,
     timeAttack.entertainment,
+  );
+  const dailyHs = formatRecord(
+    daily.score,
+    daily.difficultyLevel,
+    daily.entertainment,
   );
 
   const tip = t("menu.highScore.tapToSwitch");
@@ -146,7 +149,7 @@ export const highScoreRowHtml = (): string => {
     t("menu.highScore.timeAttack"),
     "#44ff88",
     timeAttackHs,
-  )}`;
+  )}${column("daily", t("menu.highScore.daily"), "#6bcbff", dailyHs)}`;
 };
 
 export const refreshHighScoreRow = () => {
@@ -169,7 +172,7 @@ export const handleHighScoreRowEvent = (e: Event): void => {
   }
 
   const mode = col.dataset.mode as GameMode | undefined;
-  if (mode !== "endless" && mode !== "timeAttack") return;
+  if (mode !== "endless" && mode !== "timeAttack" && mode !== "daily") return;
   cycleHighScoreColumn(mode);
   refreshHighScoreRow();
 };

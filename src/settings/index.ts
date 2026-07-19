@@ -49,11 +49,17 @@ export {
   loadSettings,
   saveSettings,
   getCurrentSettings,
+  getUserSettings,
+  beginMatchSettingsOverride,
+  clearMatchSettingsOverride,
+  hasMatchSettingsOverride,
   updateCurrentSettings,
   normalizeSettings,
   migrateSettingsPayload,
   getCurrentGameMode,
   setCurrentGameMode,
+  getActiveDailyDateKey,
+  clearActiveDailyDateKey,
 } from "./store";
 
 export {

@@ -105,7 +105,12 @@ const parseEntry = (raw: unknown): DanRunEntry | null => {
   const multiplier = Number(o.multiplier);
   if (!Number.isFinite(score) || score <= 0) return null;
   if (!Number.isFinite(playedAt) || playedAt <= 0) return null;
-  const mode: GameMode = o.mode === "timeAttack" ? "timeAttack" : "endless";
+  const mode: GameMode =
+    o.mode === "timeAttack"
+      ? "timeAttack"
+      : o.mode === "daily"
+        ? "daily"
+        : "endless";
   const scoreRank = String(o.scoreRank || "D") as ScoreRank;
   const entertainment = o.entertainment === true;
   const storedEffective = Number(o.effectiveScore);

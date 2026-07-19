@@ -181,7 +181,13 @@ export const DEFAULT_SETTINGS: GameSettings = {
   lowPerformance: false,
 };
 
-export type GameMode = "endless" | "timeAttack";
+/**
+ * Play modes from the main menu.
+ * - endless: free play until top-out
+ * - timeAttack: countdown from settings.timeAttackDuration
+ * - daily: shared UTC-day seed + frozen gameplay rules (same challenge for all)
+ */
+export type GameMode = "endless" | "timeAttack" | "daily";
 
 export type HighScoreRecord = {
   score: number;

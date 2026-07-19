@@ -68,6 +68,12 @@ describe("getHighScoreKey", () => {
     ).toBe("hs:timeAttack:60:3:std");
   });
 
+  it("daily key includes UTC date", () => {
+    // getActiveDailyDateKey is null outside setCurrentGameMode — falls back to utcDateKey()
+    const key = getHighScoreKey("daily", 2, false);
+    expect(key).toMatch(/^hs:daily:\d{4}-\d{2}-\d{2}:2:std$/);
+  });
+
   it("clamps difficulty into 1–7", () => {
     expect(getHighScoreKey("endless", 0, false)).toBe("hs:endless:1:std");
     expect(getHighScoreKey("endless", 99, true)).toBe("hs:endless:7:ent");

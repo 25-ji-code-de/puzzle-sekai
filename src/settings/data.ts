@@ -12,9 +12,10 @@ const isAppStorageKey = (key: string): boolean =>
   key === "puzzleSekaiDan" ||
   // Sync version meta (keep tokens — auth keys intentionally excluded)
   key === "puzzleSekaiSyncMeta" ||
-  // New bucket keys: hs:endless:… / hs:timeAttack:…
+  // New bucket keys: hs:endless:… / hs:timeAttack:… / hs:daily:…
   key.startsWith("hs:endless:") ||
   key.startsWith("hs:timeAttack:") ||
+  key.startsWith("hs:daily:") ||
   // Legacy 3-key layout (residual cleanup)
   key === "highScore_endless" ||
   key.startsWith("highScore_endless_") ||

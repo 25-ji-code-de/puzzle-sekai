@@ -1,6 +1,6 @@
 /**
  * High-score persistence — one JSON record per
- * mode × (time-attack duration) × difficulty × std|ent bucket.
+ * mode × (time-attack duration | daily date) × difficulty × std|ent bucket.
  */
 import type {
   DifficultyLevel,
@@ -10,8 +10,9 @@ import type {
   TimeAttackDuration,
 } from "./types";
 import { getDifficultyLevel, isEntertainmentMode } from "./difficulty";
-import { getCurrentSettings } from "./store";
+import { getActiveDailyDateKey, getCurrentSettings } from "./store";
 import { getStoragePort } from "./storage";
+import { utcDateKey } from "../domain/daily";
 
 const DIFFICULTIES: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7];
 const ENT_TAGS = ["std", "ent"] as const;
@@ -23,7 +24,17 @@ export function emptyRecord(): HighScoreRecord {
 const entTag = (entertainment: boolean): "std" | "ent" =>
   entertainment ? "ent" : "std";
 
-/** Bucket key: hs:endless:{d}:{std|ent} | hs:timeAttack:{dur}:{d}:{std|ent} */
+/** UTC date key for daily high-score buckets. */
+function dailyDateKeyForHs(): string {
+  return getActiveDailyDateKey() ?? utcDateKey();
+}
+
+/**
+ * Bucket key:
+ * - hs:endless:{d}:{std|ent}
+ * - hs:timeAttack:{dur}:{d}:{std|ent}
+ * - hs:daily:{YYYY-MM-DD}:{d}:{std|ent}
+ */
 export function getHighScoreKey(
   mode: GameMode,
   difficulty: number,
@@ -33,6 +44,7 @@ export function getHighScoreKey(
   const tag = entTag(entertainment);
   const d = Math.min(7, Math.max(1, difficulty | 0));
   if (mode === "endless") return `hs:endless:${d}:${tag}`;
+  if (mode === "daily") return `hs:daily:${dailyDateKeyForHs()}:${d}:${tag}`;
   const duration = settings?.timeAttackDuration || 90;
   return `hs:timeAttack:${duration}:${d}:${tag}`;
 }
@@ -65,26 +77,31 @@ function durationOf(
   mode: GameMode,
   settings?: GameSettings,
 ): TimeAttackDuration | null {
-  if (mode === "endless") return null;
+  if (mode !== "timeAttack") return null;
   return (settings?.timeAttackDuration || 90) as TimeAttackDuration;
 }
 
 function legacyScoreKey(
   mode: GameMode,
   duration: TimeAttackDuration | null,
-): string {
+): string | null {
   if (mode === "endless") return "highScore_endless";
-  return `highScore_timeAttack_${duration}`;
+  if (mode === "timeAttack") return `highScore_timeAttack_${duration}`;
+  // daily has no legacy keys
+  return null;
 }
 
 /**
  * One-shot migration of the old 3-key layout into a single JSON bucket.
  * Legacy difficulty 0 / missing → ★1. Safe to re-run (keys removed after).
+ * No-op for daily (no legacy layout).
  */
 function ensureMigrated(mode: GameMode, settings?: GameSettings): void {
+  if (mode === "daily") return;
   const duration = durationOf(mode, settings);
   const storage = getStoragePort();
   const scoreKey = legacyScoreKey(mode, duration);
+  if (!scoreKey) return;
   const legacyRaw = storage.get(scoreKey);
   if (legacyRaw == null) return;
 

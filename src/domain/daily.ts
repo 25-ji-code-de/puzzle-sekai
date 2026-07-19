@@ -1,0 +1,91 @@
+/**
+ * Daily challenge: one shared seed (and frozen gameplay rules) per UTC day
+ * so every player faces the same bag / item stream that calendar day.
+ *
+ * Presentation prefs (volume, lowPerformance) stay with the user; only fields
+ * that affect the discrete spawn stream or score mult are locked.
+ */
+import { DEFAULT_FUN_MODES } from "../fun/modes";
+import {
+  DEFAULT_SETTINGS,
+  GAME_GROUPS,
+  type GameSettings,
+  type GroupName,
+} from "../settings/types";
+
+/** Canonical salt so seed space does not collide with ad-hoc repro seeds. */
+const DAILY_SEED_SALT = "puzzle-sekai-daily:";
+
+/**
+ * UTC calendar day as `YYYY-MM-DD`.
+ * Using UTC keeps the “same challenge for everyone today” window global
+ * rather than flipping at each player’s local midnight.
+ */
+export function utcDateKey(date: Date = new Date()): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** True if string looks like a UTC date key (no calendar validation). */
+export function isUtcDateKey(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+/**
+ * Deterministic 32-bit seed from a date key (FNV-1a 32).
+ * Same key → same seed on every client / session.
+ */
+export function dailySeed(dateKey: string = utcDateKey()): number {
+  const s = DAILY_SEED_SALT + dateKey;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/**
+ * Gameplay rules locked for daily matches.
+ * Full unit roster, standard (no fun modes), medium speed, default item rate,
+ * classic inverted spawn — chosen so difficulty ★ and mult are stable for all.
+ */
+export const DAILY_GAMEPLAY_RULES: Pick<
+  GameSettings,
+  | "speedLevel"
+  | "selectedGroups"
+  | "funModes"
+  | "itemDropRate"
+  | "spawnOrientation"
+> = {
+  speedLevel: 2,
+  selectedGroups: [...GAME_GROUPS] as GroupName[],
+  funModes: { ...DEFAULT_FUN_MODES },
+  itemDropRate: 10,
+  spawnOrientation: "inverted",
+};
+
+/**
+ * Merge locked daily rules onto the player’s current prefs.
+ * Volumes / lowPerformance / timeAttackDuration keep the user’s values
+ * (duration is unused in daily; volumes are presentation-only).
+ */
+export function dailyMatchSettings(user: GameSettings): GameSettings {
+  return {
+    ...user,
+    ...DAILY_GAMEPLAY_RULES,
+    selectedGroups: [...DAILY_GAMEPLAY_RULES.selectedGroups],
+    funModes: { ...DAILY_GAMEPLAY_RULES.funModes },
+  };
+}
+
+/** Convenience: frozen rules alone as a full settings object (tests / defaults). */
+export function defaultDailySettings(): GameSettings {
+  return dailyMatchSettings({
+    ...DEFAULT_SETTINGS,
+    selectedGroups: [...GAME_GROUPS],
+    funModes: { ...DEFAULT_FUN_MODES },
+  });
+}

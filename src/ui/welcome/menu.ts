@@ -64,7 +64,10 @@ const removeWelcomeSprite = () => {
 
 setStartGameHooks({ teardownMenu, removeWelcomeSprite });
 
-const makeModeBtn = (label: string, mode: "endless" | "timeAttack") => {
+const makeModeBtn = (
+  label: string,
+  mode: "endless" | "timeAttack" | "daily",
+) => {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "menu-mode-btn";
@@ -139,6 +142,7 @@ const buildMenu = () => {
   btnContainer.className = "menu-modes";
   btnContainer.appendChild(makeModeBtn(t("menu.endless"), "endless"));
   btnContainer.appendChild(makeModeBtn(t("menu.timeAttack"), "timeAttack"));
+  btnContainer.appendChild(makeModeBtn(t("menu.daily"), "daily"));
   footer.appendChild(btnContainer);
 
   const toolbar = document.createElement("div");

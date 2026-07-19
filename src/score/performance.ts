@@ -37,7 +37,7 @@ const safeMult = (multiplier: number): number =>
  * Performance score comparable across difficulty multipliers and durations.
  *   effective = score / mult
  *   TA:      × (90 / duration)
- *   Endless: × (90 / clamp(playedSeconds, 30, 600)); missing → 90
+ *   Endless / Daily: × (90 / clamp(playedSeconds, 30, 600)); missing → 90
  */
 export function effectiveScore(input: EffectiveScoreInput): number {
   let e = safeScore(input.score) / safeMult(input.multiplier);
@@ -50,6 +50,7 @@ export function effectiveScore(input: EffectiveScoreInput): number {
         : PERFORMANCE_BASELINE_SECONDS;
     e *= PERFORMANCE_BASELINE_SECONDS / duration;
   } else {
+    // endless + daily
     const raw =
       Number.isFinite(input.playedSeconds) &&
       (input.playedSeconds as number) > 0

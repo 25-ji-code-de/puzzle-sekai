@@ -4,6 +4,7 @@
  */
 import {
   DifficultyLevel,
+  getActiveDailyDateKey,
   getCurrentGameMode,
   getCurrentSettings,
   getDifficultyLabel,
@@ -14,6 +15,7 @@ import {
   saveHighScore,
   type GroupName,
 } from "../settings";
+import { utcDateKey } from "../domain/daily";
 import { computeScoreRank } from "./rank";
 import { effectiveScore } from "./performance";
 import {
@@ -240,11 +242,16 @@ export const getScoreSummary = () => {
     timeAttackDuration: settings.timeAttackDuration,
     playedSeconds,
   });
+  /** UTC day of this daily run (latched at match start); only set for daily. */
+  const dailyDateKey =
+    mode === "daily" ? (getActiveDailyDateKey() ?? utcDateKey()) : undefined;
   return {
     score: _score,
     maxCombo: _maxCombo,
     timeRemaining: _timeRemaining,
     mode,
+    /** Present when mode is daily — share card / settlement date label. */
+    dailyDateKey,
     difficulty,
     difficultyLabel: getDifficultyLabel(difficulty),
     entertainment,

@@ -65,7 +65,16 @@ import {
   getScore,
 } from "../score";
 import { scheduleSyncPush } from "../sync";
-import { getCurrentGameMode, getCurrentSettings } from "../settings";
+import {
+  beginMatchSettingsOverride,
+  clearActiveDailyDateKey,
+  clearMatchSettingsOverride,
+  getActiveDailyDateKey,
+  getCurrentGameMode,
+  getCurrentSettings,
+  getUserSettings,
+} from "../settings";
+import { dailyMatchSettings, dailySeed, utcDateKey } from "../domain/daily";
 import { resetFunEffects, isFunModeOn } from "../fun/effects";
 import { setPlayPhase, isPausedPhase } from "../application/play-session/phase";
 import {
@@ -257,19 +266,31 @@ export const start = () => {
   parkMainLoop();
   ensureLiveRegions();
 
+  // Flush previous run while match-settings override (daily lock) still applies.
+  flushHighScoreIfNeeded();
+  clearMatchSettingsOverride();
+
   clearStage();
   setBgmSessionPaused(false);
   disposePauseMenu();
   disposeGameOverMenu();
   avatarStab = createavatarSan();
   app.stage.addChild(avatarStab);
-  // Flush previous run (restart / re-entry) before wiping memory.
-  flushHighScoreIfNeeded();
   bindHighScoreLifecycle();
   resetScore();
+
+  const mode = getCurrentGameMode();
+  // Daily: freeze gameplay rules + shared seed so all players share the day.
+  if (mode === "daily") {
+    beginMatchSettingsOverride(dailyMatchSettings(getUserSettings()));
+    const dateKey = getActiveDailyDateKey() ?? utcDateKey();
+    initRNG(dailySeed(dateKey));
+  } else {
+    // Seed match PRNG + piece bag (omit arg for fresh seed).
+    initRNG();
+  }
+
   initScoreDisplay();
-  // Seed match PRNG + piece bag (omit arg for fresh seed; pass seed for daily/repro).
-  initRNG();
   resetFunEffects();
   openMatch();
   gameTicker.start();
@@ -306,7 +327,6 @@ export const start = () => {
 
   // BGM starts immediately but getBgm waits on the gate for uncached tracks.
   startPlayBgm();
-  const mode = getCurrentGameMode();
   if (mode === "timeAttack") {
     startTimeAttackTimer();
   }
@@ -337,11 +357,13 @@ export const resumePlay = () => {
 
 export const returnToMenu = () => {
   leaveVisualCritical();
-  // Persist before resetScore wipes the run total.
+  // Persist before resetScore wipes the run total (while daily lock still applies).
   flushHighScoreIfNeeded();
   // Stop live-region score spam before resetScore fires onScoreChanged.
   announceMatchEnd();
   clearStage();
+  clearMatchSettingsOverride();
+  clearActiveDailyDateKey();
   disposeScoreDisplay();
   resetScore();
   resetFunEffects();

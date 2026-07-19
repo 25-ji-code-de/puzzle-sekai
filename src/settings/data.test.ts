@@ -51,6 +51,7 @@ describe("clearAppData", () => {
     memory.set("puzzleSekaiSyncMeta", "{}");
     memory.set("hs:endless:4:std", '{"score":100}');
     memory.set("hs:timeAttack:90:3:ent", '{"score":50}');
+    memory.set("hs:daily:2026-07-19:2:std", '{"score":80}');
     memory.set("highScore_endless", "9");
     memory.set("highScore_endless_difficulty", "3");
     memory.set("highScore_timeAttack_90", "1");
@@ -66,6 +67,7 @@ describe("clearAppData", () => {
     expect(memory.map.has("puzzleSekaiSyncMeta")).toBe(false);
     expect(memory.map.has("hs:endless:4:std")).toBe(false);
     expect(memory.map.has("hs:timeAttack:90:3:ent")).toBe(false);
+    expect(memory.map.has("hs:daily:2026-07-19:2:std")).toBe(false);
     expect(memory.map.has("highScore_endless")).toBe(false);
     expect(memory.map.has("highScore_endless_difficulty")).toBe(false);
     expect(memory.map.has("highScore_timeAttack_90")).toBe(false);

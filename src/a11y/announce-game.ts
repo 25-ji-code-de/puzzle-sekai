@@ -23,14 +23,20 @@ const clearScoreTimer = () => {
 };
 
 /** Call when a match actually starts (after HUD is up). */
-export const announceMatchStart = (mode: "endless" | "timeAttack"): void => {
+export const announceMatchStart = (
+  mode: "endless" | "timeAttack" | "daily",
+): void => {
   matchLive = true;
   lastAnnouncedScore = 0;
   lastAnnouncedCombo = 0;
   lastAnnouncedTime = -1;
   clearScoreTimer();
   const modeLabel =
-    mode === "timeAttack" ? t("menu.timeAttack") : t("menu.endless");
+    mode === "timeAttack"
+      ? t("menu.timeAttack")
+      : mode === "daily"
+        ? t("menu.daily")
+        : t("menu.endless");
   announce(t("a11y.matchStart", { mode: modeLabel }), {
     politeness: "assertive",
   });

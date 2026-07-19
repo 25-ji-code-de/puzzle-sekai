@@ -5,7 +5,7 @@ export const ja = {
     description:
       "気がつけば「セカイ」はカラフルなブロックでできたパズルの世界に。ユニットのメンバーを揃えて消し、ハイスコアを目指そう！（Project SEKAI ファン作品）",
     keywords:
-      "パズル⭐︎セカ,Puzzle SEKAI,プロジェクトセカイ,プロセカ,PJSK,Project SEKAI,初音ミク,ボーカロイド,バーチャルシンガー,パズル,ブロック消し,落ち物,ファンゲーム,エンドレス,タイムアタック,ユニット,Leo/need,MORE MORE JUMP,Vivid BAD SQUAD,ワンダーランズ×ショウタイム,25時,ナイトコード,NeneRobo,Mikudayo,ハイスコア,ブラウザゲーム,PixiJS",
+      "パズル⭐︎セカ,Puzzle SEKAI,プロジェクトセカイ,プロセカ,PJSK,Project SEKAI,初音ミク,ボーカロイド,バーチャルシンガー,パズル,ブロック消し,落ち物,ファンゲーム,エンドレス,タイムアタック,デイリーチャレンジ,ユニット,Leo/need,MORE MORE JUMP,Vivid BAD SQUAD,ワンダーランズ×ショウタイム,25時,ナイトコード,NeneRobo,Mikudayo,ハイスコア,ブラウザゲーム,PixiJS",
   },
   welcome: {
     title: "パズル⭐︎セカ",
@@ -21,12 +21,14 @@ export const ja = {
     subtitle: "Puzzle × SEKAI",
     endless: "エンドレス",
     timeAttack: "タイムアタック",
+    daily: "デイリー",
     settings: "設定",
     controls: "操作説明",
     about: "について",
     highScore: {
       endless: "エンドレス",
       timeAttack: "タイムアタック",
+      daily: "デイリー",
       tapToSwitch: "タップで記録切替",
     },
   },

@@ -145,4 +145,15 @@ describe("effectiveScore endless density", () => {
       }),
     ).toBeCloseTo(3000);
   });
+
+  it("daily uses endless density rules", () => {
+    expect(
+      effectiveScore({
+        score: 6000,
+        multiplier: 1,
+        mode: "daily",
+        playedSeconds: 180,
+      }),
+    ).toBeCloseTo(3000);
+  });
 });

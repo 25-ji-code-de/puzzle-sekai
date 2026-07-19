@@ -230,8 +230,16 @@ const drawCard = (
 
   ctx.fillStyle = "rgba(220, 240, 255, 0.62)";
   ctx.font = `400 26px ${display}`;
-  const modeText =
-    summary.mode === "timeAttack" ? t("menu.timeAttack") : t("menu.endless");
+  let modeText =
+    summary.mode === "timeAttack"
+      ? t("menu.timeAttack")
+      : summary.mode === "daily"
+        ? t("menu.daily")
+        : t("menu.endless");
+  // Daily: append the UTC date of this challenge (e.g. "Daily · 2026-07-19").
+  if (summary.mode === "daily" && summary.dailyDateKey) {
+    modeText = `${modeText} · ${summary.dailyDateKey}`;
+  }
   ctx.fillText(modeText, CARD_W / 2, y);
   y += 42;
 

@@ -7,7 +7,7 @@ import {
   trapFocus,
   type FocusTrapHandle,
 } from "../../a11y";
-import { getCurrentSettings } from "../store";
+import { getUserSettings } from "../store";
 import { t } from "../../i18n";
 import type { SettingsSectionCtx } from "./widgets";
 import { appendLanguageSection } from "./sections/language";
@@ -87,7 +87,7 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
   if (settingsContainer) return;
 
   onClosedCallback = options.onClosed ?? null;
-  const settings = getCurrentSettings();
+  const settings = getUserSettings();
 
   settingsContainer = document.createElement("div");
   settingsContainer.className = "settings-root";
