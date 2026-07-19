@@ -85,28 +85,27 @@ describe("clearAppData", () => {
 });
 
 describe("clearAppCaches", () => {
+  const g = globalThis as { caches?: unknown };
+
   afterEach(() => {
     // restore any stubbed caches
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (globalThis as any).caches;
+    delete g.caches;
   });
 
   it("returns 0 when caches is undefined", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (globalThis as any).caches;
+    delete g.caches;
     await expect(clearAppCaches()).resolves.toBe(0);
   });
 
   it("deletes every named cache and returns the count", async () => {
     const deleted: string[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (globalThis as any).caches = {
+    g.caches = {
       keys: async () => ["fonts", "audio", "rapier"],
       delete: async (name: string) => {
         deleted.push(name);
         return true;
       },
-    };
+    } as unknown as CacheStorage;
     await expect(clearAppCaches()).resolves.toBe(3);
     expect(deleted.sort()).toEqual(["audio", "fonts", "rapier"]);
   });

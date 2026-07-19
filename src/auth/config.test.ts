@@ -11,8 +11,7 @@ describe("isAuthConfigured", () => {
 });
 
 describe("redirectUri", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const g = globalThis as any;
+  const g = globalThis as { window?: unknown };
   const prevWindow = g.window;
 
   afterEach(() => {
@@ -25,7 +24,7 @@ describe("redirectUri", () => {
         origin: "https://example.com",
         pathname: "/game/index.html",
       },
-    };
+    } as unknown as Window;
     expect(redirectUri()).toBe("https://example.com/game/");
   });
 
@@ -35,7 +34,7 @@ describe("redirectUri", () => {
         origin: "http://localhost:7426",
         pathname: "/play",
       },
-    };
+    } as unknown as Window;
     // "/play" without trailing slash → directory "/"
     expect(redirectUri()).toBe("http://localhost:7426/");
   });
@@ -46,7 +45,7 @@ describe("redirectUri", () => {
         origin: "https://game.example",
         pathname: "/app/",
       },
-    };
+    } as unknown as Window;
     expect(redirectUri()).toBe("https://game.example/app/");
   });
 
@@ -56,7 +55,7 @@ describe("redirectUri", () => {
         origin: "http://localhost:7426",
         pathname: "/",
       },
-    };
+    } as unknown as Window;
     expect(redirectUri()).toBe("http://localhost:7426/");
   });
 });

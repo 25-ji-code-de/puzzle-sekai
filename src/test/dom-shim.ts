@@ -9,42 +9,43 @@ type MetaEl = {
   content: string;
 };
 
-type MetaList = {
-  forEach: (fn: (el: MetaEl) => void) => void;
+type TestGlobals = {
+  document?: Document;
+  navigator?: Navigator;
 };
 
 const metas = new Map<string, MetaEl>();
 
-const g = globalThis as any;
+const g = globalThis as unknown as TestGlobals;
 
 if (typeof g.navigator === "undefined") {
-  g.navigator = { language: "en-US" };
+  g.navigator = { language: "en-US" } as unknown as Navigator;
 }
 
 if (typeof g.document === "undefined") {
   g.document = {
-    documentElement: { lang: "en" },
+    documentElement: { lang: "en" } as unknown as HTMLElement,
     title: "",
     body: {
-      appendChild: () => {},
-      removeChild: () => {},
+      appendChild: <T extends Node>(node: T): T => node,
+      removeChild: <T extends Node>(node: T): T => node,
     },
     head: {
-      appendChild: (el: MetaEl) => {
-        if (el.name) metas.set(el.name, el);
+      appendChild: <T extends Node>(node: T): T => {
+        const meta = node as unknown as MetaEl;
+        if (meta.name) metas.set(meta.name, meta);
+        return node;
       },
     },
     visibilityState: "visible",
     querySelector: (sel: string) => {
       const m = /^meta\[name="([^"]+)"\]$/.exec(sel);
       if (!m) return null;
-      return metas.get(m[1]!) ?? null;
+      return (metas.get(m[1]!) ?? null) as unknown as Element | null;
     },
-    querySelectorAll: (): MetaList => ({
-      forEach: () => {},
-    }),
-    createElement: (): MetaEl => ({ name: "", content: "" }),
+    querySelectorAll: () => [] as unknown as NodeListOf<Element>,
+    createElement: () => ({ name: "", content: "" }) as unknown as HTMLElement,
     addEventListener: () => {},
     removeEventListener: () => {},
-  };
+  } as unknown as Document;
 }
