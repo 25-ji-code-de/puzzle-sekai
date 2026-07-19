@@ -17,7 +17,6 @@ import {
   buildDialogShell,
 } from "./dialog-button";
 import { buildGameOverSummary } from "./game-over-summary";
-import { shareScoreCard } from "./share-card";
 
 const GAME_OVER_OVERLAY_ID = "game-over-overlay";
 
@@ -57,7 +56,8 @@ export const showGameOverMenu = (): void => {
   const shareBtn = buildDialogButton(t("gameOver.share"), "neutral", () => {
     const label = shareBtn.textContent;
     shareBtn.disabled = true;
-    void shareScoreCard(summary)
+    void import("./share-card")
+      .then(({ shareScoreCard }) => shareScoreCard(summary))
       .catch((err: unknown) => {
         const name =
           err && typeof err === "object" && "name" in err
