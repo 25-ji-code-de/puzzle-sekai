@@ -14,7 +14,7 @@ export type PlayPhase =
   | { readonly type: "playing"; readonly mode: GameMode }
   | {
       readonly type: "paused";
-      readonly reason: "user" | "portrait";
+      readonly reason: "user" | "portrait" | "hidden";
       readonly mode: GameMode;
     }
   | {
@@ -32,7 +32,7 @@ export const setPlayPhase = (next: PlayPhase): void => {
   phase = next;
 };
 
-/** Match is running (including user/portrait pause). */
+/** Match is running (including user / portrait / hidden pause). */
 export const isPlayActive = (p: PlayPhase = phase): boolean =>
   p.type === "playing" || p.type === "paused";
 

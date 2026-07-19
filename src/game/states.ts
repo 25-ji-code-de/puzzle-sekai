@@ -58,7 +58,7 @@ import {
   initScoreDisplay,
   disposeScoreDisplay,
   setTimeRemaining,
-  decrementTime,
+  getTimeRemaining,
   flushHighScoreIfNeeded,
   bindHighScoreLifecycle,
   finalizeRunForDan,
@@ -76,7 +76,7 @@ import {
 } from "../settings";
 import { dailyMatchSettings, dailySeed, utcDateKey } from "../domain/daily";
 import { resetFunEffects, isFunModeOn } from "../fun/effects";
-import { setPlayPhase, isPausedPhase } from "../application/play-session/phase";
+import { setPlayPhase, getPlayPhase } from "../application/play-session/phase";
 import {
   openMatch,
   closeMatch,
@@ -97,6 +97,8 @@ import {
   disposePauseMenu,
   showPauseButton,
   hidePauseButton,
+  showPauseMenu,
+  isPauseMenuOpen,
 } from "../ui/pause-menu";
 import { disposeGameOverMenu, showGameOverMenu } from "../ui/game-over-menu";
 import {
@@ -131,27 +133,111 @@ let avatarStab: PIXI.AnimatedSprite;
 let nextPiece: PIXI.Sprite | undefined;
 /** Latch so requestSpawn is not re-entered while a spawn cycle is in flight. */
 let creating = false;
-let timeAttackInterval: number | undefined;
+
+/**
+ * Time-attack clock: wall-clock deadline via performance.now(), driven by
+ * gameTicker (not setInterval). setInterval(1000) drifts in background tabs
+ * and only freezes display while paused without freezing real elapsed time.
+ *
+ * - Running: `timeAttackEndsAt` is the absolute deadline (performance.now scale).
+ * - Paused: deadline cleared; remaining ms held in `timeAttackPausedRemainingMs`.
+ * - Background tab: rAF/gameTicker may stop, but on resume the first tick
+ *   re-reads performance.now() so lost wall time is applied correctly.
+ */
+let timeAttackEndsAt = 0;
+let timeAttackPausedRemainingMs = 0;
+let timeAttackHooked = false;
+let hiddenPauseBound = false;
+
+const nowMs = () =>
+  typeof performance !== "undefined" ? performance.now() : Date.now();
+
+/** Whole seconds left for the HUD (ceil so the last second still shows 1). */
+const displaySecondsFromMs = (remainingMs: number) =>
+  remainingMs <= 0 ? 0 : Math.ceil(remainingMs / 1000);
+
+const tickTimeAttack = () => {
+  if (!timeAttackEndsAt) return;
+  const remainingMs = timeAttackEndsAt - nowMs();
+  const seconds = displaySecondsFromMs(remainingMs);
+  if (seconds !== getTimeRemaining()) {
+    setTimeRemaining(seconds);
+  }
+  if (remainingMs <= 0) {
+    stopTimeAttackTimer();
+    void endTimeAttack();
+  }
+};
 
 const stopTimeAttackTimer = () => {
-  if (timeAttackInterval) {
-    clearInterval(timeAttackInterval);
-    timeAttackInterval = undefined;
+  if (timeAttackHooked) {
+    // After resetGameTicker the old ticker is destroyed; remove is best-effort.
+    try {
+      gameTicker.remove(tickTimeAttack);
+    } catch {
+      /* ignore */
+    }
+    timeAttackHooked = false;
   }
+  timeAttackEndsAt = 0;
+  timeAttackPausedRemainingMs = 0;
 };
 
 const startTimeAttackTimer = () => {
   stopTimeAttackTimer();
-  const settings = getCurrentSettings();
-  setTimeRemaining(settings.timeAttackDuration);
-  timeAttackInterval = window.setInterval(() => {
-    if (isPausedPhase()) return;
-    const isTimeUp = decrementTime();
-    if (isTimeUp) {
-      stopTimeAttackTimer();
-      void endTimeAttack();
+  const duration = getCurrentSettings().timeAttackDuration;
+  setTimeRemaining(duration);
+  timeAttackEndsAt = nowMs() + duration * 1000;
+  timeAttackPausedRemainingMs = 0;
+  if (!timeAttackHooked) {
+    gameTicker.add(tickTimeAttack);
+    timeAttackHooked = true;
+  }
+};
+
+/** Freeze remaining wall time while gameTicker is stopped (user pause). */
+const pauseTimeAttackTimer = () => {
+  if (!timeAttackEndsAt) return;
+  timeAttackPausedRemainingMs = Math.max(0, timeAttackEndsAt - nowMs());
+  timeAttackEndsAt = 0;
+  setTimeRemaining(displaySecondsFromMs(timeAttackPausedRemainingMs));
+};
+
+/** Resume from frozen remaining after pausePlay → resumePlay. */
+const resumeTimeAttackTimer = () => {
+  if (timeAttackEndsAt || timeAttackPausedRemainingMs <= 0) return;
+  timeAttackEndsAt = nowMs() + timeAttackPausedRemainingMs;
+  timeAttackPausedRemainingMs = 0;
+  if (!timeAttackHooked) {
+    gameTicker.add(tickTimeAttack);
+    timeAttackHooked = true;
+  }
+};
+
+/**
+ * Auto-pause when the page becomes hidden. Returning to the tab does not
+ * auto-resume; instead we surface the regular pause menu so the player opts in.
+ */
+const bindHiddenPauseLifecycle = () => {
+  if (hiddenPauseBound || typeof document === "undefined") return;
+  hiddenPauseBound = true;
+  document.addEventListener("visibilitychange", () => {
+    const phase = getPlayPhase();
+    if (document.visibilityState === "hidden") {
+      if (phase.type === "playing") {
+        pausePlay("hidden");
+      }
+      return;
     }
-  }, 1000);
+    if (
+      document.visibilityState === "visible" &&
+      phase.type === "paused" &&
+      phase.reason === "hidden" &&
+      !isPauseMenuOpen()
+    ) {
+      showPauseMenu();
+    }
+  });
 };
 
 /** Remove every gameplay-owned sprite + stop timers. */
@@ -178,6 +264,8 @@ const clearStage = () => {
     }
   });
   clearSpritesList();
+  // Detach countdown before destroy so we don't leave a stale hook flag.
+  stopTimeAttackTimer();
   resetGameTicker();
   teardownContinuous();
   if (endAnimation) {
@@ -185,7 +273,6 @@ const clearStage = () => {
     endAnimation = undefined;
   }
   stopBgm();
-  stopTimeAttackTimer();
   if (avatarStab) {
     app.stage.removeChild(avatarStab);
   }
@@ -265,6 +352,7 @@ const runSpawn = async () => {
 export const start = () => {
   parkMainLoop();
   ensureLiveRegions();
+  bindHiddenPauseLifecycle();
 
   // Flush previous run while match-settings override (daily lock) still applies.
   flushHighScoreIfNeeded();
@@ -335,20 +423,24 @@ export const start = () => {
   announceMatchStart(mode);
 };
 
-export const pausePlay = () => {
+export const pausePlay = (reason: "user" | "portrait" | "hidden" = "user") => {
   // User often leaves or refreshes while paused — checkpoint now.
   flushHighScoreIfNeeded();
+  // Freeze deadline before stopping the ticker so pause does not burn clock.
+  pauseTimeAttackTimer();
   gameTicker.stop();
   setBgmSessionPaused(true);
   pauseBgmPlayback();
   const mode = getCurrentGameMode();
-  setPlayPhase({ type: "paused", reason: "user", mode });
+  setPlayPhase({ type: "paused", reason, mode });
   announcePaused();
 };
 
 export const resumePlay = () => {
   resumeBgmPlayback();
   setBgmSessionPaused(false);
+  // Re-arm deadline from frozen remaining before ticks resume.
+  resumeTimeAttackTimer();
   if (!gameTicker.started) gameTicker.start();
   const mode = getCurrentGameMode();
   setPlayPhase({ type: "playing", mode });

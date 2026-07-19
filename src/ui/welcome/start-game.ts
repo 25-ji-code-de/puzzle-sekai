@@ -55,11 +55,24 @@ export const startGame = (mode: GameMode) => {
     // back to portrait freezes the match instead of letting it run blind.
     orientationGate = startPlayOrientationGate({
       message: t("display.rotateLandscape"),
-      onPause: pausePlay,
-      // Don't auto-resume if the player opened the pause menu before rotating.
+      onPause: () => pausePlay("portrait"),
+      // Don't auto-resume if the player opened the pause menu / tab-hidden pause
+      // before rotating back to landscape.
       onResume: () => {
-        void import("../pause-menu").then(({ isPauseMenuOpen }) => {
+        void Promise.all([
+          import("../pause-menu"),
+          import("../../application/play-session"),
+        ]).then(([{ isPauseMenuOpen, showPauseMenu }, { getPlayPhase }]) => {
           if (isPauseMenuOpen()) return;
+          const phase = getPlayPhase();
+          if (phase.type === "paused" && phase.reason !== "portrait") {
+            // Hidden-tab pause (or an explicit user pause without overlay) —
+            // surface the menu instead of silently unfreezing.
+            if (phase.reason === "hidden" || phase.reason === "user") {
+              showPauseMenu();
+            }
+            return;
+          }
           resumePlay();
         });
       },

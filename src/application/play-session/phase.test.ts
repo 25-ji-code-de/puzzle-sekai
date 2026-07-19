@@ -48,6 +48,11 @@ describe("play phase", () => {
       reason: "portrait",
       mode: "endless",
     };
+    const hidden: PlayPhase = {
+      type: "paused",
+      reason: "hidden",
+      mode: "timeAttack",
+    };
     const over: PlayPhase = {
       type: "gameOver",
       cause: "timeUp",
@@ -56,6 +61,8 @@ describe("play phase", () => {
     expect(isPlayingPhase(playing)).toBe(true);
     expect(isPlayingPhase(paused)).toBe(false);
     expect(isPausedPhase(paused)).toBe(true);
+    expect(isPausedPhase(hidden)).toBe(true);
+    expect(isPlayActive(hidden)).toBe(true);
     expect(isGameOverPhase(over)).toBe(true);
     expect(isGameOverPhase(playing)).toBe(false);
   });

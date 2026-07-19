@@ -65,8 +65,10 @@ export const start = (): void => {
   void loadGameStates().then((m) => m.start());
 };
 
-export const pausePlay = (): void => {
-  void loadGameStates().then((m) => m.pausePlay());
+export const pausePlay = (
+  reason: "user" | "portrait" | "hidden" = "user",
+): void => {
+  void loadGameStates().then((m) => m.pausePlay(reason));
 };
 
 export const resumePlay = (): void => {
