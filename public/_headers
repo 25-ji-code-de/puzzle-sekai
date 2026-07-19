@@ -2,10 +2,7 @@
 # https://developers.cloudflare.com/pages/configuration/headers/
 # Served from build output (Vite copies public/ → dist/).
 #
-# CSP rollout:
-#   1) Report-Only on HTML shell (below) — console violations only, no break.
-#   2) After a quiet period in production, flip header name to
-#      Content-Security-Policy (enforce). Do NOT skip Report-Only.
+# CSP is enforced (Content-Security-Policy).
 #
 # Why the current directives (do not "tighten blind"):
 #   - script-src 'unsafe-inline': index.html has two classic inline boot scripts
@@ -15,21 +12,20 @@
 #   - style-src 'unsafe-inline': critical boot CSS lives in <style> for LCP.
 #   - connect-src: SEKAI Pass + gateway defaults (auth/config.ts). Override
 #     hosts via VITE_SEKAI_PASS_ISSUER / VITE_GATEWAY_BASE require a matching
-#     CSP update before enforce. Also cloudflareinsights.com for CF Web Analytics
-#     beacon POSTs (Pages injects this when Analytics is enabled on the project).
+#     CSP update. Also cloudflareinsights.com for CF Web Analytics beacon POSTs
+#     (Pages injects this when Analytics is enabled on the project).
 #   - script-src static.cloudflareinsights.com — CF Web Analytics beacon.min.js
 #     (auto-injected by Cloudflare; not in our index.html).
 #   - img-src data: blob: — QR toDataURL + share-card download ObjectURL.
 #   - worker-src 'self' — vite-plugin-pwa Service Worker (sw.js + workbox).
-#   - No report-uri yet: watch DevTools console / CF logs during Report-Only.
-#     Add report-uri/report-to when a collector exists.
+#   - No report-uri yet: add report-uri/report-to when a collector exists.
 #
 # CSP does not apply the same way to the SW global scope as to the page.
 # Keep SW headers lean; page CSP already covers registerSW.js + module graph.
 
-# Shared CSP value (Report-Only). One line — CF _headers is line-oriented.
-# frame-ancestors is ignored in Report-Only by browsers; X-Frame-Options remains
-# the active clickjacking control until enforce.
+# Shared CSP value (enforce). One line — CF _headers is line-oriented.
+# frame-ancestors is active under enforce; X-Frame-Options remains as a
+# belt-and-suspenders clickjacking control for older clients.
 #
 # HTML shell — always revalidate
 /
@@ -38,13 +34,13 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy-Report-Only: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self';
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self';
 
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
-  Content-Security-Policy-Report-Only: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self';
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self';
 
 # Service worker / PWA — never long-cache
 /sw.js
