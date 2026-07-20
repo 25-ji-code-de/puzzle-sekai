@@ -4,6 +4,7 @@
  */
 import type { GameMode } from "../settings";
 import { effectiveScore } from "./performance";
+import { hexToRgba } from "../util/color";
 
 export type ScoreRank =
   | "D"
@@ -153,17 +154,4 @@ export function getScoreRankGlow(rank: ScoreRank | string): string {
   return hexToRgba(getScoreRankColor(rank), 0.4) ?? "rgba(255, 215, 106, 0.35)";
 }
 
-/**
- * Parse `#rrggbb` into `rgba(r, g, b, alpha)`. Returns null if not a 6-digit hex.
- */
-export function hexToRgba(hex: string, alpha: number): string | null {
-  const raw = hex.replace("#", "").trim();
-  if (raw.length !== 6) return null;
-  const n = parseInt(raw, 16);
-  if (Number.isNaN(n)) return null;
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  const a = Number.isFinite(alpha) ? alpha : 1;
-  return `rgba(${r}, ${g}, ${b}, ${a})`;
-}
+export { hexToRgba } from "../util/color";

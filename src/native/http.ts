@@ -14,13 +14,15 @@ export type HttpResult = {
   json: <T = unknown>() => T;
 };
 
-const toResult = (status: number, text: string): HttpResult => ({
+/** Pure: map status + body into HttpResult (exported for tests). */
+export const toHttpResult = (status: number, text: string): HttpResult => ({
   ok: status >= 200 && status < 300,
   status,
   text,
   json: <T = unknown>() => JSON.parse(text || "null") as T,
 });
 
+const toResult = toHttpResult;
 /** POST application/x-www-form-urlencoded. */
 export const postForm = async (
   url: string,

@@ -28,6 +28,8 @@ import {
 } from "./types";
 import { getCurrentSettings } from "./store";
 
+export { hexToPixi } from "../util/color";
+
 export function getSpeedMultiplier(settings: GameSettings): number {
   return SPEED_MULTIPLIERS[settings.speedLevel];
 }
@@ -79,12 +81,7 @@ export function getDifficultyCssColor(level: number): string {
   return getDifficultyColor(level);
 }
 
-/** Convert "#rrggbb" → 0xrrggbb for PixiJS (invalid → white). */
-export function hexToPixi(hex: string): number {
-  const raw = hex.replace("#", "").trim();
-  if (!/^[0-9a-fA-F]{6}$/.test(raw)) return 0xffffff;
-  return parseInt(raw, 16);
-}
+// hexToPixi re-exported from ../util/color above
 
 /**
  * Base score mult by ★ (mild curve; rank/dan strip mult so this is display reward).
