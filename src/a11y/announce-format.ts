@@ -13,6 +13,9 @@ export const formatTimerClock = (sec: number): string => {
   return `${mins}:${padStartDigits(secs, 2)}`;
 };
 
+// re-export pad for callers that only need timer formatting
+export { padStartDigits } from "../util/pad";
+
 /**
  * Whether to fire a time-low assertive announce.
  * Above critical threshold: no. Same second as last: no.

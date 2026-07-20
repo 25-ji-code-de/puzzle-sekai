@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clamp, clampInt } from "./clamp";
+import { clamp, clampInt, nonNegative } from "./clamp";
 
 describe("clampInt", () => {
   it("clamps into range", () => {
@@ -22,5 +22,13 @@ describe("clamp", () => {
     expect(clamp(0.2, 0.45, 1.6)).toBe(0.45);
     expect(clamp(2, 0.45, 1.6)).toBe(1.6);
     expect(clamp(1, 0.45, 1.6)).toBe(1);
+  });
+});
+
+describe("nonNegative", () => {
+  it("floors at zero", () => {
+    expect(nonNegative(3)).toBe(3);
+    expect(nonNegative(-1)).toBe(0);
+    expect(nonNegative(Number.NaN)).toBe(0);
   });
 });

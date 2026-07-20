@@ -4,6 +4,7 @@
  */
 import type { GameSettings } from "../types";
 import { updateCurrentSettings } from "../store";
+import { joinClassNames } from "../../util/css-class";
 
 export type SettingsSectionCtx = {
   settings: GameSettings;
@@ -39,9 +40,11 @@ export const makeChip = (
   },
 ): HTMLDivElement => {
   const opt = document.createElement("div");
-  opt.className = `setting-opt ${opts?.className ?? ""} ${
-    active ? "active" : ""
-  }`.trim();
+  opt.className = joinClassNames(
+    "setting-opt",
+    opts?.className,
+    active && "active",
+  );
   if (opts?.title) opt.title = opts.title;
   if (opts?.html) {
     opt.innerHTML = opts.html;

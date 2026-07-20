@@ -24,7 +24,7 @@ import {
   resetDanSessionLatch,
   type RecordDanRunResult,
 } from "./dan-store";
-import { clamp } from "../util/clamp";
+import { clamp, nonNegative } from "../util/clamp";
 
 /** Soft/hard drop contribution factor after the final score mult. */
 export const DROP_SCORE_FACTOR = 0.6;
@@ -70,17 +70,17 @@ export const getTimeRemaining = () => _timeRemaining;
 /** Wall-clock seconds since resetScore (0 if clock not started). */
 export const getPlayedSeconds = (): number => {
   if (!_matchStartedAt || typeof performance === "undefined") return 0;
-  return Math.max(0, (performance.now() - _matchStartedAt) / 1000);
+  return nonNegative((performance.now() - _matchStartedAt) / 1000);
 };
 
 export const setTimeRemaining = (seconds: number) => {
-  _timeRemaining = Math.max(0, seconds);
+  _timeRemaining = nonNegative(seconds);
   onTimerChanged?.();
 };
 
 /** Set timer without HUD refresh (used while building the display). */
 export const seedTimeRemaining = (seconds: number) => {
-  _timeRemaining = Math.max(0, seconds);
+  _timeRemaining = nonNegative(seconds);
 };
 
 export const decrementTime = (): boolean => {

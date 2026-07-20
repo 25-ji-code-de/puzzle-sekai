@@ -3,6 +3,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
+  displayNameFromParts,
   displayNameOf,
   getAuthSnapshot,
   notifyAuthChanged,
@@ -38,8 +39,9 @@ afterEach(() => {
   setStoragePort(localStoragePort);
 });
 
-describe("displayNameOf", () => {
+describe("displayNameFromParts / displayNameOf", () => {
   it("prefers trimmed displayName over username", () => {
+    expect(displayNameFromParts("  星乃一歌  ", "ichika")).toBe("星乃一歌");
     const user: AuthUser = {
       id: "1",
       username: "ichika",
@@ -49,6 +51,8 @@ describe("displayNameOf", () => {
   });
 
   it("falls back to username; empty for null", () => {
+    expect(displayNameFromParts(undefined, "saki")).toBe("saki");
+    expect(displayNameFromParts("   ", "saki")).toBe("saki");
     expect(displayNameOf({ id: "1", username: "saki" })).toBe("saki");
     expect(
       displayNameOf({ id: "1", username: "saki", displayName: "   " }),

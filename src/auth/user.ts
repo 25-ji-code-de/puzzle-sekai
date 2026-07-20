@@ -38,7 +38,20 @@ export const notifyAuthChanged = (): void => {
   }
 };
 
+/**
+ * Prefer trimmed displayName; fall back to username.
+ * Pure helper so UI formatting is testable without a session.
+ */
+export const displayNameFromParts = (
+  displayName?: string | null,
+  username?: string | null,
+): string => {
+  const d = displayName?.trim();
+  if (d) return d;
+  return username?.trim() || "";
+};
+
 export const displayNameOf = (user: AuthUser | null): string => {
   if (!user) return "";
-  return user.displayName?.trim() || user.username;
+  return displayNameFromParts(user.displayName, user.username);
 };

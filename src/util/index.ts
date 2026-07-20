@@ -2,9 +2,10 @@
  * Re-exports for shared pure helpers.
  * Prefer importing from the specific module when tree-shaking matters less.
  */
-export { clamp, clampInt } from "./clamp";
+export { clamp, clampInt, nonNegative } from "./clamp";
 export { hexToPixi, hexToRgba, parseHexRgb } from "./color";
 export { formatUtcDateKey, isUtcDateKeyFormat } from "./date-key";
 export { formatFactor, formatPercent, formatTimesMult } from "./format";
 export { fnv1a32 } from "./hash";
 export { padStartDigits, splitPaddedDigits } from "./pad";
+export { joinClassNames } from "./css-class";
