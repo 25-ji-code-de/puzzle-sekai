@@ -1,6 +1,8 @@
 /**
  * Pure helpers for a11y match announcements (no DOM / score model).
  */
+import { padStartDigits } from "../util/pad";
+
 export const TIME_CRITICAL_SEC = 10;
 
 /** mm:ss clock for remaining seconds (floored, never negative). */
@@ -8,7 +10,7 @@ export const formatTimerClock = (sec: number): string => {
   const safe = Number.isFinite(sec) ? Math.max(0, Math.floor(sec)) : 0;
   const mins = Math.floor(safe / 60);
   const secs = safe % 60;
-  return `${mins}:${String(secs).padStart(2, "0")}`;
+  return `${mins}:${padStartDigits(secs, 2)}`;
 };
 
 /**
