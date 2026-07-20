@@ -3,7 +3,7 @@ export const zh = {
   page: {
     title: "パズル⭐︎セカ | Puzzle × SEKAI",
     description:
-      "少年少女们忽然发现，熟悉的「世界」变成了由多彩方块堆叠的消消乐世界？！初音未来、天马咲希、宵崎奏等角色们从天而降，把同组合的小伙伴们连成一片就能消除得分！非商业粉丝作品，和SEGA、Colorful Palette以及Crypton Future Media没有任何关系哦☆",
+      "少年少女们忽然发现，熟悉的「世界」变成了由多彩方块堆叠的消消乐世界？！初音未来、天马咲希、宵崎奏等角色从天而降，把同组合的小伙伴们连成一片就能消除得分！非商业粉丝作品，和SEGA、Colorful Palette以及Crypton Future Media没有任何关系哦☆",
     keywords:
       "パズル⭐︎セカ,Puzzle SEKAI,烤罗斯方块,啤酒烧烤,世界计划,缤纷舞台,Project SEKAI,PJSK,プロセカ,初音未来,ミク,Miku,Vocaloid,虚拟歌手,消消乐,方块消除,下落方块,Puyo,组合消除,同人游戏,浏览器游戏,无尽模式,计时挑战,每日挑战,Leo/need,MORE MORE JUMP,Vivid BAD SQUAD,Wonderlands×Showtime,25時、ナイトコードで。,25时,Nightcord,NeneRobo,Mikudayo,高分,PixiJS",
   },
@@ -33,7 +33,7 @@ export const zh = {
     },
   },
   display: {
-    rotateLandscape: "请将设备横过来再开始游戏",
+    rotateLandscape: "请把设备横过来再开始游戏",
   },
   a11y: {
     matchStart: "对局开始。模式：{mode}。",
@@ -61,7 +61,7 @@ export const zh = {
     maxCombo: "COMBO",
     multiplier: "倍率",
     difficulty: "难度",
-    groups: "各团消除",
+    groups: "各组合消除",
     newRecord: "新纪录！",
     share: "分享卡片",
     shareFailed: "分享失败",
@@ -94,7 +94,7 @@ export const zh = {
     syncing: "同步中…",
     syncOk: "已同步",
     syncFailed: "同步失败",
-    notConfigured: "未配置登录（缺少 client_id）",
+    notConfigured: "登录未设置（缺少 client_id）",
     loggedInAs: "{name}",
   },
   settings: {
@@ -142,7 +142,7 @@ export const zh = {
       orientLine: "下落姿态 · {orient}",
       funLineItemLinked: "{name}（道具率联动）",
       starHint:
-        "难度名（Easy～Append）由下落速度和出场团数共同决定。道具、朝向、娱乐模式只会改得分倍率，不会改难度名。评级与段位看你的操作表现，调低倍率也不会让评级吃亏。",
+        "难度名（Easy～Append）看下落速度和出场组合数。道具、朝向、娱乐模式只会改得分倍率，不会改难度名。评级与段位看你的操作表现，调低倍率也不会让评级吃亏。",
     },
     lang: {
       label: "语言 / Language",
@@ -157,9 +157,9 @@ export const zh = {
       label: "性能",
       normal: "标准",
       low: "低性能",
-      normalHelp: "完整渲染缓冲（最清晰）。布局与操作不变。",
+      normalHelp: "全分辨率渲染（最清晰）。布局与操作不变。",
       lowHelp:
-        "渲染缓冲减半（约 1/4 像素）。画面略糊，布局、判定与操作区域不变。",
+        "渲染缓冲减半（约 1/4 像素）。画面会略糊，但布局、判定和操作完全不变。",
     },
     replays: {
       label: "回放",
@@ -231,7 +231,7 @@ export const zh = {
       name: "凤的生存法则",
       subtitle: "「噫——！要缩起来才行……！」",
       description:
-        "当「笑梦」与「真冬」处于相邻格子时，「笑梦」将受到惊吓并坍缩为 1×1 的单格大小。Wonderlands×Showtime的开朗担当在Nightcord的阴郁担当面前选择缩小自己——某种意义上这确实是最合理的生存策略。坍缩位移将优先选择远离「真冬」的一侧。坍缩完成后，全场方块将重新触发一次重力与物理下落判定。\n\n「总觉得……在朝比奈学姐身边的时候，如果不悄悄地缩起来，就会有非常可怕的事情发生……！」",
+        "当「笑梦」与「真冬」处于相邻格子时，「笑梦」将受到惊吓并坍缩为 1×1 的单格大小。「Wonderlands×Showtime」的开朗担当在「Nightcord」的阴郁担当面前选择缩小自己——某种意义上这确实是最合理的生存策略。坍缩后将远离「真冬」。随后全场方块将重新进行重力与物理下落判定。\n\n「总觉得……在朝比奈学姐身边的时候，如果不悄悄地缩起来，就会有非常可怕的事情发生……！」",
     },
     cantilever: {
       name: "悬臂翻转",
@@ -271,7 +271,7 @@ export const zh = {
     tapRotate: "点左半屏逆时针 / 右半屏顺时针旋转",
     swipeHardDrop: "下滑 直接落到底部",
     pressSoftDrop: "长按 加速下落",
-    easterEgg: "笑梦 / NeneRobo 下落中 · 键盘 Shift+↑ · 手机上滑 上移一格",
+    easterEgg: "笑梦 / NeneRobo 下落时 · 键盘 Shift+↑ · 手机上滑 上移一格",
   },
   noscript: {
     title: "浏览器不支持",
