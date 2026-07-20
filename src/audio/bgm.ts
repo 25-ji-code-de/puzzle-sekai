@@ -1,8 +1,8 @@
 /**
  * Lazy BGM loader via pixi-sound.
  *
- * Boot no longer blocks on ~5.5 MB of music. Tracks are fetched by scene:
- *  - menu → bgm161 (prefetched once the boot shell is ready; played on click)
+ * Boot no longer blocks on multi-MB of music. Tracks are fetched by scene:
+ *  - menu → bgm161_1 intro + bgm161_2 loop (prefetched once boot shell ready)
  *  - play → bgm038 / bgm168 (after first piece texture — see bandwidth-gate)
  *  - over → bgm182_1 + bgm182_2 (just-in-time at game over; optional idle warm)
  *
@@ -15,25 +15,34 @@
 import sound from "pixi-sound";
 import bgm038 from "../assets/sounds/038.mp3";
 import bgm168 from "../assets/sounds/168.mp3";
-import bgm161 from "../assets/sounds/161.mp3";
+import bgm161_1 from "../assets/sounds/161.1.mp3";
+import bgm161_2 from "../assets/sounds/161.2.mp3";
 import bgm182_1 from "../assets/sounds/182.1.mp3";
 import bgm182_2 from "../assets/sounds/182.2.mp3";
 import { getNetworkHints, whenAudioAllowed } from "../assets/bandwidth-gate";
 import { getVolumeScale } from "../settings";
-export type BgmKey = "bgm038" | "bgm168" | "bgm161" | "bgm182_1" | "bgm182_2";
+
+export type BgmKey =
+  "bgm038" | "bgm168" | "bgm161_1" | "bgm161_2" | "bgm182_1" | "bgm182_2";
+
 /** Legacy absolute volume passed to play() — classic loudness at 100% slider. */
 export const BGM_BASE_VOLUME = 0.3;
+
 const BGM_URLS: Record<BgmKey, string> = {
   bgm038,
   bgm168,
-  bgm161,
+  bgm161_1,
+  bgm161_2,
   bgm182_1,
   bgm182_2,
 };
+
 const cache = new Map<BgmKey, PIXI.sound.Sound>();
 const inflight = new Map<BgmKey, Promise<PIXI.sound.Sound | null>>();
+
 /** Currently audible BGM instance (menu / play / game-over). */
 let liveBgm: PIXI.sound.Sound | null = null;
+
 /**
  * Remember the active track and apply the BGM channel gain to Sound.volume.
  * pixi-sound final loudness = play(volume) × Sound.volume × context.volume,
@@ -49,6 +58,7 @@ export const setLiveBgm = (s: PIXI.sound.Sound | null): void => {
     }
   }
 };
+
 /** Push current BGM slider onto the active track (and any cached aliases). */
 export const applyBgmVolume = (): void => {
   const scale = getVolumeScale("bgm");
@@ -66,8 +76,10 @@ export const applyBgmVolume = (): void => {
     }
   });
 };
+
 /** Play move.mp3 at the current SFX slider (throttled by caller). */
 export { playSfxPreview, playVoicePreview } from "./sfx";
+
 export const unlockAudio = (): void => {
   try {
     const pixiSound = sound as typeof sound & {
@@ -75,10 +87,8 @@ export const unlockAudio = (): void => {
         audioContext?: AudioContext;
         unlocked?: boolean;
       };
-      // Some builds expose unlock helpers on the default export.
       unlock?: () => void;
     };
-    // pixi-sound WebAudio unlock (best-effort across versions)
     try {
       pixiSound.unlock?.();
     } catch {
@@ -90,7 +100,6 @@ export const unlockAudio = (): void => {
         /* gesture may still be required on some WebViews */
       });
     }
-    // Capacitor Android WebView sometimes needs a second resume after splash.
     if (ctx && typeof document !== "undefined") {
       const resume = () => {
         try {
@@ -106,8 +115,10 @@ export const unlockAudio = (): void => {
     /* ignore */
   }
 };
-/** Menu BGM may load during visual-critical; play/over tracks wait. */
-const isPlayOrOverKey = (key: BgmKey): boolean => key !== "bgm161";
+
+/** Menu intro/loop may load during visual-critical; play/over tracks wait. */
+const isPlayOrOverKey = (key: BgmKey): boolean =>
+  key !== "bgm161_1" && key !== "bgm161_2";
 
 /**
  * Wait for an in-flight Sound to finish preloading without calling play()/load()
@@ -208,7 +219,7 @@ const startLoad = (key: BgmKey): Promise<PIXI.sound.Sound | null> => {
 
 /**
  * Load one track. Play/over keys wait for whenAudioAllowed() so the first
- * piece texture can finish first on slow networks. Menu track is unrestricted.
+ * piece texture can finish first on slow networks. Menu tracks are unrestricted.
  */
 const loadOne = async (key: BgmKey): Promise<PIXI.sound.Sound | null> => {
   const hit = cache.get(key);
@@ -223,16 +234,19 @@ const loadOne = async (key: BgmKey): Promise<PIXI.sound.Sound | null> => {
 export const ensureBgm = (
   ...keys: BgmKey[]
 ): Promise<(PIXI.sound.Sound | null)[]> => Promise.all(keys.map(loadOne));
+
 /** Convenience: load and return a single track (or null on failure). */
 export const getBgm = async (key: BgmKey): Promise<PIXI.sound.Sound | null> => {
   const [s] = await ensureBgm(key);
   return s;
 };
+
 /** Sync peek — only returns a sound that is already fully loaded. */
 export const peekBgm = (key: BgmKey): PIXI.sound.Sound | null => {
   const s = cache.get(key);
   return s?.isLoaded ? s : null;
 };
+
 /**
  * Kick off background downloads without awaiting. Safe to call repeatedly;
  * already-loaded / in-flight keys are no-ops. Play keys respect the gate.
@@ -240,10 +254,12 @@ export const peekBgm = (key: BgmKey): PIXI.sound.Sound | null => {
 export const prefetchBgm = (...keys: BgmKey[]): void => {
   for (const key of keys) void loadOne(key);
 };
-/** Prefetch the menu loop so click-to-continue usually plays instantly. */
+
+/** Prefetch the menu intro+loop so click-to-continue usually plays instantly. */
 export const prefetchMenuBgm = (): void => {
-  prefetchBgm("bgm161");
+  prefetchBgm("bgm161_1", "bgm161_2");
 };
+
 /**
  * Warm play/over tracks after visual-critical (gate inside loadOne).
  * On slow/save-data networks, only warm the two in-match tracks — not game-over.
@@ -261,6 +277,7 @@ export const prefetchPlayBgm = (): void => {
   }
   prefetchBgm("bgm038", "bgm168", "bgm182_1", "bgm182_2");
 };
+
 /** Hard-stop every known BGM alias (loaded or not). */
 export const stopAllBgmAliases = (): void => {
   (Object.keys(BGM_URLS) as BgmKey[]).forEach((key) => {

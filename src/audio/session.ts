@@ -1,5 +1,5 @@
 /**
- * Match BGM session: menu loop, in-game rotation, game-over stinger chain.
+ * Match BGM session: menu intro→loop, in-game rotation, game-over stinger chain.
  * Separated from the play state machine so audio concerns stay in audio/.
  *
  * Play BGM downloads wait for bandwidth-gate (first piece texture) so they do
@@ -21,11 +21,14 @@ import {
 
 let bgmPlaying: PIXI.sound.Sound | undefined;
 let bgmActive = false;
-let gameOverIntroInst: {
+
+/** Shared intro-instance handle for menu / game-over stinger chains. */
+let stingerIntroInst: {
   stop?: () => void;
   off?: (e: string, fn: () => void) => void;
 } | null = null;
-let gameOverIntroOnEnd: (() => void) | null = null;
+let stingerIntroOnEnd: (() => void) | null = null;
+
 let bgmSwitching = false;
 /** While true, checkBGM must not treat a paused track as finished. */
 let sessionPaused = false;
@@ -34,17 +37,21 @@ export const setBgmSessionPaused = (paused: boolean) => {
   sessionPaused = paused;
 };
 
-export const stopBgm = () => {
-  bgmActive = false;
-  if (gameOverIntroInst && gameOverIntroOnEnd) {
+const detachStingerIntro = () => {
+  if (stingerIntroInst && stingerIntroOnEnd) {
     try {
-      gameOverIntroInst.off?.("end", gameOverIntroOnEnd);
+      stingerIntroInst.off?.("end", stingerIntroOnEnd);
     } catch {
       /* ignore */
     }
   }
-  gameOverIntroInst = null;
-  gameOverIntroOnEnd = null;
+  stingerIntroInst = null;
+  stingerIntroOnEnd = null;
+};
+
+export const stopBgm = () => {
+  bgmActive = false;
+  detachStingerIntro();
   if (bgmPlaying) {
     try {
       bgmPlaying.stop();
@@ -77,38 +84,36 @@ export const playBgm = (
   }
 };
 
-export const playMenuBgm = async () => {
-  unlockAudio();
-  stopBgm();
-  const s = await getBgm("bgm161");
-  if (!s) return;
-  playBgm(s, { loop: true });
-  // Do not prefetch play/game-over tracks here — that pulls multi‑MB audio
-  // while the player is still on the menu. Match start loads them just-in-time.
+type PlayInstance = {
+  on: (e: string, fn: () => void) => void;
+  stop?: () => void;
 };
 
-export const playGameOverBgm = async () => {
+/**
+ * Play non-loop intro, then switch to loop when it ends.
+ * Same chain used by menu (161) and game-over (182).
+ */
+const playIntroThenLoop = async (
+  introKey: BgmKey,
+  loopKey: BgmKey,
+): Promise<void> => {
   stopBgm();
-  const [intro, loop] = await ensureBgm("bgm182_1", "bgm182_2");
+  const [intro, loop] = await ensureBgm(introKey, loopKey);
   if (!intro?.isLoaded) return;
 
   bgmPlaying = intro;
   setLiveBgm(intro);
   const onEnd = () => {
-    gameOverIntroInst = null;
-    gameOverIntroOnEnd = null;
+    stingerIntroInst = null;
+    stingerIntroOnEnd = null;
     if (loop?.isLoaded) playBgm(loop, { loop: true });
   };
-  gameOverIntroOnEnd = onEnd;
+  stingerIntroOnEnd = onEnd;
 
   try {
     const result = intro.play({ loop: false, volume: BGM_BASE_VOLUME });
-    type PlayInstance = {
-      on: (e: string, fn: () => void) => void;
-      stop?: () => void;
-    };
     const attach = (inst: PlayInstance) => {
-      gameOverIntroInst = inst;
+      stingerIntroInst = inst;
       inst.on("end", onEnd);
     };
     if (result instanceof Promise) {
@@ -120,6 +125,19 @@ export const playGameOverBgm = async () => {
   } catch {
     /* ignore */
   }
+};
+
+/** Menu: 161.1 intro → 161.2 loop. */
+export const playMenuBgm = async () => {
+  unlockAudio();
+  await playIntroThenLoop("bgm161_1", "bgm161_2");
+  // Do not prefetch play/game-over tracks here — that pulls multi-MB audio
+  // while the player is still on the menu. Match start loads them just-in-time.
+};
+
+/** Game over: 182.1 intro → 182.2 loop. */
+export const playGameOverBgm = async () => {
+  await playIntroThenLoop("bgm182_1", "bgm182_2");
 };
 
 const playNextBGM = async () => {
