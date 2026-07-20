@@ -13,6 +13,7 @@ import {
   type GroupName,
 } from "../settings/types";
 import { formatUtcDateKey, isUtcDateKeyFormat } from "../util/date-key";
+import { fnv1a32 } from "../util/hash";
 
 /** Canonical salt so seed space does not collide with ad-hoc repro seeds. */
 const DAILY_SEED_SALT = "puzzle-sekai-daily:";
@@ -36,13 +37,7 @@ export function isUtcDateKey(value: unknown): value is string {
  * Same key → same seed on every client / session.
  */
 export function dailySeed(dateKey: string = utcDateKey()): number {
-  const s = DAILY_SEED_SALT + dateKey;
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
+  return fnv1a32(DAILY_SEED_SALT + dateKey);
 }
 
 /**

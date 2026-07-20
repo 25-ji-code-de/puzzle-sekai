@@ -7,7 +7,7 @@ import {
 } from "../../types";
 import { getItemDropLabel } from "../../difficulty";
 import { t, type MessageKey } from "../../../i18n";
-import { formatTimesMult } from "../../../util/format";
+import { formatTimesMult, formatFactor } from "../../../util/format";
 import {
   commitAndRefresh,
   makeChip,
@@ -34,7 +34,7 @@ export const appendItemDropSection = (
           }),
         {
           title: t("settings.item.tooltip", {
-            factor: ITEM_DROP_SCORE_FACTORS[rate].toFixed(2),
+            factor: formatFactor(ITEM_DROP_SCORE_FACTORS[rate]),
           }),
           html: `<div>${getItemDropLabel(rate)}</div>
       <div class="setting-opt-sub">${formatTimesMult(

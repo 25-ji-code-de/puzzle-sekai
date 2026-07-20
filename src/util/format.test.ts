@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPercent, formatTimesMult } from "./format";
+import { formatFactor, formatPercent, formatTimesMult } from "./format";
 
 describe("formatTimesMult", () => {
   it("formats × with 2 decimals", () => {
@@ -9,6 +9,13 @@ describe("formatTimesMult", () => {
   });
   it("non-finite → ×0.00", () => {
     expect(formatTimesMult(Number.NaN)).toBe("×0.00");
+  });
+});
+
+describe("formatFactor", () => {
+  it("two decimals without prefix", () => {
+    expect(formatFactor(1.12)).toBe("1.12");
+    expect(formatFactor(1)).toBe("1.00");
   });
 });
 

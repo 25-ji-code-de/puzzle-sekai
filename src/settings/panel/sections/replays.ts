@@ -6,6 +6,7 @@ import {
   type ReplaySummary,
 } from "../../../replay";
 import { t } from "../../../i18n";
+import { padStartDigits } from "../../../util/pad";
 import {
   makeOptionsRow,
   makeSettingGroup,
@@ -25,7 +26,7 @@ const modeLabel = (summary: ReplaySummary): string => {
 const replayLine = (summary: ReplaySummary): string => {
   const bits = [
     modeLabel(summary),
-    `${t("gameOver.score")} ${summary.score.toString().padStart(6, "0")}`,
+    `${t("gameOver.score")} ${padStartDigits(summary.score, 6)}`,
     `${t("gameOver.difficulty")} ${getDifficultyLabel(summary.difficulty)}`,
     summary.scoreRank,
   ];
