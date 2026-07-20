@@ -24,7 +24,7 @@ import {
   resetDanSessionLatch,
   type RecordDanRunResult,
 } from "./dan-store";
-import { clamp, nonNegative } from "../util/clamp";
+import { atLeastOne, clamp, nonNegative } from "../util/clamp";
 
 /** Soft/hard drop contribution factor after the final score mult. */
 export const DROP_SCORE_FACTOR = 0.6;
@@ -110,7 +110,7 @@ export const addDropScore = (points: number) => {
  * combo 5 → ×1.8; combo 10 → ×2.8; combo 16+ → ×4.
  */
 export const chainMultiplierOf = (combo: number): number => {
-  const c = Number.isFinite(combo) ? Math.max(1, Math.floor(combo)) : 1;
+  const c = Number.isFinite(combo) ? atLeastOne(Math.floor(combo)) : 1;
   if (c <= 1) return 1;
   return clamp(1 + 0.2 * (c - 1), 1, CHAIN_MULT_CAP);
 };

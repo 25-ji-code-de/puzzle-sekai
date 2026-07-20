@@ -20,19 +20,19 @@ Short map of `src/` for contributors. Prefer domain purity and thin presentation
 
 ## Shared utils (`src/util/`)
 
-| Module            | Role                                                 |
-| ----------------- | ---------------------------------------------------- |
-| `clamp.ts`        | `clamp` / `clampInt` / `nonNegative` / `atLeastOne`  |
-| `color.ts`        | `hexToPixi` / `hexToRgba` / `parseHexRgb`            |
-| `pad.ts`          | zero-pad digits for scores / timers                  |
-| `format.ts`       | `×mult`, percent, factor strings                     |
-| `hash.ts`         | FNV-1a 32 (daily seed)                               |
-| `date-key.ts`     | UTC `YYYY-MM-DD`                                     |
-| `css-class.ts`    | `joinClassNames` for settings chips                  |
-| `dialog-class.ts` | overlay / card / button / setting-opt class builders |
-| `dev-log.ts`      | DEV-only `devWarn`                                   |
-| `nearest.ts`      | `nearestIndex` for column lock / snap                |
-| `index.ts`        | barrel re-exports                                    |
+| Module            | Role                                                                 |
+| ----------------- | -------------------------------------------------------------------- |
+| `clamp.ts`        | `clamp` / `clampInt` / `nonNegative` / `atLeastOne` / `unitInterval` |
+| `color.ts`        | `hexToPixi` / `hexToRgba` / `parseHexRgb`                            |
+| `pad.ts`          | zero-pad digits for scores / timers                                  |
+| `format.ts`       | `×mult`, percent, factor strings                                     |
+| `hash.ts`         | FNV-1a 32 (daily seed)                                               |
+| `date-key.ts`     | UTC `YYYY-MM-DD`                                                     |
+| `css-class.ts`    | `joinClassNames` for settings chips                                  |
+| `dialog-class.ts` | overlay / card / button / setting-opt class builders                 |
+| `dev-log.ts`      | DEV-only `devWarn`                                                   |
+| `nearest.ts`      | `nearestIndex` for column lock / snap                                |
+| `index.ts`        | barrel re-exports                                                    |
 
 ## Dual physics
 

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { atLeastOne, clamp, clampInt, nonNegative } from "./clamp";
+import {
+  atLeastOne,
+  clamp,
+  clampInt,
+  nonNegative,
+  unitInterval,
+} from "./clamp";
 
 describe("clampInt", () => {
   it("clamps into range", () => {
@@ -39,5 +45,14 @@ describe("atLeastOne", () => {
     expect(atLeastOne(0)).toBe(1);
     expect(atLeastOne(-2)).toBe(1);
     expect(atLeastOne(Number.NaN)).toBe(1);
+  });
+});
+
+describe("unitInterval", () => {
+  it("saturates into [0, 1]", () => {
+    expect(unitInterval(-1)).toBe(0);
+    expect(unitInterval(0.25)).toBe(0.25);
+    expect(unitInterval(2)).toBe(1);
+    expect(unitInterval(Number.NaN)).toBe(0);
   });
 });

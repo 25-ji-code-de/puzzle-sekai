@@ -23,7 +23,7 @@ import {
 } from "../score";
 import { getDifficultyColor, getGroupDisplayColor } from "../settings";
 import { devWarn } from "../util/dev-log";
-import { atLeastOne } from "../util/clamp";
+import { atLeastOne, unitInterval } from "../util/clamp";
 
 // Portrait share image. Content is sized to fill most of the canvas
 // (not sparse type on a big empty plate) so chat thumbnails still read.
@@ -346,7 +346,7 @@ const drawCard = (
     ctx.font = `600 28px ${mono}`;
     const capW = ctx.measureText(caption).width;
     const targetW = letterW * 0.9;
-    const s = capW > 0 ? Math.min(1, targetW / capW) : 1;
+    const s = capW > 0 ? unitInterval(targetW / capW) : 1;
     ctx.save();
     ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
     ctx.textAlign = "center";

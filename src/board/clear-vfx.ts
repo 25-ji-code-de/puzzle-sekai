@@ -11,6 +11,7 @@ import { gameTicker } from "../runtime";
 import type { SpriteData } from "../game/board-state";
 import { removeSpritesFromBoard } from "./mutate";
 import { createParticles } from "./particles";
+import { unitInterval } from "../util/clamp";
 
 /** Desaturate → glow → burst → remove. */
 export const playClearAnimation = async (
@@ -51,7 +52,7 @@ export const playClearAnimation = async (
   await new Promise<void>((resolve) => {
     const glowAnim = (delta: number) => {
       glowFrame += delta;
-      const progress = Math.min(1, glowFrame / glowDuration);
+      const progress = unitInterval(glowFrame / glowDuration);
       const brightness = 5 + progress * 5;
       toRemove.forEach((sp, i) => {
         glowFilters[i].brightness(brightness, false);

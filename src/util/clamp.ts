@@ -25,3 +25,9 @@ export const atLeastOne = (n: number): number => {
   if (!Number.isFinite(n)) return 1;
   return Math.max(1, n);
 };
+
+/** Saturate into unit interval [0, 1]. Non-finite → 0. */
+export const unitInterval = (n: number): number => {
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(1, Math.max(0, n));
+};
