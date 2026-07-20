@@ -37,7 +37,12 @@ export function isUtcDateKey(value: unknown): value is string {
  * Same key → same seed on every client / session.
  */
 export function dailySeed(dateKey: string = utcDateKey()): number {
-  return fnv1a32(DAILY_SEED_SALT + dateKey);
+  return fnv1a32(dailySeedMaterial(dateKey));
+}
+
+/** Salt + key string used by {@link dailySeed} (exported for tests / debugging). */
+export function dailySeedMaterial(dateKey: string = utcDateKey()): string {
+  return DAILY_SEED_SALT + dateKey;
 }
 
 /**

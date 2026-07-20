@@ -5,6 +5,7 @@ import { describe, it, expect } from "vitest";
 import {
   dailyMatchSettings,
   dailySeed,
+  dailySeedMaterial,
   defaultDailySettings,
   isUtcDateKey,
   utcDateKey,
@@ -18,6 +19,7 @@ import {
   type GroupName,
 } from "../settings/types";
 import { mulberry32 } from "./prng";
+import { fnv1a32 } from "../util/hash";
 
 describe("utcDateKey", () => {
   it("formats UTC Y-M-D with zero padding", () => {
@@ -60,6 +62,11 @@ describe("dailySeed", () => {
     expect(s).toBeGreaterThanOrEqual(0);
     expect(s).toBeLessThanOrEqual(0xffffffff);
     expect(s).toBe(s >>> 0);
+  });
+
+  it("matches util/hash FNV-1a over salted material", () => {
+    const key = "2026-07-19";
+    expect(dailySeed(key)).toBe(fnv1a32(dailySeedMaterial(key)));
   });
 
   it("feeds mulberry32 the same stream for the same day", () => {

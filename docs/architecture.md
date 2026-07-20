@@ -18,6 +18,18 @@ Short map of `src/` for contributors. Prefer domain purity and thin presentation
 | Score        | `src/score/`                     | Model, rank, dan, HUD, performance                             |
 | Util         | `src/util/`                      | Shared pure helpers: clamp, color, pad, format, hash, date-key |
 
+## Shared utils (`src/util/`)
+
+| Module        | Role                                      |
+| ------------- | ----------------------------------------- |
+| `clamp.ts`    | `clamp` / `clampInt`                      |
+| `color.ts`    | `hexToPixi` / `hexToRgba` / `parseHexRgb` |
+| `pad.ts`      | zero-pad digits for scores / timers       |
+| `format.ts`   | `×mult`, percent, factor strings          |
+| `hash.ts`     | FNV-1a 32 (daily seed)                    |
+| `date-key.ts` | UTC `YYYY-MM-DD`                          |
+| `index.ts`    | barrel re-exports                         |
+
 ## Dual physics
 
 - **Grid** (default): discrete cells

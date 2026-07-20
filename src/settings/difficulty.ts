@@ -28,6 +28,7 @@ import {
 } from "./types";
 import { getCurrentSettings } from "./store";
 import { clamp, clampInt } from "../util/clamp";
+import { formatPercent } from "../util/format";
 
 export { hexToPixi } from "../util/color";
 
@@ -232,4 +233,4 @@ export const getTimeLabel = (
 ): string => t("settings.ta.duration", { seconds: duration });
 
 export const getItemDropLabel = (rate: ItemDropRate): string =>
-  rate === 0 ? t("settings.item.none") : `${rate}%`;
+  rate === 0 ? t("settings.item.none") : formatPercent(rate);
