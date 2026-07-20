@@ -1,0 +1,234 @@
+# Build native installers and publish a GitHub Release when a version tag is pushed.
+#
+# Trigger:
+#   git tag v1.1.0 && git push origin v1.1.0
+#   # or Actions → Release → Run workflow
+#
+# Artifacts (unsigned — fine for direct download / sideload fan release):
+#   - Windows: NSIS setup (.exe), zh/ja/en
+#   - macOS:   .app in .dmg (Gatekeeper: right-click → Open)
+#   - Linux:   .deb + .AppImage
+#   - Android: debug-signed APK (sideload; no Play Store)
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag name to release as (e.g. v1.1.0). Leave empty to use the run id."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Public OAuth client is already in .env.native; force native mode as belt-and-suspenders.
+  VITE_NATIVE: "1"
+  VITE_NATIVE_REDIRECT_URI: "puzzlesekai://auth/callback"
+
+jobs:
+  # ── Desktop (Tauri) ────────────────────────────────────────────────────────
+  desktop:
+    name: Desktop (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            os: windows-latest
+            bundles: nsis
+            artifact_glob: src-tauri/target/release/bundle/nsis/*
+          - platform: macos
+            os: macos-latest
+            bundles: app,dmg
+            artifact_glob: src-tauri/target/release/bundle/{dmg,macos}/*
+          - platform: linux
+            os: ubuntu-22.04
+            bundles: deb,appimage
+            artifact_glob: src-tauri/target/release/bundle/{deb,appimage}/*
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: yarn
+
+      - name: Install frontend deps
+        run: yarn install --immutable
+
+      - name: Install Linux WebKit / build deps
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          shared-key: tauri-${{ matrix.platform }}
+
+      - name: Build Tauri (${{ matrix.bundles }})
+        # --bundles overrides tauri.conf.json targets (which defaults to nsis for local Windows).
+        run: yarn tauri build --bundles ${{ matrix.bundles }}
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform }}
+          path: ${{ matrix.artifact_glob }}
+          if-no-files-found: error
+          retention-days: 14
+
+  # ── Android (Capacitor, sideload APK) ──────────────────────────────────────
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: yarn
+
+      - name: Install frontend deps
+        run: yarn install --immutable
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses >/dev/null || true
+
+      - name: Install Android platform / build-tools
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Build native web + sync Capacitor
+        run: yarn cap:sync
+
+      # Debug-signed APK is fine for direct sideload (no Play Store).
+      # Avoids needing a release keystore secret in CI.
+      - name: Assemble debug APK
+        working-directory: android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: |
+          VERSION="${GITHUB_REF_NAME:-${{ github.event.inputs.tag }}}"
+          VERSION="${VERSION:-run-${{ github.run_id }}}"
+          # strip leading v for filename if present
+          SAFE="${VERSION#v}"
+          SRC=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -1)
+          test -n "$SRC"
+          mkdir -p dist-release
+          cp "$SRC" "dist-release/Puzzle-SEKAI-${SAFE}-android-debug.apk"
+          ls -la dist-release/
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: dist-release/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  # ── Publish GitHub Release ─────────────────────────────────────────────────
+  publish:
+    name: Publish GitHub Release
+    needs: [desktop, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: false
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p out
+          # desktop-* and android-apk folders
+          find release-assets -type f \( \
+            -name '*.exe' -o -name '*.msi' -o -name '*.dmg' -o \
+            -name '*.AppImage' -o -name '*.deb' -o -name '*.apk' -o \
+            -name '*.app.tar.gz' \
+          \) -print -exec cp -v {} out/ \;
+          # macOS often produces a folder .app inside a dmg already; also ship raw app tarballs if any
+          find release-assets -type f -name '*.tar.gz' -print -exec cp -v {} out/ \; || true
+          ls -lah out/
+          test "$(ls -A out)"
+
+      - name: Resolve tag / release name
+        id: meta
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.tag }}" ]]; then
+            TAG="${{ github.event.inputs.tag }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            TAG="${{ github.ref_name }}"
+          else
+            TAG="run-${{ github.run_id }}"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "title=Puzzle SEKAI $TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.title }}
+          draft: false
+          prerelease: ${{ contains(steps.meta.outputs.tag, '-') }}
+          generate_release_notes: true
+          body: |
+            Direct-download packages (no app stores). Unofficial Project SEKAI fan work.
+
+            | Platform | File |
+            | --- | --- |
+            | Windows | `*-setup.exe` (NSIS, zh / ja / en) |
+            | macOS | `.dmg` (unsigned — right-click → Open the first time) |
+            | Linux | `.AppImage` / `.deb` |
+            | Android | `*-android-debug.apk` (sideload) |
+
+            Web / PWA still at https://pico.nightcord.de5.net/
+
+            See [docs/native.md](./docs/native.md) for OAuth redirect URI setup (`puzzlesekai://auth/callback`).
+          files: out/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

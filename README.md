@@ -76,6 +76,12 @@ yarn tauri:build    # 需 Rust 工具链
 yarn cap:sync       # 同步到 android/
 ```
 
+打版本 tag 后 GitHub Actions 会自动构建 Win / macOS / Linux / Android 安装包并挂到 Release（见 [docs/native.md](./docs/native.md#ci-releases-github-actions)）：
+
+```bash
+git tag v1.1.0 && git push origin v1.1.0
+```
+
 ## 🛠️ 技术栈
 
 - **渲染**: [PixiJS v5](https://pixijs.com/) (pixi.js-legacy)

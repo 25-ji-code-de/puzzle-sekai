@@ -52,6 +52,33 @@ Artifacts:
 - Tauri: `src-tauri/target/release/bundle/`
 - Android: `android/app/build/outputs/apk/`
 
+## CI releases (GitHub Actions)
+
+Push a version tag to build all platforms and attach installers to a GitHub Release:
+
+```bash
+# after main is green
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+Or **Actions → Release → Run workflow** (optional tag input).
+
+| Job             | Runner           | Output                           |
+| --------------- | ---------------- | -------------------------------- |
+| Desktop Windows | `windows-latest` | NSIS `*-setup.exe` (zh/ja/en)    |
+| Desktop macOS   | `macos-latest`   | `.dmg` (unsigned)                |
+| Desktop Linux   | `ubuntu-22.04`   | `.deb` + `.AppImage`             |
+| Android         | `ubuntu-latest`  | `*-android-debug.apk` (sideload) |
+
+Workflow file: [`.github/workflows/release.yml`](../.github/workflows/release.yml).
+
+Notes:
+
+- **Unsigned** builds on purpose (fan direct-download). macOS needs Right-click → Open.
+- Android APK is **debug-signed** so CI needs no keystore secret. Fine for sideload, not for Play Store.
+- PR / push CI ([`ci.yml`](../.github/workflows/ci.yml)) stays web-only — native toolchains only run on tags.
+
 ## OAuth (SEKAI Pass) for native
 
 Native builds use a fixed redirect URI:
@@ -74,8 +101,14 @@ Deep-link handling lives in `src/native/deep-link.ts` and is bootstrapped only w
 
 ## Icons
 
-Tauri icons under `src-tauri/icons/` are generated from `public/android-chrome-512x512.png`.  
-Replace and re-run a sharp resize if you want a dedicated desktop icon; for proper `.icns`/`.ico` multi-size assets use `yarn tauri icon path/to/1024.png` once Rust/CLI is available.
+Tauri / Android launcher icons under `src-tauri/icons/` and `android/app/src/main/res/`:
+
+| Size rule     | Source                                             |
+| ------------- | -------------------------------------------------- |
+| **&lt; 96px** | `public/favicon-48x48.png` (wordmark on soft pink) |
+| **≥ 96px**    | `public/android-chrome-512x512.png` (full art)     |
+
+Regenerate with the project’s icon script / `png-to-ico` pipeline when those sources change (see recent commits), or re-run a layered sharp pass. Do **not** use a single `tauri icon` pass on one PNG if you want this split.
 
 ## macOS Gatekeeper
 
