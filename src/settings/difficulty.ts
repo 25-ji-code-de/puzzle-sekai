@@ -27,7 +27,7 @@ import {
   isSpawnOrientation,
 } from "./types";
 import { getCurrentSettings } from "./store";
-import { clampInt } from "../util/clamp";
+import { clamp, clampInt } from "../util/clamp";
 
 export { hexToPixi } from "../util/color";
 
@@ -37,7 +37,7 @@ export function getSpeedMultiplier(settings: GameSettings): number {
 
 /** Difficulty 1–7: speedLevel + (groupCount - 3). More groups = harder. */
 export function getDifficultyLevel(settings: GameSettings): DifficultyLevel {
-  const groups = Math.min(5, Math.max(3, settings.selectedGroups.length));
+  const groups = clampInt(settings.selectedGroups.length, 3, 5);
   const level = settings.speedLevel + (groups - 3);
   return clampInt(level, 1, 7) as DifficultyLevel;
 }
@@ -145,7 +145,7 @@ export function getScoreMultiplierBreakdown(
   const fun = getFunModeMultiplier(flags, rate);
   const item = ITEM_DROP_SCORE_FACTORS[rate];
   const orient = SPAWN_ORIENTATION_SCORE_FACTORS[orientation];
-  const final = Math.min(4, Math.max(0.3, base * fun * item * orient));
+  const final = clamp(base * fun * item * orient, 0.3, 4);
 
   const lines: ScoreMultLine[] = [
     {

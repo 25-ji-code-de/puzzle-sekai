@@ -100,7 +100,7 @@ export function scaleItemLinkedFactor(
   itemDropRatePercent: number,
 ): number {
   // weight: 0%→0, 10%→1, 30%→1.5 (clamped)
-  const weight = Math.min(1.5, Math.max(0, itemDropRatePercent / 10));
+  const weight = clamp(itemDropRatePercent / 10, 0, 1.5);
   // Interpolate between 1 (no effect) and baseFactor (full effect at 10%+)
   // weight 0 → 1, weight 1 → baseFactor, weight 1.5 → slightly beyond base
   return 1 + (baseFactor - 1) * weight;

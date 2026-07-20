@@ -3,11 +3,12 @@
  */
 import type { GameSettings } from "./types";
 import { getCurrentSettings } from "./store";
+import { clamp } from "../util/clamp";
 
 /** Clamp / coerce a stored volume percent (0–100). Invalid → default. */
 export function clampVolumePercent(v: unknown, fallback: number = 100): number {
   if (typeof v !== "number" || !Number.isFinite(v)) return fallback;
-  return Math.min(100, Math.max(0, Math.round(v)));
+  return clamp(Math.round(v), 0, 100);
 }
 
 /**
