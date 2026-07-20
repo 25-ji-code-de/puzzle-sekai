@@ -29,7 +29,7 @@ import {
   cellTopLeftY,
 } from "../domain/piece";
 import { placeSpriteAtAnchor } from "../presentation/placement";
-import { nonNegative, unitInterval } from "../util/clamp";
+import { clamp, nonNegative, unitInterval } from "../util/clamp";
 
 /** Slightly slower than a snap so the pry-up arc reads clearly. */
 const TIP_ROTATE_FRAMES = 18;
@@ -370,7 +370,7 @@ const animateTip = (plan: TipPlan): Promise<void> => {
       : TIP_ROTATE_FRAMES;
     const tick = (delta: number) => {
       // Clamp so a long hitch can't skip the end snap / resolve forever
-      frame += Math.min(delta, 3);
+      frame += clamp(delta, 0, 3);
       const t = unitInterval(frame / duration);
       // Ease-in: slow at balance, then accelerates (gravity on the lever)
       const e = t * t;

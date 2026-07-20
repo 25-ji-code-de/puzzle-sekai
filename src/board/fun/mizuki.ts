@@ -25,6 +25,7 @@ import { placeSpriteAtAnchor } from "../../presentation/placement";
 import { CHAR } from "../../characters/ids";
 import { characterTouchesItem } from "../contact";
 import { isContinuousPhysics, setBodyPose, wakeBody } from "../dynamics";
+import { minManhattanToCells } from "../../util/manhattan";
 
 /** 2-cell footprint for primary (ax,ay) if every cell is on-board; else null. */
 const cellsFor = (
@@ -88,9 +89,7 @@ export const applyMizukiShift = async (
   for (let i = 0; i < sprites.length; i++) {
     const sp = sprites[i];
     if (sp.character?.name !== CHAR.Mizuki || !sp.cells?.length) continue;
-    const dist = Math.min(
-      ...sp.cells.map(([x, y]) => Math.abs(x - itemX) + Math.abs(y - itemY)),
-    );
+    const dist = minManhattanToCells(itemX, itemY, sp.cells);
     if (!best || dist < best.dist) best = { index: i, dist };
   }
   if (!best) return;

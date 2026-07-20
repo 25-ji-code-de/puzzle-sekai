@@ -3,6 +3,7 @@
  * Pure utilities — no sprite / PIXI coupling.
  */
 import { random as matchRandom } from "../domain/prng";
+import { manhattan as manhattanDist } from "../util/manhattan";
 
 export const DIRS_ORTHO: [number, number][] = [
   [-1, 0],
@@ -38,7 +39,7 @@ export const manhattan = (
   ay: number,
   bx: number,
   by: number,
-): number => Math.abs(ax - bx) + Math.abs(ay - by);
+): number => manhattanDist(ax, ay, bx, by);
 
 /** Any cell of A is orthogonally adjacent to any cell of B. */
 export const cellsOrthogonallyAdjacent = (

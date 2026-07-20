@@ -24,3 +24,4 @@ export {
   settingOptClassName,
 } from "./dialog-class";
 export { nearestIndex } from "./nearest";
+export { manhattan, minManhattanToCells } from "./manhattan";
