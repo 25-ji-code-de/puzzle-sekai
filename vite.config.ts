@@ -125,6 +125,9 @@ export default defineConfig(({ mode }) => {
   // Native shells (Tauri / Capacitor) load dist/ over a custom protocol.
   // Skip the service worker so Workbox does not fight the asset scheme.
   const isNative = mode === "native";
+  // Local profiling: skip WebP + font subset (full CJK fonts — do not ship).
+  // Usage: PUZZLE_SEKAI_FAST_BUILD=1 yarn build
+  const fastBuild = process.env.PUZZLE_SEKAI_FAST_BUILD === "1";
   // Guarantee the flag even if `.env.native` is missing on a fresh clone.
   if (isNative) {
     process.env.VITE_NATIVE = process.env.VITE_NATIVE || "1";
@@ -201,8 +204,9 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       injectAppVersion(),
-      assetsToWebp({ quality: 85 }),
-      subsetDisplayFonts(),
+      ...(fastBuild
+        ? []
+        : [assetsToWebp({ quality: 85 }), subsetDisplayFonts()]),
       ...(isNative
         ? []
         : [

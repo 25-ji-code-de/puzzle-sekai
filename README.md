@@ -67,6 +67,8 @@ yarn start
 
 ```bash
 yarn build
+# 本地快速试 build 结构（跳过 WebP / 字体子集；勿用于发布）
+yarn build:fast
 ```
 
 ### 桌面 / Android 客户端（下载包）

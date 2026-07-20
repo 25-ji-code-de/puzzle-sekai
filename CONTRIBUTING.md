@@ -171,6 +171,7 @@ yarn ci
 - 不要给 `actions/setup-node` 使用 `cache: yarn`（会误用 Yarn 1）；本仓库 CI 用独立的 Yarn Berry 缓存目录
 - Windows 上 `yarn android:apk` 走 `scripts/android-apk.mjs`（自动选 `gradlew.bat`）
 - 字体子集化与 WebP 转换只在生产 `yarn build` 运行；日常 `yarn start` 保持原图/全字体
+- 本地想快速验证 production bundle 结构、不想等 subset/sharp：`yarn build:fast`（`PUZZLE_SEKAI_FAST_BUILD=1`，**勿用于发布**）
 
 ## 🔍 代码审查
 

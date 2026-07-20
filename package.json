@@ -6,6 +6,7 @@
   "scripts": {
     "start": "vite --port 7426",
     "build": "vite build",
+    "build:fast": "node scripts/build-fast.mjs",
     "build:native": "vite build --mode native",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
