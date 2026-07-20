@@ -22,7 +22,7 @@ import type {
   TimeAttackDuration,
 } from "../settings";
 import { getStoragePort } from "../settings/storage";
-import { clampInt } from "../util/clamp";
+import { clampInt, nonNegative } from "../util/clamp";
 
 export type RecordDanRunInput = {
   mode: GameMode;
@@ -132,7 +132,7 @@ const parseEntry = (raw: unknown): DanRunEntry | null => {
     playedAt,
     mode,
     score,
-    maxCombo: Number.isFinite(maxCombo) ? Math.max(0, maxCombo) : 0,
+    maxCombo: Number.isFinite(maxCombo) ? nonNegative(maxCombo) : 0,
     difficulty,
     entertainment,
     multiplier: Number.isFinite(multiplier) ? multiplier : 1,
@@ -256,7 +256,7 @@ export const recordDanRun = (input: RecordDanRunInput): RecordDanRunResult => {
     playedAt,
     mode: input.mode,
     score: Math.floor(input.score),
-    maxCombo: Math.max(0, Math.floor(input.maxCombo) || 0),
+    maxCombo: nonNegative(Math.floor(input.maxCombo) || 0),
     difficulty,
     entertainment: input.entertainment === true,
     multiplier: mult,

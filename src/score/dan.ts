@@ -7,7 +7,7 @@
  */
 import type { DifficultyLevel, GameMode } from "../settings";
 import type { ScoreRank } from "./rank";
-import { clamp, clampInt } from "../util/clamp";
+import { clamp, clampInt, nonNegative } from "../util/clamp";
 import { hexToRgba } from "../util/color";
 
 export const DAN_STORAGE_KEY = "puzzleSekaiDan";
@@ -201,7 +201,7 @@ export const legacyEffectiveFromRaw = (
 };
 
 export const danFromTotal = (total: number): DanId => {
-  const t = Number.isFinite(total) ? Math.max(0, total) : 0;
+  const t = Number.isFinite(total) ? nonNegative(total) : 0;
   for (const row of DAN_THRESHOLDS) {
     if (t >= row.min) return row.dan;
   }
@@ -236,7 +236,7 @@ export const danColorStyle = (dan: DanId | string): string => {
 };
 
 export const comboBonusOf = (maxComboPeak: number): number => {
-  const peak = Number.isFinite(maxComboPeak) ? Math.max(0, maxComboPeak) : 0;
+  const peak = nonNegative(Number.isFinite(maxComboPeak) ? maxComboPeak : 0);
   return clamp(Math.floor(peak * 50), 0, 40_000);
 };
 
@@ -264,7 +264,7 @@ export const computeDanRating = (
   maxComboPeak: number,
 ): DanRatingBreakdown => {
   const ratings = runs.map((r) =>
-    Number.isFinite(r.rating) ? Math.max(0, r.rating) : 0,
+    nonNegative(Number.isFinite(r.rating) ? r.rating : 0),
   );
 
   const sortedDesc = [...ratings].sort((a, b) => b - a);

@@ -16,7 +16,7 @@ import {
   type ReplayInput,
   type ReplaySettingsSnapshot,
 } from "./types";
-import { clampInt } from "../util/clamp";
+import { clampInt, nonNegative } from "../util/clamp";
 
 export const isReplayInput = (value: unknown): value is ReplayInput => {
   if (!value || typeof value !== "object") return false;
@@ -127,14 +127,14 @@ export const parseReplayEntry = (raw: unknown): ReplayEntry | null => {
         ? o.dailyDateKey
         : undefined,
     settings,
-    score: Math.max(0, Math.floor(score)),
-    maxCombo: Math.max(0, Math.floor(maxCombo)),
+    score: nonNegative(Math.floor(score)),
+    maxCombo: nonNegative(Math.floor(maxCombo)),
     difficulty: clampInt(difficulty, 1, 7) as ReplayEntry["difficulty"],
     entertainment: o.entertainment === true,
     multiplier: multiplier > 0 ? multiplier : 1,
     scoreRank: typeof o.scoreRank === "string" ? o.scoreRank : "D",
-    playedSeconds: Math.max(0, playedSeconds),
-    durationMs: Math.max(0, Math.floor(durationMs)),
+    playedSeconds: nonNegative(playedSeconds),
+    durationMs: nonNegative(Math.floor(durationMs)),
     inputs,
   };
 };

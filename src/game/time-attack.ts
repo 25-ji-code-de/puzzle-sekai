@@ -2,6 +2,8 @@
  * Pure time-attack clock math (no ticker / PIXI).
  * Wall-clock deadline via performance.now() scale; UI shows ceil seconds.
  */
+import { nonNegative } from "../util/clamp";
+
 export type TimeAttackSnapshot = {
   /** Absolute deadline (performance.now scale). 0 = not running. */
   endsAt: number;
@@ -36,7 +38,7 @@ export const pauseTimeAttackClock = (
   if (!snap.endsAt) return snap;
   return {
     endsAt: 0,
-    pausedRemainingMs: Math.max(0, snap.endsAt - nowMs),
+    pausedRemainingMs: nonNegative(snap.endsAt - nowMs),
   };
 };
 
