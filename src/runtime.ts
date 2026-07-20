@@ -6,6 +6,7 @@
 import * as PIXI from "pixi.js-legacy";
 import * as Hammer from "hammerjs";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./config";
+import { atLeastOne } from "./util/clamp";
 
 /**
  * PIXI.TextMetrics samples glyphs via getImageData on a shared offscreen canvas.
@@ -22,8 +23,8 @@ try {
   const canvas =
     typeof document !== "undefined" ? document.createElement("canvas") : null;
   if (canvas) {
-    canvas.width = Math.max(1, prev?.width ?? 10);
-    canvas.height = Math.max(1, prev?.height ?? 10);
+    canvas.width = atLeastOne(prev?.width ?? 10);
+    canvas.height = atLeastOne(prev?.height ?? 10);
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (ctx) {
       metrics._canvas = canvas;

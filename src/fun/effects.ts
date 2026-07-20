@@ -2,6 +2,7 @@
 
 import { getCurrentSettings } from "../settings";
 import type { FunModeId } from "./modes";
+import { clamp } from "../util/clamp";
 
 /** Residual slow after Kanade lands; multiplies piece fall speed. Decays each spawn. */
 let kanadeSlowResidual = 1;
@@ -30,7 +31,7 @@ export const consumeKanadeSlowForSpawn = (): number => {
   const mult = kanadeSlowResidual;
   // Decay toward 1 each piece after Kanade's wave
   if (kanadeSlowResidual < 1) {
-    kanadeSlowResidual = Math.min(1, kanadeSlowResidual + 0.1);
+    kanadeSlowResidual = clamp(kanadeSlowResidual + 0.1, 0.5, 1);
   }
   return mult;
 };
