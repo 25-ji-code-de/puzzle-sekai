@@ -6,7 +6,7 @@
 #
 # Artifacts (unsigned — fine for direct download / sideload fan release):
 #   - Windows: NSIS setup (.exe), zh/ja/en
-#   - macOS:   .app in .dmg (Gatekeeper: right-click → Open)
+#   - macOS:   .dmg (Gatekeeper: right-click → Open)
 #   - Linux:   .deb + .AppImage
 #   - Android: debug-signed APK (sideload; no Play Store)
 #
@@ -53,7 +53,8 @@ jobs:
             bundles: nsis
           - platform: macos
             os: macos-latest
-            bundles: app,dmg
+            # app is built as intermediate for dmg; we only ship the .dmg
+            bundles: dmg
           - platform: linux
             os: ubuntu-22.04
             bundles: deb,appimage
@@ -132,11 +133,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: desktop-macos
-          # .dmg is the shippable install image; .app is a directory (still uploadable).
-          # Multiline path — no brace expansion (upload-artifact treats {a,b} literally).
-          path: |
-            src-tauri/target/release/bundle/dmg/*
-            src-tauri/target/release/bundle/macos/**
+          # Users only need the .dmg (contains the .app). No separate .app upload.
+          path: src-tauri/target/release/bundle/dmg/*
           if-no-files-found: error
           retention-days: 14
 
@@ -246,11 +244,8 @@ jobs:
           # desktop-* and android-apk folders
           find release-assets -type f \( \
             -name '*.exe' -o -name '*.msi' -o -name '*.dmg' -o \
-            -name '*.AppImage' -o -name '*.deb' -o -name '*.apk' -o \
-            -name '*.app.tar.gz' \
+            -name '*.AppImage' -o -name '*.deb' -o -name '*.apk' \
           \) -print -exec cp -v {} out/ \;
-          # macOS often produces a folder .app inside a dmg already; also ship raw app tarballs if any
-          find release-assets -type f -name '*.tar.gz' -print -exec cp -v {} out/ \; || true
           ls -lah out/
           test "$(ls -A out)"
 
@@ -283,7 +278,7 @@ jobs:
             | --- | --- |
             | Windows | `*-setup.exe` (NSIS, zh / ja / en) |
             | macOS | `.dmg` (unsigned — right-click → Open the first time) |
-            | Linux | `.AppImage` / `.deb` |
+            | Linux | `.AppImage` (portable) / `.deb` (Debian/Ubuntu) |
             | Android | `*-android-debug.apk` (sideload) |
 
             Web / PWA still at https://pico.nightcord.de5.net/

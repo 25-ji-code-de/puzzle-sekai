@@ -3,10 +3,10 @@
 Downloadable packages wrap the same Vite `dist/` the website ships.  
 Web / PWA at <https://pico.nightcord.de5.net/> is unchanged.
 
-| Platform                | Shell                                 | Output                        |
-| ----------------------- | ------------------------------------- | ----------------------------- |
-| Windows / macOS / Linux | [Tauri 2](https://v2.tauri.app/)      | installer / AppImage / `.app` |
-| Android                 | [Capacitor](https://capacitorjs.com/) | sideload APK (no store)       |
+| Platform                | Shell                                 | Output                       |
+| ----------------------- | ------------------------------------- | ---------------------------- |
+| Windows / macOS / Linux | [Tauri 2](https://v2.tauri.app/)      | NSIS / `.dmg` / deb+AppImage |
+| Android                 | [Capacitor](https://capacitorjs.com/) | sideload APK (no store)      |
 
 ## Prerequisites
 
