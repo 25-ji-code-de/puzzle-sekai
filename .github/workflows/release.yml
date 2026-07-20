@@ -143,9 +143,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: desktop-linux
+          # Only final packages — Tauri also leaves control.tar.gz / data.tar.gz
+          # under bundle/deb/ as intermediate ar members; those must not ship.
           path: |
-            src-tauri/target/release/bundle/deb/*
-            src-tauri/target/release/bundle/appimage/*
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
           if-no-files-found: error
           retention-days: 14
 
@@ -241,12 +243,22 @@ jobs:
       - name: Flatten artifacts
         run: |
           mkdir -p out
-          # desktop-* and android-apk folders
+          # Only end-user installers. Never *.tar.gz (deb intermediates).
           find release-assets -type f \( \
-            -name '*.exe' -o -name '*.msi' -o -name '*.dmg' -o \
-            -name '*.AppImage' -o -name '*.deb' -o -name '*.apk' \
+            -name '*-setup.exe' -o \
+            -name '*.msi' -o \
+            -name '*.dmg' -o \
+            -name '*.AppImage' -o \
+            -name '*.deb' -o \
+            -name '*.apk' \
           \) -print -exec cp -v {} out/ \;
+          echo "=== release assets ==="
           ls -lah out/
+          # Sanity: no packaging junk
+          if ls out/*.tar.gz out/control.tar.gz out/data.tar.gz 2>/dev/null; then
+            echo "Refusing to publish intermediate archives" >&2
+            exit 1
+          fi
           test "$(ls -A out)"
 
       - name: Resolve tag / release name
