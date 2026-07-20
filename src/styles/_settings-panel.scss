@@ -22,12 +22,12 @@
 
 .settings-panel {
   position: relative;
-  width: 320px;
+  width: min(320px, 92vw);
   height: 100%;
   background: var(--ui-bg-deep);
   border-left: 1px solid var(--ui-border-cyan-soft);
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
-  padding: 24px;
+  padding: clamp(12px, 2.5vh, 24px);
   overflow-y: auto;
   animation: slideIn 0.3s ease;
 

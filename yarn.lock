@@ -1199,6 +1199,33 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@capacitor/filesystem@npm:^7":
+  version: 7.1.8
+  resolution: "@capacitor/filesystem@npm:7.1.8"
+  dependencies:
+    "@capacitor/synapse": "npm:^1.0.3"
+  peerDependencies:
+    "@capacitor/core": ">=7.0.0"
+  checksum: 10c0/f93c9c5ffa1bdad70516ce78c21132bf3791ddceccab2e503d1951d7dc2639ac3096b883039ec889c6b9868ca94e127eee63ad7f4f54b48ba4de372da7bdbd7e
+  languageName: node
+  linkType: hard
+
+"@capacitor/share@npm:^7":
+  version: 7.0.4
+  resolution: "@capacitor/share@npm:7.0.4"
+  peerDependencies:
+    "@capacitor/core": ">=7.0.0"
+  checksum: 10c0/aff234dc1cdab045ecb193f01a8c3172eba9aa73101a82c430622bfdc4d6ea40665574d6539111a8dc69e363317f1bad5114512a0b0cd3020a4f228fbde84766
+  languageName: node
+  linkType: hard
+
+"@capacitor/synapse@npm:^1.0.3":
+  version: 1.0.4
+  resolution: "@capacitor/synapse@npm:1.0.4"
+  checksum: 10c0/83f37d06ebdb4234596f123417043aae8b0fd3b5905d399fe8bb7f1d7c3352c8449bef093793b01a0b3c4a59208ac27aec5b1ed7cf5e399c5c3004cc0ca74646
+  languageName: node
+  linkType: hard
+
 "@dimforge/rapier2d-compat@npm:^0.19.3":
   version: 0.19.3
   resolution: "@dimforge/rapier2d-compat@npm:0.19.3"
@@ -6126,6 +6153,8 @@ __metadata:
     "@capacitor/browser": "npm:^7"
     "@capacitor/cli": "npm:^7"
     "@capacitor/core": "npm:^7"
+    "@capacitor/filesystem": "npm:^7"
+    "@capacitor/share": "npm:^7"
     "@dimforge/rapier2d-compat": "npm:^0.19.3"
     "@eslint/js": "npm:^10.0.1"
     "@tauri-apps/api": "npm:^2"

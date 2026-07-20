@@ -90,6 +90,7 @@ export const zh = {
   auth: {
     login: "登录 SEKAI",
     loginShort: "登录",
+    loggingIn: "登录中…",
     logout: "退出登录",
     syncing: "同步中…",
     syncOk: "已同步",

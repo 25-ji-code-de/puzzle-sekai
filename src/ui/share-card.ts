@@ -587,6 +587,57 @@ export const shareScoreCard = async (summary: ScoreSummary): Promise<void> => {
     : t("gameOver.shareText", { score: summary.score });
   const title = t("menu.title");
 
+  // Capacitor native: Share plugin works where Web Share Level 2 (files) does not.
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform?.()) {
+      const { Share } = await import("@capacitor/share");
+      const { Filesystem, Directory } = await import("@capacitor/filesystem");
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("canvas blob null"));
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+          },
+          "image/png",
+          0.92,
+        );
+      });
+      const base64 = dataUrl.split(",")[1] || "";
+      const path = `share/${file.name}`;
+      await Filesystem.writeFile({
+        path,
+        data: base64,
+        directory: Directory.Cache,
+        recursive: true,
+      });
+      const { uri } = await Filesystem.getUri({
+        path,
+        directory: Directory.Cache,
+      });
+      await Share.share({
+        title,
+        text,
+        url: uri,
+        dialogTitle: title,
+      });
+      return;
+    }
+  } catch (err) {
+    const name =
+      err && typeof err === "object" && "name" in err
+        ? String((err as { name: unknown }).name)
+        : "";
+    if (name === "AbortError") return;
+    console.warn("[share] capacitor share failed, falling back", err);
+  }
+
   if (canShareFiles(file)) {
     try {
       await navigator.share({ files: [file], title, text });
@@ -598,6 +649,20 @@ export const shareScoreCard = async (summary: ScoreSummary): Promise<void> => {
           : "";
       if (name === "AbortError") return;
     }
+  }
+
+  // Web Share without files (text + url) — better than silent fail on mobile.
+  try {
+    if (typeof navigator.share === "function") {
+      await navigator.share({ title, text, url: SHARE_SITE_URL });
+      return;
+    }
+  } catch (err) {
+    const name =
+      err && typeof err === "object" && "name" in err
+        ? String((err as { name: unknown }).name)
+        : "";
+    if (name === "AbortError") return;
   }
 
   downloadFile(file);

@@ -90,6 +90,7 @@ export const en = {
   auth: {
     login: "Sign in with SEKAI",
     loginShort: "Sign in",
+    loggingIn: "Signing in…",
     logout: "Sign out",
     syncing: "Syncing…",
     syncOk: "Synced",

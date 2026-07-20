@@ -33,8 +33,19 @@ export const injectOAuthCallback = (url: string): void => {
     if (!qs) return;
     const next = `${window.location.pathname}?${qs}${window.location.hash || ""}`;
     window.history.replaceState({}, "", next);
+    // Keep the "Signing in…" chip visible until handleRedirectCallback finishes.
+    try {
+      sessionStorage.setItem("puzzleSekaiAuthPending", "1");
+    } catch {
+      /* private mode */
+    }
     void import("../auth").then(async ({ handleRedirectCallback }) => {
       const cb = await handleRedirectCallback();
+      try {
+        sessionStorage.removeItem("puzzleSekaiAuthPending");
+      } catch {
+        /* ignore */
+      }
       if (cb.handled && cb.ok) {
         const { pullMergePush } = await import("../sync");
         void pullMergePush();

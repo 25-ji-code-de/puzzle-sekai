@@ -90,6 +90,7 @@ export const ja = {
   auth: {
     login: "SEKAIでログイン",
     loginShort: "ログイン",
+    loggingIn: "ログイン中…",
     logout: "ログアウト",
     syncing: "同期中…",
     syncOk: "同期済み",

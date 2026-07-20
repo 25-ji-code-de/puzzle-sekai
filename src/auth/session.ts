@@ -164,20 +164,23 @@ export const getAccessToken = async (): Promise<string | null> => {
       refresh_token: session.refreshToken,
       client_id: PASS_CLIENT_ID,
     });
-    const res = await fetch(`${PASS_ISSUER}/oauth/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-    });
+    const { postForm } = await import("../native/http");
+    const res = await postForm(`${PASS_ISSUER}/oauth/token`, body);
     if (!res.ok) {
       clearSession();
       return null;
     }
-    const data = (await res.json()) as {
+    let data: {
       access_token?: string;
       refresh_token?: string;
       expires_in?: number;
     };
+    try {
+      data = res.json();
+    } catch {
+      clearSession();
+      return null;
+    }
     if (!data.access_token) {
       clearSession();
       return null;

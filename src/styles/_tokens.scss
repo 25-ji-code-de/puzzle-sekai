@@ -2,6 +2,11 @@
 // PIXI text styles stay in TS.
 
 :root {
+  // Fluid root size: shrinks on short / narrow viewports so fixed-px UI
+  // (menus, dialogs, settings) stays tappable without overflowing.
+  // 360×640 phone ≈ 14–15px; 1280 desktop ≈ 16px.
+  font-size: clamp(12px, 1.6vw + 0.5vh + 8px, 16px);
+
   --ui-bg-deep: rgba(15, 20, 40, 0.95);
   --ui-bg-card: rgba(20, 25, 50, 0.95);
   --ui-bg-dim: rgba(0, 0, 0, 0.7);
@@ -28,8 +33,8 @@
   --ui-mobile: #f5576c;
   --ui-key: #667eea;
   --ui-note: rgba(255, 220, 140, 0.9);
-  --ui-radius: 8px;
-  --ui-radius-lg: 16px;
+  --ui-radius: 0.5rem;
+  --ui-radius-lg: 1rem;
   --ui-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   --ui-z-pause-fab: 9000;
   --ui-z-menu: 9999;
@@ -43,6 +48,19 @@
   --font-display: sans-serif;
   --font-body: sans-serif;
   --font-mono: monospace;
+}
+
+// Extra shrink on short landscape viewports (phones in landscape ≈ 360–420px tall).
+@media (max-height: 480px) {
+  :root {
+    font-size: clamp(11px, 2.2vh + 6px, 14px);
+  }
+}
+
+@media (max-height: 360px) {
+  :root {
+    font-size: 11px;
+  }
 }
 
 .font-brand {

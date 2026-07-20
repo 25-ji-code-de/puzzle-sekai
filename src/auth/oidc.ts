@@ -100,11 +100,10 @@ const clearAuthQuery = () => {
 
 const fetchUserInfo = async (accessToken: string): Promise<AuthUser | null> => {
   try {
-    const res = await fetch(`${PASS_ISSUER}/oauth/userinfo`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const { getJson } = await import("../native/http");
+    const res = await getJson(`${PASS_ISSUER}/oauth/userinfo`, accessToken);
     if (!res.ok) return null;
-    const data = (await res.json()) as Record<string, unknown>;
+    const data = res.json<Record<string, unknown>>();
     const id = String(data.sub || data.id || "");
     const username = String(
       data.preferred_username || data.username || data.name || id,
@@ -172,25 +171,28 @@ export const handleRedirectCallback = async (): Promise<CallbackResult> => {
       redirect_uri: pending.redirectUri,
       code_verifier: pending.verifier,
     });
-    const res = await fetch(`${PASS_ISSUER}/oauth/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-    });
+    // Native shells use CapacitorHttp to bypass IdP CORS on https://localhost.
+    const { postForm } = await import("../native/http");
+    const res = await postForm(`${PASS_ISSUER}/oauth/token`, body);
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
       clearAuthQuery();
       return {
         handled: true,
         ok: false,
-        error: `token_${res.status}${text ? `:${text.slice(0, 80)}` : ""}`,
+        error: `token_${res.status}${res.text ? `:${res.text.slice(0, 80)}` : ""}`,
       };
     }
-    const data = (await res.json()) as {
+    let data: {
       access_token?: string;
       refresh_token?: string;
       expires_in?: number;
     };
+    try {
+      data = res.json();
+    } catch {
+      clearAuthQuery();
+      return { handled: true, ok: false, error: "token_bad_json" };
+    }
     if (!data.access_token) {
       clearAuthQuery();
       return { handled: true, ok: false, error: "no_access_token" };
