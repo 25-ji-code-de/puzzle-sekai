@@ -4,7 +4,7 @@
  */
 import type { GameSettings } from "../types";
 import { updateCurrentSettings } from "../store";
-import { joinClassNames } from "../../util/css-class";
+import { settingOptClassName } from "../../util/dialog-class";
 
 export type SettingsSectionCtx = {
   settings: GameSettings;
@@ -40,11 +40,7 @@ export const makeChip = (
   },
 ): HTMLDivElement => {
   const opt = document.createElement("div");
-  opt.className = joinClassNames(
-    "setting-opt",
-    opts?.className,
-    active && "active",
-  );
+  opt.className = settingOptClassName(active, opts?.className);
   if (opts?.title) opt.title = opts.title;
   if (opts?.html) {
     opt.innerHTML = opts.html;

@@ -6,6 +6,11 @@
  * the handle when the dialog is closed (see pause-menu / game-over-menu).
  */
 import { trapFocus, type FocusTrapHandle } from "../a11y";
+import {
+  dialogButtonClassName,
+  dialogCardClassName,
+  dialogOverlayClassName,
+} from "../util/dialog-class";
 
 export type DialogButtonVariant = "primary" | "neutral" | "danger";
 
@@ -16,7 +21,7 @@ export const buildDialogButton = (
 ): HTMLButtonElement => {
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = `ui-btn ui-btn--${variant}`;
+  btn.className = dialogButtonClassName(variant);
   btn.textContent = label;
   btn.onclick = onClick;
   return btn;
@@ -37,17 +42,14 @@ export const buildDialogShell = (opts: {
   overlay.id = opts.id;
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
-  overlay.className =
-    opts.backdropAlpha !== undefined && opts.backdropAlpha >= 0.75
-      ? "ui-overlay ui-overlay--dim"
-      : "ui-overlay";
+  overlay.className = dialogOverlayClassName(opts.backdropAlpha);
   // Dynamic dim strength when not default
   if (opts.backdropAlpha !== undefined && opts.backdropAlpha < 0.75) {
     overlay.style.background = `rgba(0,0,0,${opts.backdropAlpha})`;
   }
 
   const card = document.createElement("div");
-  card.className = opts.wide ? "ui-dialog ui-dialog--wide" : "ui-dialog";
+  card.className = dialogCardClassName(opts.wide);
 
   const title = document.createElement("div");
   title.className = "ui-dialog__title";

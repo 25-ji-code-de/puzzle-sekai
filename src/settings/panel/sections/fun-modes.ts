@@ -7,6 +7,7 @@ import {
 } from "../../../fun/modes";
 import { t, type MessageKey } from "../../../i18n";
 import { formatTimesMult } from "../../../util/format";
+import { settingOptClassName } from "../../../util/dialog-class";
 import {
   commitAndRefresh,
   makeOptionsRow,
@@ -43,7 +44,7 @@ export const appendFunModesSection = (
   FUN_MODE_DEFS.forEach((def) => {
     const on = !!settings.funModes[def.id];
     const opt = document.createElement("div");
-    opt.className = `setting-opt ${on ? "active" : ""}`;
+    opt.className = settingOptClassName(on);
     opt.title = t(`fun.${def.id}.description` as MessageKey);
     const shownFactor = def.itemLinked
       ? scaleItemLinkedFactor(def.scoreFactor, currentItemRate)

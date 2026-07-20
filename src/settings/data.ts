@@ -4,6 +4,7 @@
 import { SETTINGS_KEY } from "./types";
 import { resetCurrentSettingsToDefaults } from "./store";
 import { getStoragePort } from "./storage";
+import { devWarn } from "../util/dev-log";
 
 /** Keys owned by the app (auth intentionally excluded). Exported for tests. */
 export const isAppStorageKey = (key: string): boolean =>
@@ -32,7 +33,7 @@ export function clearAppData(): void {
       .filter(isAppStorageKey)
       .forEach((key) => storage.remove(key));
   } catch (e) {
-    console.warn("Failed to clear app data:", e);
+    devWarn("Failed to clear app data:", e);
   }
   resetCurrentSettingsToDefaults();
 }
@@ -44,7 +45,7 @@ export async function clearAppCaches(): Promise<number> {
     await Promise.all(names.map((name) => caches.delete(name)));
     return names.length;
   } catch (e) {
-    console.warn("Failed to clear caches:", e);
+    devWarn("Failed to clear caches:", e);
     return 0;
   }
 }
