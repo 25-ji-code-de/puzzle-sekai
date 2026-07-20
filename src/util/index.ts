@@ -25,3 +25,4 @@ export {
 } from "./dialog-class";
 export { nearestIndex } from "./nearest";
 export { manhattan, minManhattanToCells } from "./manhattan";
+export { maxOf, minOf } from "./minmax";

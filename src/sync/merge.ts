@@ -6,6 +6,7 @@ import { DAN_RUN_CAP, type DanRunEntry, type DanState } from "../score/dan";
 import type { HighScoreRecord } from "../settings";
 import { emptyPicoSyncData, type PicoSyncData } from "./types";
 import { clampInt, nonNegative } from "../util/clamp";
+import { maxOf } from "../util/minmax";
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
@@ -59,14 +60,13 @@ export const mergeDanStates = (local: DanState, cloud: DanState): DanState => {
   );
   const trimmed =
     runs.length > DAN_RUN_CAP ? runs.slice(runs.length - DAN_RUN_CAP) : runs;
-  const peakFromRuns = trimmed.reduce(
-    (m, r) => Math.max(m, r.maxCombo || 0),
+  const peakFromRuns = maxOf(
+    trimmed.map((r) => r.maxCombo || 0),
     0,
   );
-  const maxComboPeak = Math.max(
-    local.maxComboPeak || 0,
-    cloud.maxComboPeak || 0,
-    peakFromRuns,
+  const maxComboPeak = maxOf(
+    [local.maxComboPeak || 0, cloud.maxComboPeak || 0, peakFromRuns],
+    0,
   );
   return { version: 1, runs: trimmed, maxComboPeak };
 };

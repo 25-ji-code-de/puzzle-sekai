@@ -31,6 +31,7 @@ Short map of `src/` for contributors. Prefer domain purity and thin presentation
 | `css-class.ts`    | `joinClassNames` for settings chips                                                 |
 | `dialog-class.ts` | overlay / card / button / setting-opt class builders                                |
 | `dev-log.ts`      | DEV-only `devWarn`                                                                  |
+| `minmax.ts`       | `maxOf` / `minOf` array extremes                                                    |
 | `manhattan.ts`    | cell Manhattan distance helpers                                                     |
 | `nearest.ts`      | `nearestIndex` for column lock / snap                                               |
 | `index.ts`        | barrel re-exports                                                                   |
