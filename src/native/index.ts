@@ -10,5 +10,6 @@ export {
 export {
   openExternalUrl,
   applyWindowDisplayMode,
+  applyImmersiveSystemUi,
   type WindowDisplayMode,
 } from "./shell";

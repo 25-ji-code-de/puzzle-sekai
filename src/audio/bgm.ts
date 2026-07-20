@@ -71,11 +71,36 @@ export { playSfxPreview, playVoicePreview } from "./sfx";
 export const unlockAudio = (): void => {
   try {
     const pixiSound = sound as typeof sound & {
-      context?: { audioContext?: AudioContext };
+      context?: {
+        audioContext?: AudioContext;
+        unlocked?: boolean;
+      };
+      // Some builds expose unlock helpers on the default export.
+      unlock?: () => void;
     };
+    // pixi-sound WebAudio unlock (best-effort across versions)
+    try {
+      pixiSound.unlock?.();
+    } catch {
+      /* ignore */
+    }
     const ctx = pixiSound.context?.audioContext;
     if (ctx && ctx.state === "suspended") {
-      void ctx.resume();
+      void ctx.resume().catch(() => {
+        /* gesture may still be required on some WebViews */
+      });
+    }
+    // Capacitor Android WebView sometimes needs a second resume after splash.
+    if (ctx && typeof document !== "undefined") {
+      const resume = () => {
+        try {
+          if (ctx.state === "suspended") void ctx.resume();
+        } catch {
+          /* ignore */
+        }
+      };
+      document.addEventListener("visibilitychange", resume, { passive: true });
+      window.addEventListener("focus", resume, { passive: true });
     }
   } catch {
     /* ignore */

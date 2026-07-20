@@ -24,6 +24,10 @@ const bootstrapAuthCallback = async (): Promise<void> => {
       void import("../../native/deep-link").then(
         ({ bootstrapNativeDeepLinks }) => bootstrapNativeDeepLinks(),
       );
+      // Android immersive: hide status/nav bars as soon as the shell boots.
+      void import("../../native/shell").then(({ applyImmersiveSystemUi }) =>
+        applyImmersiveSystemUi(),
+      );
     }
   } catch (e) {
     console.warn("[auth] bootstrap callback", e);

@@ -9,8 +9,7 @@ const config: CapacitorConfig = {
   appName: "Puzzle SEKAI",
   webDir: "dist",
   server: {
-    // https scheme keeps Web Crypto / secure-context APIs available.
-    // CapacitorHttp (enabled below) bypasses CORS for IdP token exchange.
+    // https keeps Web Crypto / secure-context APIs available.
     androidScheme: "https",
   },
   android: {
@@ -18,10 +17,11 @@ const config: CapacitorConfig = {
     backgroundColor: "#1a1a1e",
   },
   plugins: {
+    // Do NOT enable global CapacitorHttp — it patches fetch/XHR and can break
+    // large binary audio loads (BGM/voice via pixi-sound). OAuth uses explicit
+    // CapacitorHttp.request in src/native/http.ts instead.
     CapacitorHttp: {
-      // Native HTTP for all fetch/XHR — IdP + gateway calls skip CORS on
-      // the Capacitor origin (https://localhost).
-      enabled: true,
+      enabled: false,
     },
   },
 };
