@@ -9,12 +9,9 @@ import {
   continuousContactColumnsForItem,
   landYInColumnFromGrid,
 } from "./contact-math";
+import { emptyBoardGrid } from "../test/empty-grid";
 
-const emptyGrid = (): (string | null)[][] =>
-  Array.from({ length: ROWS }, () =>
-    Array.from({ length: COLUMNS }, () => null),
-  );
-
+const emptyGrid = () => emptyBoardGrid(ROWS, COLUMNS);
 describe("cellsTouch", () => {
   it("same cell and ortho neighbors", () => {
     expect(cellsTouch(2, 3, 2, 3)).toBe(true);
@@ -34,12 +31,12 @@ describe("landYInColumnFromGrid", () => {
   });
   it("returns -1 when column is full", () => {
     const g = emptyGrid();
-    for (let y = 0; y < ROWS; y++) g[y][1] = "x";
+    for (let y = 0; y < ROWS; y++) g[y][1] = "Ichika";
     expect(landYInColumnFromGrid(g, 1)).toBe(-1);
   });
   it("lands one above first occupied cell from top", () => {
     const g = emptyGrid();
-    for (let y = 5; y < ROWS; y++) g[y][2] = "x";
+    for (let y = 5; y < ROWS; y++) g[y][2] = "Ichika";
     expect(landYInColumnFromGrid(g, 2)).toBe(4);
   });
   it("rejects out-of-range columns", () => {
@@ -59,7 +56,7 @@ describe("contactColumnsForItemOnGrid", () => {
 
   it("skips columns that cannot fit a 2-cell vertical piece", () => {
     const g = emptyGrid();
-    for (let y = 1; y < ROWS; y++) g[y][0] = "x";
+    for (let y = 1; y < ROWS; y++) g[y][0] = "Ichika";
     const cols = contactColumnsForItemOnGrid(g, 0, 0);
     expect(cols).not.toContain(0);
   });

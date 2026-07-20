@@ -8,11 +8,9 @@ import {
   stackHeightForPrimary,
   maxOccupiedHeight,
 } from "./stack";
-import type { BoardGrid } from "./grid-write";
+import { emptyBoardGrid } from "../../test/empty-grid";
 
-const emptyGrid = (rows = 6, cols = 4): BoardGrid =>
-  Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
-
+const emptyGrid = (rows = 6, cols = 4) => emptyBoardGrid(rows, cols);
 describe("columnsForPiece", () => {
   it("vertical cell2 / item / shrunk use primary column only", () => {
     expect(columnsForPiece(2, 0, "cell2")).toEqual([2]);

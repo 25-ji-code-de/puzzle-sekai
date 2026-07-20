@@ -10,13 +10,11 @@ import {
   dropFootprint,
   cloneGrid,
   copyGridInto,
-  type BoardGrid,
 } from "./grid-write";
 import { cell } from "../types/cell";
+import { emptyBoardGrid } from "../../test/empty-grid";
 
-const emptyGrid = (rows = 4, cols = 4): BoardGrid =>
-  Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
-
+const emptyGrid = (rows = 4, cols = 4) => emptyBoardGrid(rows, cols);
 describe("writeFootprint / clearFootprint", () => {
   it("writes tokens into in-bounds cells only", () => {
     const grid = emptyGrid();

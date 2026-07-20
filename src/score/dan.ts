@@ -7,6 +7,8 @@
  */
 import type { DifficultyLevel, GameMode } from "../settings";
 import type { ScoreRank } from "./rank";
+import { clamp, clampInt } from "../util/clamp";
+import { hexToRgba } from "../util/color";
 
 export const DAN_STORAGE_KEY = "puzzleSekaiDan";
 export const DAN_RUN_CAP = 100;
@@ -162,10 +164,7 @@ export const isSOrAbove = (rank: ScoreRank | string): boolean =>
   S_OR_ABOVE.has(rank as ScoreRank);
 
 export const difficultyWeight = (difficulty: number): number => {
-  const d = Math.min(
-    7,
-    Math.max(1, Math.floor(difficulty) || 1),
-  ) as DifficultyLevel;
+  const d = clampInt(difficulty, 1, 7) as DifficultyLevel;
   return DIFFICULTY_WEIGHT[d];
 };
 
@@ -219,17 +218,8 @@ export const getDanCssColor = (dan: DanId | string): string => {
   return getDanColor(dan);
 };
 
-export const getDanGlow = (dan: DanId | string): string => {
-  const hex = getDanColor(dan);
-  const raw = hex.replace("#", "");
-  if (raw.length !== 6) return "rgba(255, 255, 255, 0.25)";
-  const n = parseInt(raw, 16);
-  if (Number.isNaN(n)) return "rgba(255, 255, 255, 0.25)";
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r}, ${g}, ${b}, 0.4)`;
-};
+export const getDanGlow = (dan: DanId | string): string =>
+  hexToRgba(getDanColor(dan), 0.4) ?? "rgba(255, 255, 255, 0.25)";
 
 /** Inline style for DOM dan labels (gradient clip for 真·秘传). */
 export const danColorStyle = (dan: DanId | string): string => {
@@ -247,7 +237,7 @@ export const danColorStyle = (dan: DanId | string): string => {
 
 export const comboBonusOf = (maxComboPeak: number): number => {
   const peak = Number.isFinite(maxComboPeak) ? Math.max(0, maxComboPeak) : 0;
-  return Math.min(40_000, Math.floor(peak * 50));
+  return clamp(Math.floor(peak * 50), 0, 40_000);
 };
 
 /** Count trailing S+ runs (newest at end of array). */
@@ -262,7 +252,7 @@ export const sStreakOf = (runs: readonly DanRunEntry[]): number => {
 
 export const streakBonusOf = (streak: number): number => {
   const s = Number.isFinite(streak) ? Math.max(0, Math.floor(streak)) : 0;
-  return Math.min(60_000, s * 1_500);
+  return clamp(s * 1_500, 0, 60_000);
 };
 
 /**

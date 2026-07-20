@@ -12,13 +12,14 @@ import {
 import type { PieceKind } from "../../domain/types";
 import type { LocalPoint } from "./alpha-shape";
 import { aabbGap, poseAabb, type Pose } from "./pose";
+import { clampInt } from "../../util/clamp";
 
 /** Gap (px) under which two pieces are considered adjacent for clears / fun modes. */
 export const CONTACT_GAP = 8;
 
 export const projectToColumn = (worldX: number): number => {
   const col = Math.floor((worldX - BOARD_ORIGIN_X) / BOX_SIZE);
-  return Math.max(0, Math.min(COLUMNS - 1, col));
+  return clampInt(col, 0, COLUMNS - 1);
 };
 
 /**
@@ -28,7 +29,7 @@ export const projectToColumn = (worldX: number): number => {
  */
 export const projectToRow = (worldY: number): number => {
   const row = Math.floor((worldY - BOARD_ORIGIN_Y) / BOX_SIZE);
-  return Math.max(0, Math.min(ROWS - 1, row));
+  return clampInt(row, 0, ROWS - 1);
 };
 
 /** Center X of a column (cell center). */
