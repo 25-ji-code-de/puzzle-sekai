@@ -3,6 +3,7 @@
  * Opaque pixels → convex hull in space where (0,0) = sprite anchor / body origin.
  */
 import type * as PIXI from "pixi.js-legacy";
+import { atLeastOne } from "../../util/clamp";
 import { devWarn } from "../../util/dev-log";
 
 export type LocalPoint = { x: number; y: number };
@@ -133,11 +134,11 @@ export const buildAlphaShape = (sprite: PIXI.Sprite): AlphaShape | null => {
   }
 
   const frame = tex.frame;
-  const fw = Math.max(1, Math.floor(frame.width));
-  const fh = Math.max(1, Math.floor(frame.height));
+  const fw = atLeastOne(Math.floor(frame.width));
+  const fh = atLeastOne(Math.floor(frame.height));
   const scale = Math.min(1, MAX_SAMPLE / Math.max(fw, fh));
-  const sw = Math.max(1, Math.floor(fw * scale));
-  const sh = Math.max(1, Math.floor(fh * scale));
+  const sw = atLeastOne(Math.floor(fw * scale));
+  const sh = atLeastOne(Math.floor(fh * scale));
 
   let canvas: HTMLCanvasElement;
   try {
@@ -212,8 +213,8 @@ export const buildAlphaShape = (sprite: PIXI.Sprite): AlphaShape | null => {
     const shape: AlphaShape = {
       points: hull,
       halfExtents: {
-        x: Math.max(1, (maxX - minX) / 2),
-        y: Math.max(1, (maxY - minY) / 2),
+        x: atLeastOne((maxX - minX) / 2),
+        y: atLeastOne((maxY - minY) / 2),
       },
       center: { x: cx, y: cy },
     };

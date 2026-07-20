@@ -19,3 +19,9 @@ export const nonNegative = (n: number): number => {
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, n);
 };
+
+/** Floor at one; non-finite → 1. Useful for sizes / half-extents. */
+export const atLeastOne = (n: number): number => {
+  if (!Number.isFinite(n)) return 1;
+  return Math.max(1, n);
+};

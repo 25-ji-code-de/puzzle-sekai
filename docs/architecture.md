@@ -22,7 +22,7 @@ Short map of `src/` for contributors. Prefer domain purity and thin presentation
 
 | Module            | Role                                                 |
 | ----------------- | ---------------------------------------------------- |
-| `clamp.ts`        | `clamp` / `clampInt` / `nonNegative`                 |
+| `clamp.ts`        | `clamp` / `clampInt` / `nonNegative` / `atLeastOne`  |
 | `color.ts`        | `hexToPixi` / `hexToRgba` / `parseHexRgb`            |
 | `pad.ts`          | zero-pad digits for scores / timers                  |
 | `format.ts`       | `×mult`, percent, factor strings                     |

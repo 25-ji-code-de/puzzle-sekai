@@ -5,6 +5,7 @@
 import type { PieceKind } from "../../domain/types";
 import { colliderSpecFor } from "./colliders";
 import type { LocalPoint } from "./alpha-shape";
+import { nonNegative } from "../../util/clamp";
 
 export type Pose = { x: number; y: number; rotation: number };
 
@@ -73,7 +74,7 @@ export const aabbGap = (
   a: { minX: number; minY: number; maxX: number; maxY: number },
   b: { minX: number; minY: number; maxX: number; maxY: number },
 ): number => {
-  const dx = Math.max(0, Math.max(a.minX - b.maxX, b.minX - a.maxX));
-  const dy = Math.max(0, Math.max(a.minY - b.maxY, b.minY - a.maxY));
+  const dx = nonNegative(Math.max(a.minX - b.maxX, b.minX - a.maxX));
+  const dy = nonNegative(Math.max(a.minY - b.maxY, b.minY - a.maxY));
   return Math.hypot(dx, dy);
 };
