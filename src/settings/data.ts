@@ -5,7 +5,8 @@ import { SETTINGS_KEY } from "./types";
 import { resetCurrentSettingsToDefaults } from "./store";
 import { getStoragePort } from "./storage";
 
-const isAppStorageKey = (key: string): boolean =>
+/** Keys owned by the app (auth intentionally excluded). Exported for tests. */
+export const isAppStorageKey = (key: string): boolean =>
   key === SETTINGS_KEY ||
   key === "puzzleSekaiLocale" ||
   // Account dan run log (B30 + R10 + A)

@@ -9,6 +9,7 @@ describe("isOAuthCallbackUrl", () => {
     expect(
       isOAuthCallbackUrl("puzzlesekai://auth/callback?code=abc&state=xyz"),
     ).toBe(true);
+    expect(isOAuthCallbackUrl("puzzlesekai://auth/callback")).toBe(true);
   });
 
   it("rejects unrelated schemes / hosts", () => {
@@ -17,5 +18,7 @@ describe("isOAuthCallbackUrl", () => {
     );
     expect(isOAuthCallbackUrl("puzzlesekai://other/path")).toBe(false);
     expect(isOAuthCallbackUrl("not-a-url")).toBe(false);
+    expect(isOAuthCallbackUrl("")).toBe(false);
+    expect(isOAuthCallbackUrl("http://auth/callback")).toBe(false);
   });
 });

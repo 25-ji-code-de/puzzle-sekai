@@ -20,3 +20,10 @@ export {
   announceGameOver,
   announceMenu,
 } from "./announce-game";
+export {
+  TIME_CRITICAL_SEC,
+  formatTimerClock,
+  shouldAnnounceTimeLow,
+  scoreAnnounceKind,
+  shouldSpeakScore,
+} from "./announce-format";
