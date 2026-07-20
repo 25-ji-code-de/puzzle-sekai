@@ -5,6 +5,7 @@
 export {
   atLeastOne,
   clamp,
+  clampCount,
   clampInt,
   nonNegative,
   unitInterval,

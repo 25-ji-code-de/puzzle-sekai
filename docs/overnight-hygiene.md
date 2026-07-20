@@ -10,7 +10,7 @@ Autonomous hygiene/refactor stream on `main` starting at `d800e57` (not pushed u
 
 ## Highlights shipped
 
-- `src/util/`: clamp (+atLeastOne), color, pad, format, hash, date-key, css-class, dialog-class, dev-log, nearest
+- `src/util/`: clamp (+atLeastOne, unitInterval, clampCount), color, pad, format, hash, date-key, css-class, dialog-class, dev-log, nearest
 - Soft `console.warn` on best-effort paths → `devWarn` (prod quiet)
 - Replay parse, hidden-pause, display-policy, contact-math, focus-trap math, live-region math
 - Docs: `docs/architecture.md`, CONTRIBUTING/native notes for `build:fast` / util policy

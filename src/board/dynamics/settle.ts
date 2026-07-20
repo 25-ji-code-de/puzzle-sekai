@@ -48,8 +48,8 @@ export const settleWorld = async (): Promise<{ moved: boolean }> => {
   await new Promise<void>((resolve) => {
     const tick = (delta: number) => {
       // delta is PIXI frames (~1 at 60fps)
-      const dt = Math.min(delta, MAX_SUBSTEPS) / 60;
       const sub = clamp(Math.ceil(delta), 1, MAX_SUBSTEPS);
+      const dt = Math.min(delta, MAX_SUBSTEPS) / 60;
       for (let i = 0; i < sub; i++) {
         stepWorld(dt / sub);
       }

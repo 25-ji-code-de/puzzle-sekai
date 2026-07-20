@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   atLeastOne,
   clamp,
+  clampCount,
   clampInt,
   nonNegative,
   unitInterval,
@@ -54,5 +55,14 @@ describe("unitInterval", () => {
     expect(unitInterval(0.25)).toBe(0.25);
     expect(unitInterval(2)).toBe(1);
     expect(unitInterval(Number.NaN)).toBe(0);
+  });
+});
+
+describe("clampCount", () => {
+  it("keeps workers within [1, max]", () => {
+    expect(clampCount(8, 3)).toBe(3);
+    expect(clampCount(0, 4)).toBe(1);
+    expect(clampCount(2.9, 4)).toBe(2);
+    expect(clampCount(Number.NaN, 4)).toBe(1);
   });
 });

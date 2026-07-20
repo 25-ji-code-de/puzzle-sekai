@@ -31,3 +31,10 @@ export const unitInterval = (n: number): number => {
   if (!Number.isFinite(n)) return 0;
   return Math.min(1, Math.max(0, n));
 };
+
+/** Integer in [1, max] after flooring (non-finite / empty → 1, max < 1 → 1). */
+export const clampCount = (n: number, max: number): number => {
+  const hi = Number.isFinite(max) && max >= 1 ? Math.floor(max) : 1;
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(hi, Math.max(1, Math.floor(n)));
+};
