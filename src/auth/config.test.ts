@@ -2,11 +2,41 @@
  * Auth config pure helpers (redirect URI / configured flag).
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { isAuthConfigured, redirectUri } from "./config";
+import {
+  isAuthConfigured,
+  redirectUri,
+  stripTrailingSlash,
+  webRedirectUriFromLocation,
+} from "./config";
 
 describe("isAuthConfigured", () => {
   it("is a boolean reflecting client id presence", () => {
     expect(typeof isAuthConfigured()).toBe("boolean");
+  });
+});
+
+describe("stripTrailingSlash / webRedirectUriFromLocation", () => {
+  it("strips one trailing slash", () => {
+    expect(stripTrailingSlash("https://a/")).toBe("https://a");
+    expect(stripTrailingSlash("https://a")).toBe("https://a");
+  });
+
+  it("strips .html filename to its directory", () => {
+    expect(
+      webRedirectUriFromLocation("https://example.com", "/game/index.html"),
+    ).toBe("https://example.com/game/");
+  });
+
+  it("ensures trailing slash for directory paths", () => {
+    expect(webRedirectUriFromLocation("http://localhost:7426", "/play")).toBe(
+      "http://localhost:7426/",
+    );
+  });
+
+  it("keeps trailing slash paths", () => {
+    expect(webRedirectUriFromLocation("https://game.example", "/app/")).toBe(
+      "https://game.example/app/",
+    );
   });
 });
 
