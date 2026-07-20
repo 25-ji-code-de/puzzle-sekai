@@ -6,6 +6,13 @@
  * resolve them at build time.
  */
 
+const devWarn = (msg: string, err?: unknown): void => {
+  if (import.meta.env.DEV) {
+    if (err !== undefined) console.warn(msg, err);
+    else console.warn(msg);
+  }
+};
+
 /** Open an https URL in the OS default browser (not the app webview). */
 export const openExternalUrl = async (url: string): Promise<boolean> => {
   // Tauri 2 opener
@@ -67,8 +74,8 @@ export const applyWindowDisplayMode = async (
     } catch {
       /* already windowed */
     }
-  } catch {
-    /* not Tauri */
+  } catch (e) {
+    devWarn("[native] applyWindowDisplayMode failed (or not Tauri)", e);
   }
 };
 
