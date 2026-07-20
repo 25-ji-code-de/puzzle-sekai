@@ -81,20 +81,16 @@ export const savePkcePending = (p: PkcePending): void => {
 };
 
 export const loadPkcePending = (): PkcePending | null => {
-  try {
-    const raw = readPkceRaw();
-    if (!raw) return null;
-    const o = JSON.parse(raw) as Partial<PkcePending>;
-    if (!o.verifier || !o.state || !o.redirectUri) return null;
-    return {
-      verifier: o.verifier,
-      state: o.state,
-      nonce: o.nonce || "",
-      redirectUri: o.redirectUri,
-    };
-  } catch {
-    return null;
-  }
+  const raw = readPkceRaw();
+  if (!raw) return null;
+  const o = safeJsonParse<Partial<PkcePending>>(raw);
+  if (!o?.verifier || !o.state || !o.redirectUri) return null;
+  return {
+    verifier: o.verifier,
+    state: o.state,
+    nonce: o.nonce || "",
+    redirectUri: o.redirectUri,
+  };
 };
 
 export const clearPkcePending = (): void => {

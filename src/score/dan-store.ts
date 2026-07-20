@@ -24,6 +24,7 @@ import type {
 import { getStoragePort } from "../settings/storage";
 import { clampInt, nonNegative } from "../util/clamp";
 import { maxOf } from "../util/minmax";
+import { safeJsonParse } from "../util/json";
 import { devWarn } from "../util/dev-log";
 
 export type RecordDanRunInput = {
@@ -157,27 +158,24 @@ const parseEntry = (raw: unknown): DanRunEntry | null => {
 
 export const parseDanState = (raw: string | null): DanState => {
   if (!raw) return emptyDanState();
-  try {
-    const obj = JSON.parse(raw) as Partial<DanState>;
-    const runsIn = Array.isArray(obj.runs) ? obj.runs : [];
-    const runs: DanRunEntry[] = [];
-    for (const r of runsIn) {
-      const e = parseEntry(r);
-      if (e) runs.push(e);
-    }
-    runs.sort((a, b) => a.playedAt - b.playedAt);
-    const trimmed =
-      runs.length > DAN_RUN_CAP ? runs.slice(runs.length - DAN_RUN_CAP) : runs;
-    const maxComboPeak = nonNegative(
-      maxOf(
-        [Number(obj.maxComboPeak) || 0, ...trimmed.map((r) => r.maxCombo)],
-        0,
-      ),
-    );
-    return { version: DAN_STATE_VERSION, runs: trimmed, maxComboPeak };
-  } catch {
-    return emptyDanState();
+  const obj = safeJsonParse<Partial<DanState>>(raw);
+  if (!obj) return emptyDanState();
+  const runsIn = Array.isArray(obj.runs) ? obj.runs : [];
+  const runs: DanRunEntry[] = [];
+  for (const r of runsIn) {
+    const e = parseEntry(r);
+    if (e) runs.push(e);
   }
+  runs.sort((a, b) => a.playedAt - b.playedAt);
+  const trimmed =
+    runs.length > DAN_RUN_CAP ? runs.slice(runs.length - DAN_RUN_CAP) : runs;
+  const maxComboPeak = nonNegative(
+    maxOf(
+      [Number(obj.maxComboPeak) || 0, ...trimmed.map((r) => r.maxCombo)],
+      0,
+    ),
+  );
+  return { version: DAN_STATE_VERSION, runs: trimmed, maxComboPeak };
 };
 
 export const loadDanState = (): DanState => {

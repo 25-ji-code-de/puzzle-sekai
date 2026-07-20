@@ -9,6 +9,7 @@ import {
   type ReplaySummary,
 } from "./types";
 import { parseReplayEntry, sortReplaysNewestFirst } from "./parse";
+import { safeJsonParse } from "../util/json";
 
 export {
   isReplayInput,
@@ -17,17 +18,13 @@ export {
 } from "./parse";
 
 export const loadReplayEntries = (): ReplayEntry[] => {
-  try {
-    const raw = getStoragePort().get(REPLAY_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return sortReplaysNewestFirst(
-      parsed.map(parseReplayEntry).filter(Boolean) as ReplayEntry[],
-    ).slice(0, REPLAY_LIMIT);
-  } catch {
-    return [];
-  }
+  const raw = getStoragePort().get(REPLAY_STORAGE_KEY);
+  if (!raw) return [];
+  const parsed = safeJsonParse<unknown>(raw);
+  if (!Array.isArray(parsed)) return [];
+  return sortReplaysNewestFirst(
+    parsed.map(parseReplayEntry).filter(Boolean) as ReplayEntry[],
+  ).slice(0, REPLAY_LIMIT);
 };
 
 const saveReplayEntries = (entries: ReplayEntry[]): void => {
