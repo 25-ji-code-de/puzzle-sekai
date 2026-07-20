@@ -251,7 +251,7 @@ export const sStreakOf = (runs: readonly DanRunEntry[]): number => {
 };
 
 export const streakBonusOf = (streak: number): number => {
-  const s = Number.isFinite(streak) ? Math.max(0, Math.floor(streak)) : 0;
+  const s = Number.isFinite(streak) ? Math.floor(nonNegative(streak)) : 0;
   return clamp(s * 1_500, 0, 60_000);
 };
 

@@ -5,6 +5,7 @@
 import { DAN_RUN_CAP, type DanRunEntry, type DanState } from "../score/dan";
 import type { HighScoreRecord } from "../settings";
 import { emptyPicoSyncData, type PicoSyncData } from "./types";
+import { clampInt, nonNegative } from "../util/clamp";
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
@@ -124,15 +125,16 @@ export const parsePicoSyncData = (raw: unknown): PicoSyncData | null => {
           ? r.timeAttackDuration
           : undefined,
       score: Math.floor(score),
-      maxCombo: Math.max(0, Math.floor(Number(r.maxCombo) || 0)),
-      difficulty: Math.min(
+      maxCombo: nonNegative(Math.floor(Number(r.maxCombo) || 0)),
+      difficulty: clampInt(
+        Math.floor(Number(r.difficulty) || 1),
+        1,
         7,
-        Math.max(1, Math.floor(Number(r.difficulty) || 1)),
       ) as DanRunEntry["difficulty"],
       entertainment: r.entertainment === true,
       multiplier: mult,
       scoreRank: String(r.scoreRank || "D") as DanRunEntry["scoreRank"],
-      rating: Math.max(0, Math.floor(Number(r.rating) || 0)),
+      rating: nonNegative(Math.floor(Number(r.rating) || 0)),
     };
     if (Number.isFinite(storedEffective) && storedEffective > 0) {
       entry.effectiveScore = storedEffective;

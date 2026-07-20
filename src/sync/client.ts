@@ -5,6 +5,7 @@ import { getAccessToken, logout } from "../auth";
 import { GATEWAY_BASE, SYNC_PROJECT } from "../auth/config";
 import { parsePicoSyncData } from "./merge";
 import type { PicoSyncData } from "./types";
+import { nonNegative } from "../util/clamp";
 
 export type CloudSyncEnvelope = {
   user_id?: string;
@@ -73,7 +74,7 @@ export const uploadCloudSync = async (
     headers,
     body: JSON.stringify({
       project: SYNC_PROJECT,
-      version: Math.max(0, cloudVersion),
+      version: nonNegative(cloudVersion),
       data,
     }),
   });

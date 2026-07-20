@@ -59,6 +59,7 @@ import {
   stepShiftX,
   tryRotate,
 } from "../board/dynamics";
+import { nonNegative } from "../util/clamp";
 
 export { nextCharacter, initRNG, randomCharacter } from "./rng";
 export { getMatchSeed } from "../domain/prng";
@@ -185,7 +186,7 @@ export const createPiece = async (
 
   const pieceY = () => {
     const rawY = (piece.y - BOX_SIZE / 2) / BOX_SIZE;
-    return Math.max(0, Math.ceil(rawY));
+    return Math.ceil(nonNegative(rawY));
   };
 
   const tryShiftToCol = (fromCol: number, targetCol: number, y: number) => {

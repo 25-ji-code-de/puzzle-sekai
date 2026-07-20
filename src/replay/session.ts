@@ -23,6 +23,7 @@ import {
   type ReplayInput,
   type ReplaySettingsSnapshot,
 } from "./types";
+import { nonNegative } from "../util/clamp";
 
 type ReplayFinishSummary = {
   score: number;
@@ -103,7 +104,7 @@ export const replayModeLabel = (mode: GameMode): string =>
   mode === "timeAttack" ? "timeAttack" : mode === "daily" ? "daily" : "endless";
 
 const elapsedMs = (startedAt: number, pausedAccumMs: number): number =>
-  Math.max(0, Math.floor(nowMs() - startedAt - pausedAccumMs));
+  Math.floor(nonNegative(nowMs() - startedAt - pausedAccumMs));
 
 const isReplayRecordableSettings = (settings: GameSettings): boolean =>
   settings.funModes?.truePhysics !== true;
@@ -158,7 +159,7 @@ export const pauseReplayRecordingClock = (): void => {
 
 export const resumeReplayRecordingClock = (): void => {
   if (!recordSession || !recordSession.pausedAt) return;
-  recordSession.pausedAccumMs += Math.max(0, nowMs() - recordSession.pausedAt);
+  recordSession.pausedAccumMs += nonNegative(nowMs() - recordSession.pausedAt);
   recordSession.pausedAt = 0;
 };
 
@@ -246,7 +247,7 @@ export const pauseReplayPlaybackClock = (): void => {
 
 export const resumeReplayPlaybackClock = (): void => {
   if (!playSession || !playSession.pausedAt) return;
-  playSession.pausedAccumMs += Math.max(0, nowMs() - playSession.pausedAt);
+  playSession.pausedAccumMs += nonNegative(nowMs() - playSession.pausedAt);
   playSession.pausedAt = 0;
 };
 
