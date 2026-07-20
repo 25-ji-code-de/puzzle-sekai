@@ -168,8 +168,9 @@ export const zh = {
       borderless: "无边框",
       fullscreen: "全屏",
       windowedHelp: "普通可缩放窗口。开始游戏时不会自动全屏。",
-      borderlessHelp: "无边框窗口并最大化铺满屏幕（桌面端）。",
-      fullscreenHelp: "独占全屏（游戏开始时进入）。",
+      windowedWebHelp: "普通页面显示。开始游戏时不会自动全屏。",
+      borderlessHelp: "无边框窗口并最大化铺满屏幕（仅桌面客户端）。",
+      fullscreenHelp: "全屏（开始游戏或切换时进入）。",
     },
     replays: {
       label: "回放",

@@ -172,8 +172,10 @@ export const en = {
       fullscreen: "Fullscreen",
       windowedHelp:
         "Normal resizable window. The game won't auto-fullscreen on start.",
-      borderlessHelp: "Borderless maximized window (desktop).",
-      fullscreenHelp: "Exclusive fullscreen (entered on game start).",
+      windowedWebHelp:
+        "Normal page layout. The game won't auto-fullscreen on start.",
+      borderlessHelp: "Borderless maximized window (desktop app only).",
+      fullscreenHelp: "Fullscreen (entered on start or when selected).",
     },
     replays: {
       label: "Replays",
