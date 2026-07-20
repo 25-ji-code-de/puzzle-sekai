@@ -5,6 +5,7 @@
 import { GAME_GROUPS, type GroupName } from "../settings/types";
 import type { ScoreSummary } from "./model";
 import { padStartDigits, splitPaddedDigits } from "../util/pad";
+import { formatTimesMult } from "../util/format";
 
 export const padDigits = (n: number, len: number): string =>
   padStartDigits(n, len);
@@ -27,7 +28,7 @@ export const groupsForSummary = (summary: ScoreSummary): GroupName[] => {
   return GAME_GROUPS.filter((g) => wanted.has(g));
 };
 
-export const formatMultiplier = (mult: number): string => `×${mult.toFixed(2)}`;
+export const formatMultiplier = (mult: number): string => formatTimesMult(mult);
 
 export const SCORE_PAD = 8;
 export const COMBO_PAD = 4;

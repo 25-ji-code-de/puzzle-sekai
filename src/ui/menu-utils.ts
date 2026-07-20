@@ -10,6 +10,7 @@ import {
 } from "../settings";
 import { t } from "../i18n";
 import { nextHighScoreCursor } from "./menu-cursor";
+import { padStartDigits } from "../util/pad";
 
 export { nextHighScoreCursor } from "./menu-cursor";
 
@@ -93,7 +94,7 @@ export const highScoreRowHtml = (): string => {
   }
 
   const formatRecord = (score: number, diff: number, ent: boolean) => {
-    const scoreStr = score.toString().padStart(6, "0");
+    const scoreStr = padStartDigits(score, 6);
     const star =
       diff >= 1 && diff <= 7
         ? getDifficultyLabel(diff as DifficultyLevel)
