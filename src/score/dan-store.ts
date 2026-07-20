@@ -22,6 +22,7 @@ import type {
   TimeAttackDuration,
 } from "../settings";
 import { getStoragePort } from "../settings/storage";
+import { clampInt } from "../util/clamp";
 
 export type RecordDanRunInput = {
   mode: GameMode;
@@ -74,7 +75,7 @@ const makeId = (playedAt: number, score: number): string => {
 };
 
 const clampDifficulty = (d: number): DifficultyLevel =>
-  Math.min(7, Math.max(1, Math.floor(d) || 1)) as DifficultyLevel;
+  clampInt(d, 1, 7) as DifficultyLevel;
 
 const recomputeRating = (entry: {
   score: number;

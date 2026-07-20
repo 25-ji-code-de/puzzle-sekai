@@ -1,7 +1,5 @@
 /**
  * Empty rectangular board grids for unit tests (domain / board).
+ * Re-exports production helper so tests share one implementation.
  */
-import type { BoardGrid } from "../domain/piece/grid-write";
-
-export const emptyBoardGrid = (rows: number, cols: number): BoardGrid =>
-  Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
+export { createEmptyBoardGrid as emptyBoardGrid } from "../domain/piece/grid-write";

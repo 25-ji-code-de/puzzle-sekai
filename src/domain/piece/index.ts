@@ -44,6 +44,7 @@ export { footprintCollides, willCollidePrimary } from "./collision";
 
 export type { BoardGrid } from "./grid-write";
 export {
+  createEmptyBoardGrid,
   writeFootprint,
   clearFootprint,
   maxDropDistance,

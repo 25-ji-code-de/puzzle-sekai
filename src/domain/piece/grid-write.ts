@@ -9,6 +9,12 @@ import { bottomCells, translateCells } from "./cells";
 
 export type { BoardGrid, Cell };
 
+/** Allocate an empty rectangular occupancy grid. */
+export const createEmptyBoardGrid = (rows: number, cols: number): BoardGrid =>
+  Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => null as BoardCell),
+  );
+
 /** Write token into each footprint cell (in-bounds only). */
 export const writeFootprint = (
   grid: BoardGrid,
