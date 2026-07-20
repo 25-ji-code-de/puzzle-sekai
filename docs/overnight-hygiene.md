@@ -22,7 +22,13 @@ yarn test && yarn typecheck && yarn lint && yarn format:check
 # optional full: yarn ci
 ```
 
-Approximate suite size after session: ~550 tests / ~80 files (grows with util tests).
+Approximate suite size after session: ~551 tests / ~80 files (grows with util tests).
+
+## Recent tip commits (local)
+
+- `devWarn` sweep across auth/native/sync/UI/game
+- `nonNegative` / `clamp` adoption in score, sync, replay, active
+- Dialog/settings class builders + `nearestIndex`
 
 ## Do not touch without review
 

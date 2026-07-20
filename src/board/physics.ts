@@ -29,6 +29,7 @@ import {
   cellTopLeftY,
 } from "../domain/piece";
 import { placeSpriteAtAnchor } from "../presentation/placement";
+import { nonNegative } from "../util/clamp";
 
 /** Slightly slower than a snap so the pry-up arc reads clearly. */
 const TIP_ROTATE_FRAMES = 18;
@@ -394,7 +395,7 @@ const animateTip = (plan: TipPlan): Promise<void> => {
         members.forEach(({ sp }, i) => {
           const p = poses[i];
           sp.sprite.rotation = p.startRot + angleEnd;
-          sp.sprite.zIndex = Math.max(0, (sp.sprite.zIndex || 0) - 100);
+          sp.sprite.zIndex = nonNegative((sp.sprite.zIndex || 0) - 100);
           // Commit cells by tip geometry — never via primaryFromSprite re-derive
           commitTipLanding(
             sp,
