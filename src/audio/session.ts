@@ -19,6 +19,13 @@ import {
   type BgmKey,
 } from "./bgm";
 
+const devWarn = (msg: string, err?: unknown): void => {
+  if (import.meta.env.DEV) {
+    if (err !== undefined) console.warn(msg, err);
+    else console.warn(msg);
+  }
+};
+
 let bgmPlaying: PIXI.sound.Sound | undefined;
 let bgmActive = false;
 
@@ -55,8 +62,8 @@ export const stopBgm = () => {
   if (bgmPlaying) {
     try {
       bgmPlaying.stop();
-    } catch {
-      /* ignore */
+    } catch (e) {
+      devWarn("[audio] stopBgm failed", e);
     }
   }
   stopAllBgmAliases();
