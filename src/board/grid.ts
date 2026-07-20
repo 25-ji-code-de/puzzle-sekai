@@ -2,6 +2,7 @@
  * Shared grid helpers: adjacency, cell keys, bounds.
  * Pure utilities — no sprite / PIXI coupling.
  */
+import { random as matchRandom } from "../domain/prng";
 
 export const DIRS_ORTHO: [number, number][] = [
   [-1, 0],
@@ -73,8 +74,6 @@ export const isAdjacentToAny = (
   cells.some(([ex, ey]) =>
     others.some(([mx, my]) => manhattan(ex, ey, mx, my) === 1),
   );
-
-import { random as matchRandom } from "../domain/prng";
 
 /**
  * Fisher–Yates shuffle. Defaults to the match PRNG so wonder-blast / gameplay

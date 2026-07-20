@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   emptyRecord,
   getHighScoreKey,
+  highScoreBucketKey,
   listHighScoreRecords,
   loadBestHighScoreRecord,
   loadHighScore,
@@ -78,6 +79,23 @@ describe("getHighScoreKey", () => {
   it("clamps difficulty into 1–7", () => {
     expect(getHighScoreKey("endless", 0, false)).toBe("hs:endless:1:std");
     expect(getHighScoreKey("endless", 99, true)).toBe("hs:endless:7:ent");
+  });
+});
+
+describe("highScoreBucketKey", () => {
+  it("builds daily keys with an explicit date (no clock)", () => {
+    expect(
+      highScoreBucketKey("daily", 2, false, { dailyDateKey: "2026-07-19" }),
+    ).toBe("hs:daily:2026-07-19:2:std");
+    expect(
+      highScoreBucketKey("daily", 2, true, { dailyDateKey: "2026-07-19" }),
+    ).toBe("hs:daily:2026-07-19:2:ent");
+  });
+
+  it("defaults TA duration to 90", () => {
+    expect(highScoreBucketKey("timeAttack", 3, false)).toBe(
+      "hs:timeAttack:90:3:std",
+    );
   });
 });
 

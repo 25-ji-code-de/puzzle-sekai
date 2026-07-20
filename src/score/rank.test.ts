@@ -7,6 +7,7 @@ import {
   getScoreRankColor,
   getScoreRankCssColor,
   getScoreRankGlow,
+  hexToRgba,
   scoreRankColorStyle,
   SCORE_RANKS,
   SCORE_RANK_COLORS,
@@ -166,5 +167,12 @@ describe("rank colors", () => {
     // #ffd76a → 255, 215, 106
     expect(glow).toBe("rgba(255, 215, 106, 0.4)");
     expect(getScoreRankGlow("not-a-rank")).toBe("rgba(138, 143, 156, 0.4)"); // D
+  });
+
+  it("hexToRgba parses #rrggbb", () => {
+    expect(hexToRgba("#ff0000", 0.5)).toBe("rgba(255, 0, 0, 0.5)");
+    expect(hexToRgba("00ff00", 1)).toBe("rgba(0, 255, 0, 1)");
+    expect(hexToRgba("#fff", 1)).toBeNull();
+    expect(hexToRgba("not-hex", 1)).toBeNull();
   });
 });

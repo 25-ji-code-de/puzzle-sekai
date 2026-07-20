@@ -34,19 +34,44 @@ function dailyDateKeyForHs(): string {
  * - hs:endless:{d}:{std|ent}
  * - hs:timeAttack:{dur}:{d}:{std|ent}
  * - hs:daily:{YYYY-MM-DD}:{d}:{std|ent}
+ *
+ * Pure builder (no store / clock). Prefer this in tests; {@link getHighScoreKey}
+ * fills daily date + TA duration from live settings.
  */
+export function highScoreBucketKey(
+  mode: GameMode,
+  difficulty: number,
+  entertainment: boolean,
+  opts?: { timeAttackDuration?: number; dailyDateKey?: string },
+): string {
+  const tag = entTag(entertainment);
+  const d = Math.min(7, Math.max(1, difficulty | 0));
+  if (mode === "endless") return `hs:endless:${d}:${tag}`;
+  if (mode === "daily") {
+    const dateKey = opts?.dailyDateKey || "1970-01-01";
+    return `hs:daily:${dateKey}:${d}:${tag}`;
+  }
+  const duration = opts?.timeAttackDuration || 90;
+  return `hs:timeAttack:${duration}:${d}:${tag}`;
+}
+
 export function getHighScoreKey(
   mode: GameMode,
   difficulty: number,
   entertainment: boolean,
   settings?: GameSettings,
 ): string {
-  const tag = entTag(entertainment);
-  const d = Math.min(7, Math.max(1, difficulty | 0));
-  if (mode === "endless") return `hs:endless:${d}:${tag}`;
-  if (mode === "daily") return `hs:daily:${dailyDateKeyForHs()}:${d}:${tag}`;
-  const duration = settings?.timeAttackDuration || 90;
-  return `hs:timeAttack:${duration}:${d}:${tag}`;
+  if (mode === "daily") {
+    return highScoreBucketKey(mode, difficulty, entertainment, {
+      dailyDateKey: dailyDateKeyForHs(),
+    });
+  }
+  if (mode === "timeAttack") {
+    return highScoreBucketKey(mode, difficulty, entertainment, {
+      timeAttackDuration: settings?.timeAttackDuration || 90,
+    });
+  }
+  return highScoreBucketKey(mode, difficulty, entertainment);
 }
 
 export function parseRecord(raw: string | null): HighScoreRecord {
