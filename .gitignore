@@ -36,12 +36,27 @@ out/
 /dist/
 .cache/
 
+# Tauri
+src-tauri/target/
+
+# Capacitor / Android local
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/captures/
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+
 # Local env (keep .env.example)
 .env
 .env.local
 .env.*.local
 .env.development
 .env.production
+# .env.native is committed (public OAuth client + VITE_NATIVE=1 defaults)
 
 # Audio
 *.m4a

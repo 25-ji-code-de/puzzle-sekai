@@ -1,7 +1,7 @@
 /**
  * Auth config pure helpers (redirect URI / configured flag).
  */
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { isAuthConfigured, redirectUri } from "./config";
 
 describe("isAuthConfigured", () => {
@@ -16,6 +16,7 @@ describe("redirectUri", () => {
 
   afterEach(() => {
     g.window = prevWindow;
+    vi.unstubAllEnvs();
   });
 
   it("strips .html filename to its directory", () => {
@@ -57,5 +58,17 @@ describe("redirectUri", () => {
       },
     } as unknown as Window;
     expect(redirectUri()).toBe("http://localhost:7426/");
+  });
+
+  it("uses fixed custom scheme when VITE_NATIVE=1", () => {
+    vi.stubEnv("VITE_NATIVE", "1");
+    vi.stubEnv("VITE_NATIVE_REDIRECT_URI", "puzzlesekai://auth/callback");
+    g.window = {
+      location: {
+        origin: "https://tauri.localhost",
+        pathname: "/",
+      },
+    } as unknown as Window;
+    expect(redirectUri()).toBe("puzzlesekai://auth/callback");
   });
 });

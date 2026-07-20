@@ -6,3 +6,5 @@ coverage
 *.min.js
 *.map
 public
+android
+src-tauri/target

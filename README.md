@@ -64,6 +64,18 @@ yarn start
 yarn build
 ```
 
+### 桌面 / Android 客户端（下载包）
+
+Web 版仍然是主交付物。可选的原生壳（Tauri 桌面 + Capacitor Android）把同一份 `dist/` 打成安装包，仅通过 GitHub Releases 分发、不上架应用商店。
+
+详见 **[docs/native.md](./docs/native.md)**（Rust / Android SDK 前置、OAuth `puzzlesekai://` 注册、打包命令）。
+
+```bash
+yarn build:native   # 无 Service Worker 的壳用前端产物
+yarn tauri:build    # 需 Rust 工具链
+yarn cap:sync       # 同步到 android/
+```
+
 ## 🛠️ 技术栈
 
 - **渲染**: [PixiJS v5](https://pixijs.com/) (pixi.js-legacy)
@@ -72,6 +84,8 @@ yarn build
 - **构建**: [Vite](https://vitejs.dev/)
 - **语言**: TypeScript
 - **样式**: SCSS
+- **桌面壳**: [Tauri 2](https://v2.tauri.app/)（可选）
+- **Android 壳**: [Capacitor](https://capacitorjs.com/)（可选，侧载）
 
 ## 🎮 操作说明
 

@@ -1,8 +1,15 @@
 /**
  * Persist OAuth tokens + user profile (localStorage via StoragePort).
+ * PKCE pending uses sessionStorage on web; localStorage on native shells so
+ * custom-scheme OAuth hops do not drop the verifier/state.
  */
 import { getStoragePort } from "../settings/storage";
-import { AUTH_STORAGE_KEY, PASS_CLIENT_ID, PASS_ISSUER } from "./config";
+import {
+  AUTH_STORAGE_KEY,
+  isNativeBuild,
+  PASS_CLIENT_ID,
+  PASS_ISSUER,
+} from "./config";
 
 export type AuthUser = {
   id: string;
@@ -19,7 +26,7 @@ export type AuthSession = {
   user: AuthUser;
 };
 
-const PKCE_SESSION_KEY = "puzzleSekaiPkce";
+export const PKCE_SESSION_KEY = "puzzleSekaiPkce";
 
 export type PkcePending = {
   verifier: string;
@@ -28,17 +35,52 @@ export type PkcePending = {
   redirectUri: string;
 };
 
-export const savePkcePending = (p: PkcePending): void => {
+const readPkceRaw = (): string | null => {
+  if (isNativeBuild()) {
+    return getStoragePort().get(PKCE_SESSION_KEY);
+  }
   try {
-    sessionStorage.setItem(PKCE_SESSION_KEY, JSON.stringify(p));
+    return sessionStorage.getItem(PKCE_SESSION_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const writePkceRaw = (raw: string): void => {
+  if (isNativeBuild()) {
+    getStoragePort().set(PKCE_SESSION_KEY, raw);
+    return;
+  }
+  try {
+    sessionStorage.setItem(PKCE_SESSION_KEY, raw);
   } catch {
     /* private mode */
   }
 };
 
+const removePkceRaw = (): void => {
+  if (isNativeBuild()) {
+    getStoragePort().remove(PKCE_SESSION_KEY);
+    return;
+  }
+  try {
+    sessionStorage.removeItem(PKCE_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
+export const savePkcePending = (p: PkcePending): void => {
+  try {
+    writePkceRaw(JSON.stringify(p));
+  } catch {
+    /* private mode / quota */
+  }
+};
+
 export const loadPkcePending = (): PkcePending | null => {
   try {
-    const raw = sessionStorage.getItem(PKCE_SESSION_KEY);
+    const raw = readPkceRaw();
     if (!raw) return null;
     const o = JSON.parse(raw) as Partial<PkcePending>;
     if (!o.verifier || !o.state || !o.redirectUri) return null;
@@ -55,7 +97,7 @@ export const loadPkcePending = (): PkcePending | null => {
 
 export const clearPkcePending = (): void => {
   try {
-    sessionStorage.removeItem(PKCE_SESSION_KEY);
+    removePkceRaw();
   } catch {
     /* ignore */
   }

@@ -6,6 +6,13 @@
   "scripts": {
     "start": "vite --port 7426",
     "build": "vite build",
+    "build:native": "vite build --mode native",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "cap:sync": "yarn build:native && cap sync android",
+    "android:open": "cap open android",
+    "android:apk": "yarn cap:sync && cd android && ./gradlew assembleRelease",
     "preview": "vite preview",
     "fonts:subset": "node scripts/subset-fonts.mjs",
     "format": "prettier --write .",
@@ -18,7 +25,10 @@
     "ci": "yarn test && yarn typecheck && yarn lint && yarn format:check && yarn build"
   },
   "devDependencies": {
+    "@capacitor/android": "^7",
+    "@capacitor/cli": "^7",
     "@eslint/js": "^10.0.1",
+    "@tauri-apps/cli": "^2",
     "@types/qrcode": "^1.5.6",
     "eslint": "^10.7.0",
     "eslint-plugin-unicorn": "^72.0.0",
@@ -46,7 +56,10 @@
     "**/*.{json,md,scss,css,html,yml,yaml}": "yarn exec prettier --write"
   },
   "dependencies": {
+    "@capacitor/app": "^7",
+    "@capacitor/core": "^7",
     "@dimforge/rapier2d-compat": "^0.19.3",
+    "@tauri-apps/plugin-deep-link": "^2",
     "@types/hammerjs": "^2.0.36",
     "hammerjs": "^2.0.8",
     "pixi-sound": "^3.0.4",

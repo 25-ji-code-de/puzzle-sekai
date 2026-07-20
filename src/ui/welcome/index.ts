@@ -10,11 +10,20 @@ import { showWelcomePage } from "./menu";
  */
 const bootstrapAuthCallback = async (): Promise<void> => {
   try {
-    const { handleRedirectCallback } = await import("../../auth");
+    const { handleRedirectCallback, isNativeBuild } =
+      await import("../../auth");
     const cb = await handleRedirectCallback();
     if (cb.handled && cb.ok) {
       const { pullMergePush } = await import("../../sync");
       void pullMergePush();
+    }
+    // Native shells: listen for custom-scheme OAuth returns that arrive after
+    // boot (or via cold-start deep link). Dynamic import keeps Capacitor/Tauri
+    // out of the web graph.
+    if (isNativeBuild()) {
+      void import("../../native/deep-link").then(
+        ({ bootstrapNativeDeepLinks }) => bootstrapNativeDeepLinks(),
+      );
     }
   } catch (e) {
     console.warn("[auth] bootstrap callback", e);

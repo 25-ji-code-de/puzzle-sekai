@@ -21,8 +21,24 @@ export const SYNC_PROJECT = String(
 export const AUTH_STORAGE_KEY = "puzzleSekaiAuth";
 export const SYNC_META_KEY = "puzzleSekaiSyncMeta";
 
-/** OAuth redirect_uri must match Pass applications.redirect_uris exactly. */
+/**
+ * True when the bundle was built for a native shell (Tauri / Capacitor).
+ * Set via VITE_NATIVE=1 in `.env.native` / `vite build --mode native`.
+ */
+export const isNativeBuild = (): boolean =>
+  String(import.meta.env.VITE_NATIVE || "").trim() === "1";
+
+/** Custom-scheme OAuth callback for native shells. Register this on the IdP. */
+export const NATIVE_REDIRECT_URI = String(
+  import.meta.env.VITE_NATIVE_REDIRECT_URI || "puzzlesekai://auth/callback",
+).trim();
+
+/**
+ * OAuth redirect_uri must match Pass applications.redirect_uris exactly.
+ * Native shells use a fixed custom scheme; web uses the current page origin.
+ */
 export const redirectUri = (): string => {
+  if (isNativeBuild()) return NATIVE_REDIRECT_URI;
   if (typeof window === "undefined") return "http://localhost:7426/";
   const { origin, pathname } = window.location;
   // Static site at root (or subpath). Prefer origin + directory of index.
