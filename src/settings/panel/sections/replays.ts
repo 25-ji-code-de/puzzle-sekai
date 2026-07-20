@@ -1,10 +1,10 @@
 import { startReplay } from "../../../ui/welcome/start-game";
+import { getDifficultyLabel } from "../../index";
 import {
-  getDifficultyLabel,
   listReplaySummaries,
   loadReplayEntry,
   type ReplaySummary,
-} from "../../index";
+} from "../../../replay";
 import { t } from "../../../i18n";
 import {
   makeOptionsRow,

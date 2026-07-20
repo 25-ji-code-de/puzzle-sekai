@@ -11,11 +11,11 @@ import {
   getDifficultyLevel,
   getScoreMultiplier,
   isEntertainmentMode,
-  isReplayPlayback,
   loadHighScoreRecord,
   saveHighScore,
   type GroupName,
 } from "../settings";
+import { isReplayPlayback } from "../replay";
 import { utcDateKey } from "../domain/daily";
 import { computeScoreRank } from "./rank";
 import { effectiveScore } from "./performance";

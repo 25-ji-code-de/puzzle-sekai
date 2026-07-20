@@ -28,9 +28,11 @@ import {
   getCurrentSettings,
   getSpeedMultiplier,
   getSpawnRotation,
+} from "../settings";
+import {
   setReplayLiveControlTarget,
   type ReplayControlTarget,
-} from "../settings";
+} from "../replay";
 import {
   onShihoLanded,
   consumeKanadeSlowForSpawn,

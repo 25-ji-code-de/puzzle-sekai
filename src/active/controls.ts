@@ -4,7 +4,7 @@
  */
 import { app, hammerManager } from "../runtime";
 import { isControlsSwapped } from "../fun/effects";
-import { isReplayPlayback, recordReplayAction } from "../settings";
+import { isReplayPlayback, recordReplayAction } from "../replay";
 
 export type PieceControlActions = {
   moveLeft: () => void;

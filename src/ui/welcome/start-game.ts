@@ -12,9 +12,8 @@ import {
   setActiveDailyDateKey,
   getUserSettings,
   type GameMode,
-  queueReplayPlayback,
-  type ReplayEntry,
 } from "../../settings";
+import { queueReplayPlayback, type ReplayEntry } from "../../replay";
 import { t } from "../../i18n";
 import { isNativeBuild } from "../../auth/config";
 import {

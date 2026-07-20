@@ -9,7 +9,7 @@ import {
   getReplayPlaybackEntry,
   isReplayPlayback,
   queueReplayPlayback,
-} from "../settings";
+} from "../replay";
 import type { FocusTrapHandle } from "../a11y";
 import {
   armDialogFocus,

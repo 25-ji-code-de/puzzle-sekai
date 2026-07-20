@@ -70,22 +70,24 @@ import {
   beginMatchSettingsOverride,
   clearActiveDailyDateKey,
   clearMatchSettingsOverride,
+  getActiveDailyDateKey,
+  getCurrentGameMode,
+  getCurrentSettings,
+  getUserSettings,
+} from "../settings";
+import {
   consumeQueuedReplayPlayback,
   activateReplayPlayback,
   beginReplayRecording,
   clearReplayPlayback,
   finishReplayRecording,
   flushReplayPlayback,
-  getActiveDailyDateKey,
-  getCurrentGameMode,
-  getCurrentSettings,
-  getUserSettings,
   isReplayPlayback,
   pauseReplayPlaybackClock,
   pauseReplayRecordingClock,
   resumeReplayPlaybackClock,
   resumeReplayRecordingClock,
-} from "../settings";
+} from "../replay";
 import { dailyMatchSettings, dailySeed, utcDateKey } from "../domain/daily";
 import { resetFunEffects, isFunModeOn } from "../fun/effects";
 import { ensurePlayPack } from "../assets/play-pack";
