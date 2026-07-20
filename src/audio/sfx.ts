@@ -23,6 +23,14 @@ import { groupSounds } from "../characters/data";
 /** Fixed sample for the settings voice-volume slider. */
 import voicePreviewUrl from "../assets/sounds/chara/emu_3.mp3";
 
+/** Prod keeps SFX best-effort silent; surface failures while iterating. */
+const devWarn = (msg: string, err?: unknown): void => {
+  if (import.meta.env.DEV) {
+    if (err !== undefined) console.warn(msg, err);
+    else console.warn(msg);
+  }
+};
+
 export type SfxChannel = "sfx" | "voice";
 
 export { SFX_MOVE_BASE, SFX_LAND_BASE, SFX_EFFECT_BASE };
@@ -64,6 +72,7 @@ export const whenSoundReady = (
       }
       if (Date.now() - t0 > LOAD_WAIT_MS) {
         readyWaiters.delete(key);
+        devWarn(`[audio] whenSoundReady timed out: ${key}`);
         resolve(null);
         return;
       }
@@ -84,8 +93,8 @@ const ensureSoundAlias = (key: string): void => {
       sound.add(key, { url: key, preload: true, singleInstance: false });
     }
     ensuredAliases.add(key);
-  } catch {
-    /* ignore */
+  } catch (e) {
+    devWarn(`[audio] ensureSoundAlias failed: ${key}`, e);
   }
 };
 
@@ -130,8 +139,8 @@ const playReady = (
     try {
       if (opts?.stopFirst && ready.isPlaying) ready.stop();
       ready.play({ volume });
-    } catch {
-      /* ignore — SFX is best-effort */
+    } catch (e) {
+      devWarn(`[audio] playReady failed: ${key}`, e);
     }
   };
 

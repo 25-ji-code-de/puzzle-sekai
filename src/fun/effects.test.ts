@@ -73,6 +73,24 @@ describe("kanade slow residual", () => {
     onKanadeCleared();
     expect(getKanadeSlowResidual()).toBe(1);
   });
+
+  it("decays to 1 and stays capped (no overshoot)", () => {
+    funModes.kanadeSlow = true;
+    onKanadeLanded();
+    // 0.5 → 0.6 → … → 1.0 over five consumptions after land
+    for (let i = 0; i < 6; i++) consumeKanadeSlowForSpawn();
+    expect(getKanadeSlowResidual()).toBe(1);
+    expect(consumeKanadeSlowForSpawn()).toBe(1);
+    expect(getKanadeSlowResidual()).toBe(1);
+  });
+
+  it("re-landing Kanade refreshes residual to 0.5 mid-decay", () => {
+    funModes.kanadeSlow = true;
+    onKanadeLanded();
+    consumeKanadeSlowForSpawn(); // residual → 0.6
+    onKanadeLanded();
+    expect(getKanadeSlowResidual()).toBe(0.5);
+  });
 });
 
 describe("shizuku control swap", () => {
