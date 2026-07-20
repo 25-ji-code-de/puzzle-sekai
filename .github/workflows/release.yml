@@ -1,7 +1,7 @@
 # Build native installers and publish a GitHub Release when a version tag is pushed.
 #
 # Trigger:
-#   git tag v1.1.0 && git push origin v1.1.0
+#   git tag v1.2.0 && git push origin v1.2.0
 #   # or Actions → Release → Run workflow
 #
 # Artifacts (unsigned — fine for direct download / sideload fan release):
@@ -9,6 +9,9 @@
 #   - macOS:   .app in .dmg (Gatekeeper: right-click → Open)
 #   - Linux:   .deb + .AppImage
 #   - Android: debug-signed APK (sideload; no Play Store)
+#
+# Yarn 4 note: do NOT use setup-node `cache: yarn` — on windows-latest it
+# invokes the global Yarn 1.x before Corepack can activate packageManager.
 
 name: Release
 
@@ -19,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag name to release as (e.g. v1.1.0). Leave empty to use the run id."
+        description: "Tag name to release as (e.g. v1.2.0-rc.1). Leave empty to use the run id."
         required: false
         default: ""
 
@@ -60,15 +63,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
-
+      # setup-node first (no yarn cache — see header). Then Corepack → Yarn 4.
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-          cache: yarn
+
+      - name: Enable Corepack (Yarn 4)
+        run: |
+          corepack enable
+          corepack prepare yarn@4.17.0 --activate
+          yarn --version
+
+      - name: Cache Yarn downloads
+        uses: actions/cache@v4
+        with:
+          path: .yarn-ci-cache
+          key: yarn-berry-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            yarn-berry-${{ runner.os }}-
 
       - name: Install frontend deps
+        env:
+          YARN_CACHE_FOLDER: ${{ github.workspace }}/.yarn-ci-cache
         run: yarn install --immutable
 
       - name: Install Linux WebKit / build deps
@@ -110,15 +126,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-          cache: yarn
+
+      - name: Enable Corepack (Yarn 4)
+        run: |
+          corepack enable
+          corepack prepare yarn@4.17.0 --activate
+          yarn --version
+
+      - name: Cache Yarn downloads
+        uses: actions/cache@v4
+        with:
+          path: .yarn-ci-cache
+          key: yarn-berry-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            yarn-berry-${{ runner.os }}-
 
       - name: Install frontend deps
+        env:
+          YARN_CACHE_FOLDER: ${{ github.workspace }}/.yarn-ci-cache
         run: yarn install --immutable
 
       - name: Set up JDK 21

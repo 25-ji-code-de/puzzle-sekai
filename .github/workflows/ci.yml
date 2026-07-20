@@ -10,23 +10,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Corepack must be enabled before setup-node's yarn cache lookup,
-      # otherwise the system Yarn 1.x fails on packageManager: yarn@4.
-      - name: Enable Corepack
-        run: corepack enable
+
+      # Do not use setup-node `cache: yarn` — it can invoke Yarn 1.x before Corepack.
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-          cache: yarn
+
+      - name: Enable Corepack (Yarn 4)
+        run: |
+          corepack enable
+          corepack prepare yarn@4.17.0 --activate
+          yarn --version
+
+      - name: Cache Yarn downloads
+        uses: actions/cache@v4
+        with:
+          path: .yarn-ci-cache
+          key: yarn-berry-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            yarn-berry-${{ runner.os }}-
+
       - name: Install
+        env:
+          YARN_CACHE_FOLDER: ${{ github.workspace }}/.yarn-ci-cache
         run: yarn install --immutable
+
       - name: Test
         run: yarn test
+
       - name: Typecheck
         run: yarn tsc --noEmit
+
       - name: Lint
         run: yarn lint
+
       - name: Format
         run: yarn format:check
+
       - name: Build
         run: yarn build
