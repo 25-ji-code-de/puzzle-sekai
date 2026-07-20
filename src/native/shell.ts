@@ -5,13 +5,7 @@
  * Uses static-looking dynamic imports of known package names so Vite can
  * resolve them at build time.
  */
-
-const devWarn = (msg: string, err?: unknown): void => {
-  if (import.meta.env.DEV) {
-    if (err !== undefined) console.warn(msg, err);
-    else console.warn(msg);
-  }
-};
+import { devWarn } from "../util/dev-log";
 
 /** Open an https URL in the OS default browser (not the app webview). */
 export const openExternalUrl = async (url: string): Promise<boolean> => {

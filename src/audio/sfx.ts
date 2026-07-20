@@ -22,14 +22,7 @@ import {
 import { groupSounds } from "../characters/data";
 /** Fixed sample for the settings voice-volume slider. */
 import voicePreviewUrl from "../assets/sounds/chara/emu_3.mp3";
-
-/** Prod keeps SFX best-effort silent; surface failures while iterating. */
-const devWarn = (msg: string, err?: unknown): void => {
-  if (import.meta.env.DEV) {
-    if (err !== undefined) console.warn(msg, err);
-    else console.warn(msg);
-  }
-};
+import { devWarn } from "../util/dev-log";
 
 export type SfxChannel = "sfx" | "voice";
 

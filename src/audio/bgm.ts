@@ -21,14 +21,7 @@ import bgm182_1 from "../assets/sounds/182.1.mp3";
 import bgm182_2 from "../assets/sounds/182.2.mp3";
 import { getNetworkHints, whenAudioAllowed } from "../assets/bandwidth-gate";
 import { getVolumeScale } from "../settings";
-
-/** Prod keeps audio best-effort silent; surface failures while iterating. */
-const devWarn = (msg: string, err?: unknown): void => {
-  if (import.meta.env.DEV) {
-    if (err !== undefined) console.warn(msg, err);
-    else console.warn(msg);
-  }
-};
+import { devWarn } from "../util/dev-log";
 
 export type BgmKey =
   "bgm038" | "bgm168" | "bgm161_1" | "bgm161_2" | "bgm182_1" | "bgm182_2";

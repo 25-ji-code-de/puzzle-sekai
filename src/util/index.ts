@@ -9,3 +9,4 @@ export { formatFactor, formatPercent, formatTimesMult } from "./format";
 export { fnv1a32 } from "./hash";
 export { padStartDigits, splitPaddedDigits } from "./pad";
 export { joinClassNames } from "./css-class";
+export { devWarn } from "./dev-log";
