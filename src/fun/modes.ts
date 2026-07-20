@@ -1,6 +1,7 @@
 // Entertainment / fun-mode definitions (no gameplay logic here)
 // Display strings (name / subtitle / description) live in i18n: fun.<id>.*
 
+import { clamp } from "../util/clamp";
 export const FUN_MODE_IDS = [
   "mikudayo",
   "kanadeSlow",
@@ -118,5 +119,5 @@ export function getFunModeMultiplier(
       : def.scoreFactor;
     product *= factor;
   }
-  return Math.min(1.6, Math.max(0.45, product));
+  return clamp(product, 0.45, 1.6);
 }

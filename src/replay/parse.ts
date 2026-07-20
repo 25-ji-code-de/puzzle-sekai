@@ -16,6 +16,7 @@ import {
   type ReplayInput,
   type ReplaySettingsSnapshot,
 } from "./types";
+import { clampInt } from "../util/clamp";
 
 export const isReplayInput = (value: unknown): value is ReplayInput => {
   if (!value || typeof value !== "object") return false;
@@ -128,10 +129,7 @@ export const parseReplayEntry = (raw: unknown): ReplayEntry | null => {
     settings,
     score: Math.max(0, Math.floor(score)),
     maxCombo: Math.max(0, Math.floor(maxCombo)),
-    difficulty: Math.min(
-      7,
-      Math.max(1, Math.floor(difficulty)),
-    ) as ReplayEntry["difficulty"],
+    difficulty: clampInt(difficulty, 1, 7) as ReplayEntry["difficulty"],
     entertainment: o.entertainment === true,
     multiplier: multiplier > 0 ? multiplier : 1,
     scoreRank: typeof o.scoreRank === "string" ? o.scoreRank : "D",

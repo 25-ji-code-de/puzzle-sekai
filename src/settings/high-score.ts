@@ -13,6 +13,7 @@ import { getDifficultyLevel, isEntertainmentMode } from "./difficulty";
 import { getActiveDailyDateKey, getCurrentSettings } from "./store";
 import { getStoragePort } from "./storage";
 import { utcDateKey } from "../domain/daily";
+import { clampInt } from "../util/clamp";
 
 const DIFFICULTIES: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7];
 const ENT_TAGS = ["std", "ent"] as const;
@@ -45,7 +46,7 @@ export function highScoreBucketKey(
   opts?: { timeAttackDuration?: number; dailyDateKey?: string },
 ): string {
   const tag = entTag(entertainment);
-  const d = Math.min(7, Math.max(1, difficulty | 0));
+  const d = clampInt(difficulty, 1, 7);
   if (mode === "endless") return `hs:endless:${d}:${tag}`;
   if (mode === "daily") {
     const dateKey = opts?.dailyDateKey || "1970-01-01";

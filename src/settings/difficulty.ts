@@ -27,6 +27,7 @@ import {
   isSpawnOrientation,
 } from "./types";
 import { getCurrentSettings } from "./store";
+import { clampInt } from "../util/clamp";
 
 export { hexToPixi } from "../util/color";
 
@@ -38,7 +39,7 @@ export function getSpeedMultiplier(settings: GameSettings): number {
 export function getDifficultyLevel(settings: GameSettings): DifficultyLevel {
   const groups = Math.min(5, Math.max(3, settings.selectedGroups.length));
   const level = settings.speedLevel + (groups - 3);
-  return Math.min(7, Math.max(1, level)) as DifficultyLevel;
+  return clampInt(level, 1, 7) as DifficultyLevel;
 }
 
 /** Get difficulty label (i18n-aware) */
