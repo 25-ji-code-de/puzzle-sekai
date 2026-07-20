@@ -3,6 +3,7 @@ import maokenFontUrl from "../assets/fonts/MaokenAssortedSans-Lite.woff2";
 import nishikiFontUrl from "../assets/fonts/nishiki-teki.woff2";
 import robotoRegularUrl from "../assets/fonts/Roboto-Regular.woff2";
 import robotoSemiBoldUrl from "../assets/fonts/Roboto-SemiBold.woff2";
+import { devWarn } from "../util/dev-log";
 
 /**
  * Centralized font schemes. Every text surface picks a scheme; stacks adapt
@@ -221,7 +222,7 @@ const ensureFace = async (
     await loadFace(family, url, weight);
     loadedFaces.add(key);
   } catch (e) {
-    console.warn(`Failed to load ${family} (${weight}) font:`, e);
+    devWarn(`Failed to load ${family} (${weight}) font:`, e);
   }
 };
 

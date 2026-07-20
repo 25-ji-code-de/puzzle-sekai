@@ -4,6 +4,7 @@
  * For boot-time flags that must not import the full settings graph
  * (e.g. runtime.ts lowPerformance), prefer {@link readStorageJsonFlag}.
  */
+import { devWarn } from "../util/dev-log";
 export interface StoragePort {
   get(key: string): string | null;
   set(key: string, value: string): void;
@@ -44,14 +45,14 @@ export const localStoragePort: StoragePort = {
     try {
       localStorage.setItem(key, value);
     } catch (e) {
-      console.warn("storage set failed", key, e);
+      devWarn("storage set failed", e);
     }
   },
   remove(key) {
     try {
       localStorage.removeItem(key);
     } catch (e) {
-      console.warn("storage remove failed", key, e);
+      devWarn("storage remove failed", e);
     }
   },
   keys() {

@@ -3,6 +3,7 @@
  * Opaque pixels → convex hull in space where (0,0) = sprite anchor / body origin.
  */
 import type * as PIXI from "pixi.js-legacy";
+import { devWarn } from "../../util/dev-log";
 
 export type LocalPoint = { x: number; y: number };
 
@@ -219,7 +220,7 @@ export const buildAlphaShape = (sprite: PIXI.Sprite): AlphaShape | null => {
     cache.set(key, shape);
     return shape;
   } catch (e) {
-    console.warn("[truePhysics] alpha shape extract failed", e);
+    devWarn("[truePhysics] alpha shape extract failed", e);
     cache.set(key, null);
     return null;
   }

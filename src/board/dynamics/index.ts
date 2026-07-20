@@ -11,6 +11,7 @@ import {
 } from "./world";
 import { settleWorld } from "./settle";
 import type { EntityId } from "../../domain/types";
+import { devWarn } from "../../util/dev-log";
 
 /** Session flag: truePhysics requested but Rapier failed → stay on grid. */
 let continuousDisabledThisSession = false;
@@ -23,7 +24,7 @@ export const isContinuousPhysics = (): boolean => {
 
 export const disableContinuousThisSession = (): void => {
   continuousDisabledThisSession = true;
-  console.warn(
+  devWarn(
     "[truePhysics] Disabled for this session; falling back to grid physics.",
   );
 };
@@ -50,7 +51,7 @@ export const ensureContinuousReady = async (): Promise<boolean> => {
     await ensureWorld();
     return true;
   } catch (e) {
-    console.warn("[truePhysics] ensureContinuousReady failed", e);
+    devWarn("[truePhysics] ensureContinuousReady failed", e);
     disableContinuousThisSession();
     destroyWorld();
     return false;
