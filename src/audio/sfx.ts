@@ -19,7 +19,9 @@ import {
   SFX_LAND_BASE,
   SFX_EFFECT_BASE,
 } from "../settings";
-import { characterData, groupSounds } from "../characters/data";
+import { groupSounds } from "../characters/data";
+/** Fixed sample for the settings voice-volume slider. */
+import voicePreviewUrl from "../assets/sounds/chara/emu_3.mp3";
 
 export type SfxChannel = "sfx" | "voice";
 
@@ -169,14 +171,30 @@ export const playSfxPreview = (): void => {
   replayLoadedSfx("move", "sfx", SFX_MOVE_BASE);
 };
 
+const VOICE_PREVIEW_ALIAS = "voice-preview-emu3";
 const VOICE_PREVIEW_BASE = 0.5;
+
+/** Settings-panel voice preview — always emu_3, not match-dependent. */
 export const playVoicePreview = (): void => {
-  const sample = characterData.find((c) => c.sounds?.fall?.length)?.sounds
-    ?.fall?.[0];
-  if (sample) {
-    playLoadedSfx(sample, "voice", VOICE_PREVIEW_BASE);
-    return;
+  try {
+    if (!sound.exists(VOICE_PREVIEW_ALIAS)) {
+      sound.add(VOICE_PREVIEW_ALIAS, {
+        url: voicePreviewUrl,
+        preload: true,
+        singleInstance: true,
+      });
+    }
+    const sfx = sound.find(VOICE_PREVIEW_ALIAS);
+    if (sfx) {
+      playReady(VOICE_PREVIEW_ALIAS, sfx, voiceVol(VOICE_PREVIEW_BASE), {
+        stopFirst: true,
+      });
+      return;
+    }
+  } catch {
+    /* fall through */
   }
+  // Last resort if registration fails mid-session.
   playLoadedSfx("move", "voice", VOICE_PREVIEW_BASE);
 };
 
