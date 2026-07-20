@@ -10,11 +10,13 @@ import {
 import {
   setCurrentGameMode,
   setActiveDailyDateKey,
+  getUserSettings,
   type GameMode,
   queueReplayPlayback,
   type ReplayEntry,
 } from "../../settings";
 import { t } from "../../i18n";
+import { isNativeBuild } from "../../auth/config";
 import {
   requestAppFullscreen,
   waitForLandscape,
@@ -40,9 +42,18 @@ export const disposeOrientationGate = () => {
 };
 
 const startThroughOrientationGate = () => {
-  // Must request fullscreen from this user-gesture stack; fire-and-forget so
-  // a browser rejection (e.g. iOS Safari) never blocks game start.
-  void requestAppFullscreen();
+  // Honour the display-mode setting: only fullscreen requests enter fullscreen
+  // on game start. Windowed/borderless keep their current chrome.
+  const displayMode = getUserSettings().displayMode;
+  if (displayMode === "fullscreen") {
+    // Must request fullscreen from this user-gesture stack; fire-and-forget so
+    // a browser rejection (e.g. iOS Safari) never blocks game start.
+    void requestAppFullscreen();
+  } else if (isNativeBuild() && displayMode === "borderless") {
+    void import("../../native/shell").then(({ applyWindowDisplayMode }) =>
+      applyWindowDisplayMode("borderless"),
+    );
+  }
 
   onTeardownMenu?.();
   onRemoveWelcomeSprite?.();

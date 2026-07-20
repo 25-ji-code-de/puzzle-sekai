@@ -10,6 +10,7 @@ import {
   getGroupDisplayColor,
   isItemDropRate,
   isSpawnOrientation,
+  isDisplayMode,
   isSpeedLevel,
   isTimeAttackDuration,
 } from "./types";
@@ -20,6 +21,14 @@ describe("type guards", () => {
     expect(isSpawnOrientation("upright")).toBe(true);
     expect(isSpawnOrientation("sideways")).toBe(false);
     expect(isSpawnOrientation(null)).toBe(false);
+  });
+
+  it("isDisplayMode whitelist", () => {
+    expect(isDisplayMode("windowed")).toBe(true);
+    expect(isDisplayMode("borderless")).toBe(true);
+    expect(isDisplayMode("fullscreen")).toBe(true);
+    expect(isDisplayMode("maximized")).toBe(false);
+    expect(isDisplayMode(null)).toBe(false);
   });
 
   it("isItemDropRate whitelist", () => {

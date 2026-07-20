@@ -2,18 +2,28 @@
 pub fn run() {
     let mut builder = tauri::Builder::default();
 
-    // Single instance so deep-link OAuth returns re-focus the existing window
-    // instead of spawning a second process with an empty session.
+    // Single instance: second process (deep-link launch) hands argv to the first
+    // and exits, so the existing webview keeps its PKCE state / session.
     #[cfg(desktop)]
     {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
-            // Forward deep-link argv into the deep-link plugin.
-            println!("single-instance argv: {argv:?}");
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            use tauri::Manager;
+            // Bring the existing window forward when a deep-link reopens us.
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_focus();
+                let _ = window.unminimize();
+                let _ = window.show();
+            }
+            // argv usually looks like: [exe, "puzzlesekai://auth/callback?..."]
+            // The deep-link plugin listens for OS events; single-instance just
+            // ensures we don't spawn a second process that would lose sessionStorage/localStorage.
+            println!("[single-instance] argv={argv:?}");
         }));
     }
 
     builder
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // Register puzzlesekai:// on first run (Windows/Linux). macOS uses Info.plist.
             #[cfg(desktop)]

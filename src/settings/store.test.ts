@@ -70,6 +70,19 @@ describe("normalizeSettings", () => {
       true,
     );
   });
+
+  it("defaults invalid displayMode and keeps valid ones", () => {
+    expect(normalizeSettings({}).displayMode).toBe("windowed");
+    expect(normalizeSettings({ displayMode: "maximized" }).displayMode).toBe(
+      "windowed",
+    );
+    expect(normalizeSettings({ displayMode: "borderless" }).displayMode).toBe(
+      "borderless",
+    );
+    expect(normalizeSettings({ displayMode: "fullscreen" }).displayMode).toBe(
+      "fullscreen",
+    );
+  });
 });
 
 describe("migrateSettingsPayload", () => {

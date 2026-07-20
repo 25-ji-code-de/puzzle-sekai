@@ -164,6 +164,16 @@ export const en = {
       lowHelp:
         "Half render buffer (~¼ pixels). Looks softer; layout, hitboxes, and controls stay the same.",
     },
+    display: {
+      label: "Display mode",
+      windowed: "Windowed",
+      borderless: "Borderless",
+      fullscreen: "Fullscreen",
+      windowedHelp:
+        "Normal resizable window. The game won't auto-fullscreen on start.",
+      borderlessHelp: "Borderless maximized window (desktop).",
+      fullscreenHelp: "Exclusive fullscreen (entered on game start).",
+    },
     replays: {
       label: "Replays",
       watch: "Watch replay",

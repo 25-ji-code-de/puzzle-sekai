@@ -20,6 +20,7 @@ import {
   SETTINGS_VERSION,
   isItemDropRate,
   isSpawnOrientation,
+  isDisplayMode,
   isSpeedLevel,
   isTimeAttackDuration,
 } from "./types";
@@ -73,6 +74,9 @@ export function normalizeSettings(raw: unknown): GameSettings {
       DEFAULT_SETTINGS.voiceVolume,
     ),
     lowPerformance: src.lowPerformance === true,
+    displayMode: isDisplayMode(src.displayMode)
+      ? src.displayMode
+      : DEFAULT_SETTINGS.displayMode,
   };
 }
 

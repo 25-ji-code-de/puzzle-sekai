@@ -1,7 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2/capability",
   "identifier": "default",
-  "description": "Default capability for the main window (deep-link OAuth return).",
+  "description": "Default capability for the main window (deep-link OAuth return + opener + window chrome).",
   "windows": ["main"],
-  "permissions": ["core:default", "deep-link:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-set-decorations",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-set-focus",
+    "core:window:allow-show",
+    "core:window:allow-unminimize",
+    "deep-link:default",
+    "opener:default"
+  ]
 }

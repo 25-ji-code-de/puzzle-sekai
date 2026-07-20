@@ -3,6 +3,7 @@
  */
 import {
   isAuthConfigured,
+  isNativeBuild,
   PASS_CLIENT_ID,
   PASS_ISSUER,
   redirectUri,
@@ -48,7 +49,21 @@ export const startLogin = async (): Promise<LoginStartResult> => {
     url.searchParams.set("state", state);
     url.searchParams.set("nonce", nonce);
 
-    window.location.assign(url.toString());
+    const authorizeUrl = url.toString();
+    // Native shells: open the IdP in the OS browser so the OAuth redirect
+    // lands as a system deep-link (puzzlesekai://) back into this app.
+    // Navigating the embedded webview would trap the custom scheme.
+    if (isNativeBuild()) {
+      const { openExternalUrl } = await import("../native/shell");
+      const ok = await openExternalUrl(authorizeUrl);
+      if (!ok) {
+        // Fallback — better than failing silently
+        window.location.assign(authorizeUrl);
+      }
+      return { ok: true };
+    }
+
+    window.location.assign(authorizeUrl);
     return { ok: true };
   } catch (e) {
     console.warn("[auth] startLogin", e);

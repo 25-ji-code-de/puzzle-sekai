@@ -164,6 +164,17 @@ export const ja = {
       lowHelp:
         "描画バッファを半分（画素は約1/4）。少し柔らかく見えますが、レイアウト・判定・操作範囲は変わりません。",
     },
+    display: {
+      label: "表示モード",
+      windowed: "ウィンドウ",
+      borderless: "ボーダーレス",
+      fullscreen: "フルスクリーン",
+      windowedHelp:
+        "通常のリサイズ可能なウィンドウ。開始時に自動で全画面にはなりません。",
+      borderlessHelp:
+        "枠なしウィンドウを最大化して画面いっぱいに表示（デスクトップ）。",
+      fullscreenHelp: "排他的フルスクリーン（ゲーム開始時に切り替え）。",
+    },
     replays: {
       label: "リプレイ",
       watch: "リプレイを見る",

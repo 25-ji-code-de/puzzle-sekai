@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "de.nightcord.puzzlesekai"
+    namespace "net.de5.nightcord.puzzlesekai"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "de.nightcord.puzzlesekai"
+        applicationId "net.de5.nightcord.puzzlesekai"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

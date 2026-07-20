@@ -1153,6 +1153,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@capacitor/browser@npm:^7":
+  version: 7.0.5
+  resolution: "@capacitor/browser@npm:7.0.5"
+  peerDependencies:
+    "@capacitor/core": ">=7.0.0"
+  checksum: 10c0/d88cdfb2d0368e8b6edaf894989b1f9d957965d34fd8b5002b0fff05eee1b51d7a7cfa048624f13bd0e41530262655aa632f4cb8621f77ac789a642738081981
+  languageName: node
+  linkType: hard
+
 "@capacitor/cli@npm:^7":
   version: 7.6.8
   resolution: "@capacitor/cli@npm:7.6.8"
@@ -2808,7 +2817,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tauri-apps/api@npm:^2.11.0":
+"@tauri-apps/api@npm:^2, @tauri-apps/api@npm:^2.11.0":
   version: 2.11.1
   resolution: "@tauri-apps/api@npm:2.11.1"
   checksum: 10c0/78a08a64ee7eab9d34bd4ba1bdc3a2440c7e9cc5737b3f1d77bd80fa38b0cb5e9601efe04da40c947c5da2ca38dc702bec21b4ae96b18ee5f3e82980d1f0b325
@@ -2942,6 +2951,15 @@ __metadata:
   dependencies:
     "@tauri-apps/api": "npm:^2.11.0"
   checksum: 10c0/3a3a5f41f4556889ecd94ab9c8b23f5faed5ebbe61590a4ddc6116b8ff7f4c6e16e33a60e384e11668101d85f9059600375a978ac280f51ea212b9906b6acc95
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/plugin-opener@npm:^2":
+  version: 2.5.4
+  resolution: "@tauri-apps/plugin-opener@npm:2.5.4"
+  dependencies:
+    "@tauri-apps/api": "npm:^2.11.0"
+  checksum: 10c0/9d5b8893680e776d4ae91f2be8ba9a49c56a3163307b4ad10ff71ffdaf67d07f7a7d4335c465cf32f499582d4589a04d9a66064de117e761b2588254b5202d53
   languageName: node
   linkType: hard
 
@@ -6105,12 +6123,15 @@ __metadata:
   dependencies:
     "@capacitor/android": "npm:^7"
     "@capacitor/app": "npm:^7"
+    "@capacitor/browser": "npm:^7"
     "@capacitor/cli": "npm:^7"
     "@capacitor/core": "npm:^7"
     "@dimforge/rapier2d-compat": "npm:^0.19.3"
     "@eslint/js": "npm:^10.0.1"
+    "@tauri-apps/api": "npm:^2"
     "@tauri-apps/cli": "npm:^2"
     "@tauri-apps/plugin-deep-link": "npm:^2"
+    "@tauri-apps/plugin-opener": "npm:^2"
     "@types/hammerjs": "npm:^2.0.36"
     "@types/qrcode": "npm:^1.5.6"
     eslint: "npm:^10.7.0"

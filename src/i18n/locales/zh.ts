@@ -161,6 +161,15 @@ export const zh = {
       lowHelp:
         "渲染缓冲减半（约 1/4 像素）。画面会略糊，但布局、判定和操作完全不变。",
     },
+    display: {
+      label: "显示模式",
+      windowed: "窗口",
+      borderless: "无边框",
+      fullscreen: "全屏",
+      windowedHelp: "普通可缩放窗口。开始游戏时不会自动全屏。",
+      borderlessHelp: "无边框窗口并最大化铺满屏幕（桌面端）。",
+      fullscreenHelp: "独占全屏（游戏开始时进入）。",
+    },
     replays: {
       label: "回放",
       watch: "查看回放",

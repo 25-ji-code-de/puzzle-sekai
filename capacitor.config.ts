@@ -5,7 +5,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * webDir is the Vite native build output (`yarn build:native`).
  */
 const config: CapacitorConfig = {
-  appId: "de.nightcord.puzzlesekai",
+  appId: "net.de5.nightcord.puzzlesekai",
   appName: "Puzzle SEKAI",
   webDir: "dist",
   server: {

@@ -1,4 +1,4 @@
-package de.nightcord.puzzlesekai;
+package net.de5.nightcord.puzzlesekai;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -8,11 +8,24 @@ export type TimeAttackDuration = 60 | 90 | 120 | 180;
 /** Item spawn chance when stack is low enough (percent 0–30) */
 export type ItemDropRate = 0 | 5 | 10 | 15 | 20 | 30;
 /**
+ * App window / screen mode.
+ * - windowed (default): normal resizable window; no auto-fullscreen on start
+ * - borderless: full screen without title bar / decorations
+ * - fullscreen: exclusive fullscreen
+ */
+export type DisplayMode = "windowed" | "borderless" | "fullscreen";
+/**
  * Character spawn facing while falling.
  * - inverted (default): head-down — harder spatial read, ×1.00
  * - upright: head-up — easier, slightly lower score mult
  */
 export type SpawnOrientation = "inverted" | "upright";
+
+export const DISPLAY_MODES: readonly DisplayMode[] = [
+  "windowed",
+  "borderless",
+  "fullscreen",
+];
 
 export const SPEED_LEVELS: readonly SpeedLevel[] = [1, 2, 3, 4, 5];
 export const TIME_ATTACK_DURATIONS: readonly TimeAttackDuration[] = [
@@ -49,6 +62,8 @@ export interface GameSettings {
    * canvas buffer (~960×540). Stage coordinates stay the same; pixels cost less.
    */
   lowPerformance: boolean;
+  /** Window / screen mode; applied on start and when the setting changes. */
+  displayMode: DisplayMode;
 }
 
 export const SPEED_MULTIPLIERS: Record<SpeedLevel, number> = {
@@ -91,6 +106,9 @@ export const SPAWN_ORIENTATION_SCORE_FACTORS: Record<SpawnOrientation, number> =
 
 export const isSpawnOrientation = (v: unknown): v is SpawnOrientation =>
   v === "inverted" || v === "upright";
+
+export const isDisplayMode = (v: unknown): v is DisplayMode =>
+  typeof v === "string" && (DISPLAY_MODES as readonly string[]).includes(v);
 
 export const isItemDropRate = (v: unknown): v is ItemDropRate =>
   typeof v === "number" && (ITEM_DROP_RATES as number[]).includes(v);
@@ -179,6 +197,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   sfxVolume: 100,
   voiceVolume: 100,
   lowPerformance: false,
+  displayMode: "windowed",
 };
 
 /**

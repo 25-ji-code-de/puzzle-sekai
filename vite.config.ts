@@ -121,6 +121,8 @@ export default defineConfig(({ mode }) => {
       // (not inlined). Workbox globPatterns omit `*.map`, so PWA install size
       // is unaffected; maps only load when a developer opens DevTools.
       sourcemap: true,
+      // Native shell APIs are only dynamically imported under VITE_NATIVE=1.
+      // Keep them as separate chunks so the web/PWA entry never eagerly loads them.
       rollupOptions: {
         output: {
           // Split heavy vendors so the browser can parse/cache them separately
