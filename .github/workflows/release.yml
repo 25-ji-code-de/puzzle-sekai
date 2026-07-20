@@ -46,18 +46,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # NOTE: upload-artifact does NOT expand bash braces `{a,b}` — list paths
+          # with newlines (see Upload step). Matrix only carries platform metadata.
           - platform: windows
             os: windows-latest
             bundles: nsis
-            artifact_glob: src-tauri/target/release/bundle/nsis/*
           - platform: macos
             os: macos-latest
             bundles: app,dmg
-            artifact_glob: src-tauri/target/release/bundle/{dmg,macos}/*
           - platform: linux
             os: ubuntu-22.04
             bundles: deb,appimage
-            artifact_glob: src-tauri/target/release/bundle/{deb,appimage}/*
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -111,11 +110,44 @@ jobs:
         # --bundles overrides tauri.conf.json targets (which defaults to nsis for local Windows).
         run: yarn tauri build --bundles ${{ matrix.bundles }}
 
-      - name: Upload desktop artifacts
+      - name: List bundle outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== bundle tree ==="
+          find src-tauri/target/release/bundle -maxdepth 3 \( -type f -o -type d \) | sort || true
+          ls -la src-tauri/target/release/bundle/ || true
+
+      - name: Upload desktop artifacts (windows)
+        if: matrix.platform == 'windows'
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-${{ matrix.platform }}
-          path: ${{ matrix.artifact_glob }}
+          name: desktop-windows
+          path: src-tauri/target/release/bundle/nsis/*
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload desktop artifacts (macos)
+        if: matrix.platform == 'macos'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos
+          # .dmg is the shippable install image; .app is a directory (still uploadable).
+          # Multiline path — no brace expansion (upload-artifact treats {a,b} literally).
+          path: |
+            src-tauri/target/release/bundle/dmg/*
+            src-tauri/target/release/bundle/macos/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload desktop artifacts (linux)
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: |
+            src-tauri/target/release/bundle/deb/*
+            src-tauri/target/release/bundle/appimage/*
           if-no-files-found: error
           retention-days: 14
 
