@@ -7,9 +7,9 @@ import type { FunEffect } from "../types";
 
 export const wonderBlastEffect: FunEffect = {
   id: "wonderBlast",
-  onCleared(ctx, cleared: SpriteData[]) {
+  async onCleared(ctx, cleared: SpriteData[]) {
     if (!ctx.isOn("wonderBlast")) return { changed: false };
-    const blasted = applyWonderBlast(cleared);
+    const blasted = await applyWonderBlast(cleared);
     return { changed: blasted, scored: blasted };
   },
 };

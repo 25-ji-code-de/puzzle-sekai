@@ -7,8 +7,7 @@ import { SpriteData, sprites } from "../../game/board-state";
 import { onKanadeCleared } from "../../fun/effects";
 import { SFX_EFFECT_BASE } from "../../settings";
 import { playLoadedSfx } from "../../audio/sfx";
-import { createParticles } from "../particles";
-import { removeSpritesFromBoard } from "../mutate";
+import { playClearAnimation } from "../clear-vfx";
 import { anyPairAdjacent, shuffleInPlace } from "../grid";
 import { CHAR } from "../../characters/ids";
 import { entitiesTouching, isContinuousPhysics, massOfKind } from "../dynamics";
@@ -84,10 +83,12 @@ const continuousPairTouch = (
 
 /**
  * When Rui and NeneRobo are both in a cleared set AND share an edge,
- * randomly blast extra pieces.
+ * randomly blast extra pieces (same white-flash VFX as a normal clear).
  * @returns true if any sprites were removed by the blast.
  */
-export const applyWonderBlast = (cleared: SpriteData[]): boolean => {
+export const applyWonderBlast = async (
+  cleared: SpriteData[],
+): Promise<boolean> => {
   const ruiSprites = cleared.filter((sp) => sp.character?.name === CHAR.Rui);
   const neneRoboSprites = cleared.filter(
     (sp) => sp.character?.name === CHAR.NeneRobo,
@@ -104,6 +105,7 @@ export const applyWonderBlast = (cleared: SpriteData[]): boolean => {
   const blastTarget = Math.min(12, halfBoard, 2 + 2 * ruiNeneCount);
   if (blastTarget <= 0) return false;
 
+  // Only remaining board pieces — the Rui/NeneRobo clear already finished its VFX.
   const candidates = shuffleInPlace(
     sprites
       .filter((sp) =>
@@ -125,7 +127,7 @@ export const applyWonderBlast = (cleared: SpriteData[]): boolean => {
   playLoadedSfx(blastKey, "sfx", SFX_EFFECT_BASE);
 
   addScore(cellsCleared);
-  createParticles(remove);
-  removeSpritesFromBoard(remove);
+  // Full clear presentation so blasted pieces are obvious (flash → glow → particles).
+  await playClearAnimation(remove);
   return true;
 };
