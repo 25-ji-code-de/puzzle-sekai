@@ -16,3 +16,4 @@ export {
   dialogOverlayClassName,
   settingOptClassName,
 } from "./dialog-class";
+export { nearestIndex } from "./nearest";
