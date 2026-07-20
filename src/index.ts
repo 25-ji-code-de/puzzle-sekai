@@ -21,6 +21,7 @@ import move from "./assets/sounds/move.mp3";
 import emuShrinkSfx from "./assets/sounds/effects/47_004_007.mp3";
 import carrotAkitoSfx from "./assets/sounds/effects/2509_004_002.mp3";
 import carrotEnaSfx from "./assets/sounds/effects/2509_004_003.mp3";
+import nomSfx from "./assets/sounds/effects/nom.mp3";
 import bg from "./assets/bg.png";
 import welcomeImg from "./assets/welcome.png";
 import { initializeFontSystem } from "./ui/fonts";
@@ -79,6 +80,7 @@ app.loader
   .add("emuShrink", emuShrinkSfx)
   .add("carrotAkito", carrotAkitoSfx)
   .add("carrotEna", carrotEnaSfx)
+  .add("nom", nomSfx)
   .add("welcome", welcomeImg)
   .load((_loader, resources) => {
     setWelcomeLoadProgress(100);

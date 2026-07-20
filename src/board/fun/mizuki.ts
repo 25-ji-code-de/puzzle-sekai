@@ -12,6 +12,8 @@ import {
 } from "../../game/board-state";
 import { isFunModeOn } from "../../fun/effects";
 import { isFriesItem } from "../../items";
+import { SFX_EFFECT_BASE } from "../../settings";
+import { playLoadedSfx } from "../../audio/sfx";
 import { commitLandedSprite, fallChunk } from "../core";
 import { createParticles } from "../particles";
 import { removeSpritesFromBoard } from "../mutate";
@@ -169,6 +171,8 @@ export const tryMizukiEatFries = async (): Promise<boolean> => {
       if (toEat.length === 0) break;
       addScore(toEat.length);
       createParticles(toEat);
+      // Crunch SFX once per eat wave (even if multiple fries).
+      playLoadedSfx("nom", "sfx", SFX_EFFECT_BASE);
       removeSpritesFromBoard(toEat);
       anyEaten = true;
       await fallChunk(sprites);
@@ -196,6 +200,7 @@ export const tryMizukiEatFries = async (): Promise<boolean> => {
 
     addScore(toEat.length);
     createParticles(toEat);
+    playLoadedSfx("nom", "sfx", SFX_EFFECT_BASE);
     removeSpritesFromBoard(toEat);
     anyEaten = true;
     await fallChunk(sprites);
