@@ -79,9 +79,11 @@ export function getDifficultyCssColor(level: number): string {
   return getDifficultyColor(level);
 }
 
-/** Convert "#rrggbb" → 0xrrggbb for PixiJS */
+/** Convert "#rrggbb" → 0xrrggbb for PixiJS (invalid → white). */
 export function hexToPixi(hex: string): number {
-  return parseInt(hex.replace("#", ""), 16);
+  const raw = hex.replace("#", "").trim();
+  if (!/^[0-9a-fA-F]{6}$/.test(raw)) return 0xffffff;
+  return parseInt(raw, 16);
 }
 
 /**

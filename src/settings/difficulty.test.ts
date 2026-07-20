@@ -98,6 +98,12 @@ describe("difficulty colors", () => {
 
   it("hexToPixi strips #", () => {
     expect(hexToPixi("#ff5577")).toBe(0xff5577);
+    expect(hexToPixi("00ff00")).toBe(0x00ff00);
+  });
+
+  it("hexToPixi falls back to white on garbage", () => {
+    expect(hexToPixi("#fff")).toBe(0xffffff);
+    expect(hexToPixi("not-a-color")).toBe(0xffffff);
   });
 });
 
