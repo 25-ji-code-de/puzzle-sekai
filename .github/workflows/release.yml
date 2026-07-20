@@ -242,19 +242,24 @@ jobs:
 
       - name: Flatten artifacts
         run: |
+          set -euo pipefail
           mkdir -p out
           # Only end-user installers. Never *.tar.gz (deb intermediates).
-          find release-assets -type f \( \
+          # Rename: spaces → underscores (GitHub release asset labels fight spaces).
+          while IFS= read -r -d '' f; do
+            base="$(basename "$f")"
+            safe="${base// /_}"
+            cp -v "$f" "out/$safe"
+          done < <(find release-assets -type f \( \
             -name '*-setup.exe' -o \
             -name '*.msi' -o \
             -name '*.dmg' -o \
             -name '*.AppImage' -o \
             -name '*.deb' -o \
             -name '*.apk' \
-          \) -print -exec cp -v {} out/ \;
+          \) -print0)
           echo "=== release assets ==="
           ls -lah out/
-          # Sanity: no packaging junk
           if ls out/*.tar.gz out/control.tar.gz out/data.tar.gz 2>/dev/null; then
             echo "Refusing to publish intermediate archives" >&2
             exit 1
@@ -275,22 +280,37 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "title=Puzzle SEKAI $TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release
+      # Re-tagging the same name (rc.1 again) can leave a draft + published release.
+      # softprops then races finalize with already_exists on tag_name. Drop drafts first.
+      - name: Drop draft releases for this tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/drop-draft-release.py
+
+      - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: ${{ steps.meta.outputs.title }}
+          # Never create a draft — drafts race with published releases on the same tag.
           draft: false
           prerelease: ${{ contains(steps.meta.outputs.tag, '-') }}
           generate_release_notes: true
+          # Replace assets when re-running the same tag (rc re-spins).
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          # Prerelease tags (contain '-') should not become "latest".
+          make_latest: ${{ !contains(steps.meta.outputs.tag, '-') }}
           body: |
             Direct-download packages (no app stores). Unofficial Project SEKAI fan work.
 
             | Platform | File |
             | --- | --- |
-            | Windows | `*-setup.exe` (NSIS, zh / ja / en) |
-            | macOS | `.dmg` (unsigned — right-click → Open the first time) |
-            | Linux | `.AppImage` (portable) / `.deb` (Debian/Ubuntu) |
+            | Windows | `*_x64-setup.exe` (NSIS, zh / ja / en) |
+            | macOS | `*.dmg` (unsigned — right-click → Open the first time) |
+            | Linux | `*.AppImage` (portable) / `*.deb` (Debian/Ubuntu) |
             | Android | `*-android-debug.apk` (sideload) |
 
             Web / PWA still at https://pico.nightcord.de5.net/
