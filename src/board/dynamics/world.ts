@@ -19,6 +19,7 @@ import { colliderSpecFor, massOfKind } from "./colliders";
 import { resolveComOffset, type ComOffset } from "./com-table";
 import { poseAabb } from "./pose";
 import { loadRapier, type RapierMod } from "./rapier-loader";
+import { clamp } from "../../util/clamp";
 
 /** World gravity (px/s²). Tuned for puzzle-like fall feel. */
 export const WORLD_GRAVITY_Y = 520;
@@ -392,7 +393,7 @@ export const allSettledBodies = (): BodyEntry[] =>
 export const stepWorld = (dtSeconds: number = 1 / 60): void => {
   if (!state) return;
   // Rapier uses fixed timestep; set then step
-  state.world.timestep = Math.min(Math.max(dtSeconds, 1 / 240), 1 / 30);
+  state.world.timestep = clamp(dtSeconds, 1 / 240, 1 / 30);
   state.world.step(state.eventQueue);
   syncSpritesFromBodies();
 };

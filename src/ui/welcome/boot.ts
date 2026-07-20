@@ -11,6 +11,7 @@ import { t, getLocale, onLocaleChange } from "../../i18n";
 import { unlockAudio } from "../../audio/bgm";
 import { playMenuBgm } from "../../audio/session";
 import welcomeImg from "../../assets/welcome.png";
+import { clamp } from "../../util/clamp";
 
 let modalEl: HTMLDivElement | null = null;
 let clickPromptEl: HTMLDivElement | null = null;
@@ -260,7 +261,7 @@ export const showBootWelcome = () => {
 };
 
 export const setWelcomeLoadProgress = (pct: number) => {
-  lastLoadProgress = Math.max(0, Math.min(100, pct));
+  lastLoadProgress = clamp(pct, 0, 100);
   refreshBootPromptText();
 };
 

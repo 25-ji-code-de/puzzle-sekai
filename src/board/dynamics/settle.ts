@@ -3,6 +3,7 @@
  */
 import { gameTicker } from "../../runtime";
 import { allSettledBodies, stepWorld, syncSpritesFromBodies } from "./world";
+import { clamp } from "../../util/clamp";
 
 const EPS_V = 12; // px/s
 const EPS_W = 0.2; // rad/s
@@ -48,7 +49,7 @@ export const settleWorld = async (): Promise<{ moved: boolean }> => {
     const tick = (delta: number) => {
       // delta is PIXI frames (~1 at 60fps)
       const dt = Math.min(delta, MAX_SUBSTEPS) / 60;
-      const sub = Math.max(1, Math.min(MAX_SUBSTEPS, Math.ceil(delta)));
+      const sub = clamp(Math.ceil(delta), 1, MAX_SUBSTEPS);
       for (let i = 0; i < sub; i++) {
         stepWorld(dt / sub);
       }

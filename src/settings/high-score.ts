@@ -170,7 +170,7 @@ function loadBucket(
   // Prefer key-derived meta if JSON disagrees.
   return {
     score: record.score,
-    difficultyLevel: Math.min(7, Math.max(1, difficulty | 0)),
+    difficultyLevel: clampInt(difficulty, 1, 7),
     entertainment,
     updatedAt: record.updatedAt,
   };

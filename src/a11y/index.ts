@@ -3,6 +3,8 @@ export {
   trapFocus,
   type FocusTrapHandle,
   type FocusTrapOptions,
+  nextTabIndex,
+  shouldWrapTab,
 } from "./focus-trap";
 export {
   ensureLiveRegions,
