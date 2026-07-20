@@ -6,6 +6,7 @@ import {
   computeScoreRank,
   getScoreRankColor,
   getScoreRankCssColor,
+  getScoreRankGlow,
   scoreRankColorStyle,
   SCORE_RANKS,
   SCORE_RANK_COLORS,
@@ -157,5 +158,13 @@ describe("rank colors", () => {
     expect(scoreRankColorStyle("S")).toContain("text-shadow");
     expect(scoreRankColorStyle("SSS+")).toContain("background-clip:text");
     expect(scoreRankColorStyle("SSS+")).toContain(SCORE_RANK_SSS_PLUS_GRADIENT);
+  });
+
+  it("getScoreRankGlow is rgba derived from flat color", () => {
+    const glow = getScoreRankGlow("S");
+    expect(glow).toMatch(/^rgba\(\d+, \d+, \d+, 0\.4\)$/);
+    // #ffd76a → 255, 215, 106
+    expect(glow).toBe("rgba(255, 215, 106, 0.4)");
+    expect(getScoreRankGlow("not-a-rank")).toBe("rgba(138, 143, 156, 0.4)"); // D
   });
 });

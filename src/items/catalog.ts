@@ -53,8 +53,25 @@ export const isCarrotItem = (file: string): boolean => {
 
 /** Group B: fries / ポテト / 薯条 — used by mizukiShift fun mode */
 export const FRIES_ITEMS: readonly string[] = itemGroups[1];
-export const isFriesItem = (file: string): boolean =>
-  FRIES_ITEMS.includes(file);
+/** Match by import URL equality or path substring (robust to hashed URLs). */
+export const isFriesItem = (file: string): boolean => {
+  if (!file) return false;
+  if (FRIES_ITEMS.includes(file)) return true;
+  const lower = file.toLowerCase();
+  // Group B material ids (see itemGroups[1])
+  return (
+    lower.includes("material044") ||
+    lower.includes("material105") ||
+    lower.includes("material106") ||
+    lower.includes("material107") ||
+    lower.includes("material108") ||
+    lower.includes("material109") ||
+    lower.includes("material110") ||
+    lower.includes("material111") ||
+    lower.includes("material112") ||
+    lower.includes("material113")
+  );
+};
 
 import { randomInt } from "../domain/prng";
 

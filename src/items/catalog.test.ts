@@ -32,6 +32,14 @@ describe("isCarrotItem / isFriesItem", () => {
     expect(isCarrotItem("")).toBe(false);
     expect(isCarrotItem("material999.png")).toBe(false);
   });
+
+  it("fries also matches path substrings", () => {
+    expect(isFriesItem("/cdn/material044.abc.webp")).toBe(true);
+    expect(isFriesItem("MATERIAL105.png")).toBe(true);
+    expect(isFriesItem("material113-hash.webp")).toBe(true);
+    expect(isFriesItem("")).toBe(false);
+    expect(isFriesItem("material999.png")).toBe(false);
+  });
 });
 
 describe("items bag", () => {
