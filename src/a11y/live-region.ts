@@ -6,6 +6,7 @@
  *  - polite  — score/combo and routine updates (queued, not interrupting)
  *  - assertive — phase changes (pause, game over, time critical)
  */
+import { prepareLiveMessage, shouldSpeakText } from "./live-region-math";
 
 const POLITE_ID = "a11y-live-polite";
 const ASSERTIVE_ID = "a11y-live-assertive";
@@ -49,8 +50,8 @@ export const ensureLiveRegions = (): void => {
 
 const write = (el: HTMLDivElement | null, text: string): void => {
   if (!el) return;
-  const msg = text.trim();
-  if (!msg) return;
+  const msg = prepareLiveMessage(text);
+  if (!shouldSpeakText(msg)) return;
   // Clear then set so identical consecutive strings still fire on some AT.
   el.textContent = "";
   // Double rAF: give the clear a chance to flush before the new text.
@@ -83,3 +84,5 @@ export const disposeLiveRegions = (): void => {
   politeEl = null;
   assertiveEl = null;
 };
+
+export { prepareLiveMessage, shouldSpeakText } from "./live-region-math";

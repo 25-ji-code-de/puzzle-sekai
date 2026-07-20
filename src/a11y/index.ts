@@ -11,6 +11,8 @@ export {
   announce,
   disposeLiveRegions,
   type AnnounceOptions,
+  prepareLiveMessage,
+  shouldSpeakText,
 } from "./live-region";
 export {
   announceMatchStart,
