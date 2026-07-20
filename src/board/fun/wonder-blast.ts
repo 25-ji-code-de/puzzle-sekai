@@ -12,6 +12,7 @@ import { anyPairAdjacent, shuffleInPlace } from "../grid";
 import { CHAR } from "../../characters/ids";
 import { entitiesTouching, isContinuousPhysics, massOfKind } from "../dynamics";
 import { pieceKindFrom } from "../../domain/types";
+import { clamp } from "../../util/clamp";
 
 const scoreUnits = (sp: SpriteData): number => {
   if (typeof sp.mass === "number") return sp.mass;
@@ -103,7 +104,7 @@ export const applyWonderBlast = async (
   const ruiNeneCount = ruiSprites.length + neneRoboSprites.length;
   const halfBoard = Math.floor((ROWS * COLUMNS) / 2);
   const blastCap = Math.min(12, halfBoard);
-  const blastTarget = Math.min(blastCap, 2 + 2 * ruiNeneCount);
+  const blastTarget = clamp(2 + 2 * ruiNeneCount, 0, blastCap);
   if (blastTarget <= 0) return false;
 
   // Only remaining board pieces — the Rui/NeneRobo clear already finished its VFX.

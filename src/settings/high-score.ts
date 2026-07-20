@@ -14,6 +14,7 @@ import { getActiveDailyDateKey, getCurrentSettings } from "./store";
 import { getStoragePort } from "./storage";
 import { utcDateKey } from "../domain/daily";
 import { clampInt } from "../util/clamp";
+import { safeJsonParse } from "../util/json";
 
 const DIFFICULTIES: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7];
 const ENT_TAGS = ["std", "ent"] as const;
@@ -77,22 +78,19 @@ export function getHighScoreKey(
 
 export function parseRecord(raw: string | null): HighScoreRecord {
   if (!raw) return emptyRecord();
-  try {
-    // New format: JSON object
-    if (raw.startsWith("{")) {
-      const obj = JSON.parse(raw) as Partial<HighScoreRecord>;
-      const score = Number(obj.score) || 0;
-      const difficultyLevel = Number(obj.difficultyLevel) || 0;
-      const entertainment = obj.entertainment === true;
-      const updatedAt = Number(obj.updatedAt) || 0;
-      return { score, difficultyLevel, entertainment, updatedAt };
-    }
-    // Defensive: plain number string
-    const score = parseInt(raw, 10) || 0;
-    return { ...emptyRecord(), score };
-  } catch {
-    return emptyRecord();
+  // New format: JSON object
+  if (raw.startsWith("{")) {
+    const obj = safeJsonParse<Partial<HighScoreRecord>>(raw);
+    if (!obj) return emptyRecord();
+    const score = Number(obj.score) || 0;
+    const difficultyLevel = Number(obj.difficultyLevel) || 0;
+    const entertainment = obj.entertainment === true;
+    const updatedAt = Number(obj.updatedAt) || 0;
+    return { score, difficultyLevel, entertainment, updatedAt };
   }
+  // Defensive: plain number string
+  const score = parseInt(raw, 10) || 0;
+  return { ...emptyRecord(), score };
 }
 
 function resolveSettings(settings?: GameSettings): GameSettings {

@@ -159,10 +159,9 @@ export const parsePicoSyncData = (raw: unknown): PicoSyncData | null => {
       updatedAt: Number(v.updatedAt) || 0,
     };
   }
-  const maxComboPeak = Math.max(
+  const maxComboPeak = maxOf(
+    [Number(danRaw?.maxComboPeak) || 0, ...runs.map((r) => r.maxCombo)],
     0,
-    Number(danRaw?.maxComboPeak) || 0,
-    ...runs.map((r) => r.maxCombo),
   );
   return {
     schema: 1,

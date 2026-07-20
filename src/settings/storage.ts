@@ -5,6 +5,7 @@
  * (e.g. runtime.ts lowPerformance), prefer {@link readStorageJsonFlag}.
  */
 import { devWarn } from "../util/dev-log";
+import { safeJsonParse } from "../util/json";
 export interface StoragePort {
   get(key: string): string | null;
   set(key: string, value: string): void;
@@ -26,7 +27,7 @@ export const readStorageJsonFlag = (
     const raw =
       typeof localStorage !== "undefined" ? localStorage.getItem(key) : null;
     if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const parsed = safeJsonParse<Record<string, unknown>>(raw);
     return parsed?.[field] === true;
   } catch {
     return fallback;

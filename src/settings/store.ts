@@ -27,6 +27,7 @@ import {
 import { clampVolumePercent } from "./volume";
 import { getStoragePort } from "./storage";
 import { devWarn } from "../util/dev-log";
+import { safeJsonParse } from "../util/json";
 
 const defaultSettings = (): GameSettings => ({
   ...DEFAULT_SETTINGS,
@@ -110,7 +111,8 @@ export function loadSettings(): GameSettings {
   try {
     const saved = getStoragePort().get(SETTINGS_KEY);
     if (saved) {
-      return migrateSettingsPayload(JSON.parse(saved));
+      const parsed = safeJsonParse(saved);
+      if (parsed != null) return migrateSettingsPayload(parsed);
     }
   } catch (e) {
     devWarn("Failed to load settings:", e);

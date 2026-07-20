@@ -11,6 +11,7 @@ import {
   PASS_ISSUER,
 } from "./config";
 import { devWarn } from "../util/dev-log";
+import { safeJsonParse } from "../util/json";
 
 export type AuthUser = {
   id: string;
@@ -108,8 +109,8 @@ export const loadSession = (): AuthSession | null => {
   try {
     const raw = getStoragePort().get(AUTH_STORAGE_KEY);
     if (!raw) return null;
-    const o = JSON.parse(raw) as Partial<AuthSession>;
-    if (!o.accessToken || !o.user?.id || !o.user?.username) return null;
+    const o = safeJsonParse<Partial<AuthSession>>(raw);
+    if (!o?.accessToken || !o.user?.id || !o.user?.username) return null;
     return {
       accessToken: o.accessToken,
       refreshToken: o.refreshToken,
