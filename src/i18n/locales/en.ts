@@ -305,6 +305,7 @@ export const en = {
   },
   about: {
     title: "About",
+    version: "Version",
     afdian: "Afdian",
     reportIssue: "Open an issue",
     disclaimerTitle: "Disclaimer",

@@ -299,6 +299,7 @@ export const zh = {
   },
   about: {
     title: "关于",
+    version: "版本",
     afdian: "爱发电",
     reportIssue: "提交 Issue",
     disclaimerTitle: "免责声明",

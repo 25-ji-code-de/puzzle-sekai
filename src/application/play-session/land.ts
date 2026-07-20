@@ -13,6 +13,7 @@ import {
   anyBodyAboveTopOut,
   isContinuousPhysics,
   projectToColumn,
+  projectToRow,
 } from "../../board/dynamics";
 import { BOARD_ORIGIN_Y, BOX_SIZE } from "../../config";
 
@@ -38,10 +39,13 @@ export const handleItemLand = async (
     commitLandedSprite(sprite, spriteIndex, undefined, true);
     if (!isMatchOpen()) return { scored: false, topOut: false };
     const col = projectToColumn(sprite.x);
+    // Row from sprite Y so column-sensitive fun (allergy scan band, etc.)
+    // sees a real board row — not a hard-coded 0 under continuous physics.
+    const row = projectToRow(sprite.y);
     const landFx = await runItemLandEffects({
       itemFile,
       x: col,
-      y: 0,
+      y: row,
     });
     if (!isMatchOpen()) return { scored: false, topOut: false };
     const { cleared } = await settleBoard();

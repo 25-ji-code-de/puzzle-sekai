@@ -1,7 +1,9 @@
 import { defineConfig, type Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import fs from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import {
   SUBSET_FONTS,
@@ -9,6 +11,27 @@ import {
   charsetHash,
   subsetWoff2,
 } from "./scripts/subset-fonts.mjs";
+
+/** Ship version — single source of truth is package.json (injected at build). */
+const pkgVersion = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL("./package.json", import.meta.url)),
+    "utf8",
+  ),
+).version as string;
+
+/**
+ * Replace %APP_VERSION% in index.html (JSON-LD softwareVersion, etc.).
+ * Keeps the HTML source free of a second hard-coded version string.
+ */
+function injectAppVersion(): Plugin {
+  return {
+    name: "inject-app-version",
+    transformIndexHtml(html) {
+      return html.replaceAll("%APP_VERSION%", pkgVersion);
+    },
+  };
+}
 
 /**
  * Production-only: rewrite PNG/JPEG imports under src/assets to compressed WebP.
@@ -111,6 +134,22 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: "./",
+    // Single source of truth: package.json version → runtime + HTML transform.
+    define: {
+      __APP_VERSION__: JSON.stringify(pkgVersion),
+    },
+    // Vitest inherits this config. Keep Claude Code worktrees and other local
+    // trees out of the suite (otherwise every test runs twice and CI thrash).
+    test: {
+      exclude: [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/cypress/**",
+        "**/.{idea,git,cache,output,temp}/**",
+        "**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*",
+        "**/.claude/**",
+      ],
+    },
     // Downlevel ES2020+ syntax (`?.`, `??`, etc.) so older Chrome/Edge/Firefox/
     // Safari/iOS browsers can parse the production bundle. Vite's default
     // (`modules`) leaves those operators intact.
@@ -161,6 +200,7 @@ export default defineConfig(({ mode }) => {
       devSourcemap: true,
     },
     plugins: [
+      injectAppVersion(),
       assetsToWebp({ quality: 85 }),
       subsetDisplayFonts(),
       ...(isNative

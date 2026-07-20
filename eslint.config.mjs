@@ -14,6 +14,7 @@ export default tseslint.config(
       "dist/**",
       "node_modules/**",
       ".yarn/**",
+      ".claude/**",
       "public/**",
       "coverage/**",
       "*.min.js",

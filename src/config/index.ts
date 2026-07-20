@@ -5,6 +5,13 @@ export const LEFT_BORDER = 530;
 export const RIGHT_BORDER = LEFT_BORDER + BOX_SIZE * COLUMNS;
 export const SPEED = 1.5;
 
+/**
+ * App ship version (package.json → vite `define` → `__APP_VERSION__`).
+ * Prefer this over hard-coding "1.x.y" in UI / SEO copy.
+ */
+export const APP_VERSION: string =
+  typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0-dev";
+
 /** Canvas / PIXI Application size (must match runtime Application). */
 export const STAGE_HEIGHT = 1080;
 export const STAGE_WIDTH = 1920;

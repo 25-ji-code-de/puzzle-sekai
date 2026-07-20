@@ -102,6 +102,7 @@ export { massOfKind } from "./colliders";
 export {
   CONTACT_GAP,
   projectToColumn,
+  projectToRow,
   columnCenterX,
   entitiesTouching,
 } from "./proximity";

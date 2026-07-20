@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   isMatchOpen: vi.fn(() => true),
   isContinuousPhysics: vi.fn(() => false),
   projectToColumn: vi.fn((x: number) => Math.trunc(x / 100)),
+  projectToRow: vi.fn((y: number) => Math.trunc(y / 100)),
   anyBodyAboveTopOut: vi.fn(() => false),
   pieceKindFrom: vi.fn(() => "cell2"),
   rotationToOrientation: vi.fn(() => 1),
@@ -50,6 +51,7 @@ vi.mock("../../board/dynamics", () => ({
   anyBodyAboveTopOut: mocks.anyBodyAboveTopOut,
   isContinuousPhysics: mocks.isContinuousPhysics,
   projectToColumn: mocks.projectToColumn,
+  projectToRow: mocks.projectToRow,
 }));
 
 vi.mock("../../domain/types", () => ({
@@ -99,6 +101,9 @@ beforeEach(() => {
   mocks.projectToColumn
     .mockReset()
     .mockImplementation((x: number) => Math.trunc(x / 100));
+  mocks.projectToRow
+    .mockReset()
+    .mockImplementation((y: number) => Math.trunc(y / 100));
   mocks.anyBodyAboveTopOut.mockReset().mockReturnValue(false);
   mocks.pieceKindFrom.mockReset().mockReturnValue("cell2");
   mocks.rotationToOrientation.mockReset().mockReturnValue(1);
@@ -177,20 +182,24 @@ describe("handleItemLand", () => {
     expect(mocks.resetCombo).not.toHaveBeenCalled();
   });
 
-  it("uses projected columns for continuous item land effects", async () => {
+  it("uses projected columns and rows for continuous item land effects", async () => {
     mocks.isContinuousPhysics.mockReturnValue(true);
     mocks.projectToColumn.mockReturnValue(4);
+    mocks.projectToRow.mockReturnValue(3);
     mocks.runItemLandEffects.mockResolvedValue({ changed: true, scored: true });
 
-    const sprite = makeSprite({ x: 455, y: BOARD_ORIGIN_Y });
+    const sprite = makeSprite({ x: 455, y: BOARD_ORIGIN_Y + BOX_SIZE * 3 });
     const result = await handleItemLand(sprite, 2, "item.png", 99, 88);
 
     expect(result).toEqual({ scored: true, topOut: false });
     expect(mocks.projectToColumn).toHaveBeenCalledWith(455);
+    expect(mocks.projectToRow).toHaveBeenCalledWith(
+      BOARD_ORIGIN_Y + BOX_SIZE * 3,
+    );
     expect(mocks.runItemLandEffects).toHaveBeenCalledWith({
       itemFile: "item.png",
       x: 4,
-      y: 0,
+      y: 3,
     });
     expect(mocks.resetCombo).not.toHaveBeenCalled();
   });

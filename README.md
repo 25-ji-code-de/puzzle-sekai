@@ -14,7 +14,7 @@
 
 基于 [Pazuru-Pico](https://github.com/hamzaabamboo/pazuru-pico) (by HamP) 改造的 Project SEKAI 主题方块消除游戏。使用 PixiJS + TypeScript 构建。
 
-**当前版本：`1.1.0`**
+**当前版本：`1.2.0`**
 
 ### 🎮 在线游玩
 
@@ -34,20 +34,25 @@
 - 🎪 **娯楽モード**（可多开，任意 ON 即标记娯楽）
   - ミクダヨー参戦 / カナデの余韻 / ショウタイム爆破 / 雫のミラー
   - にんじん嫌い / ポテトと瑞希 / えむちぢみ
+  - 悬臂物理（cantilever）/ 真物理（truePhysics · Rapier）— 二者互斥
 - 🥕 **道具系统** - にんじん・ポテト等；掉落率可调；可能列约束 Ena/Akito/Mizuki
+- 📅 **每日挑战** - 按日固定 seed；可与 SEKAI Pass 云同步（可选登录）
+- 🔁 **回放** - 本地录制 / 回放对局（设置面板）
+- 🏆 **段位** - 按成绩累积 dan；结算可分享卡片
 - 📱 **手机适配** - 触屏手势操控
 - 🎯 **计分** - 硬降 / 软降 / 消除 + 连击，应用最终分数倍率
-- 🎵 **BGM** - 对局曲随机；结算 182.1 → 182.2 循环
+- 🎵 **BGM** - 对局曲随机；菜单 / 结算 intro→loop
 - 🗣️ **语音与音效** - 角色落地语音、团消语音、娯楽专用效果音
 - ✨ **消除特效** - 变白→发光→粒子消散
 - 🌐 **欢迎页** - 模式选择、设置、操作说明、最高分展示
+- 💻 **原生壳** - 可选 Tauri 桌面 + Capacitor Android（见 docs/native.md）
 
 ## 🚀 快速开始
 
 ### 前置要求
 
-- Node.js 18+
-- Yarn
+- Node.js 18+（CI 使用 Node 24 + Corepack Yarn 4.17）
+- Yarn 4（`corepack enable`）
 
 ### 安装与运行
 
@@ -79,7 +84,7 @@ yarn cap:sync       # 同步到 android/
 打版本 tag 后 GitHub Actions 会自动构建 Win / macOS / Linux / Android 安装包并挂到 Release（见 [docs/native.md](./docs/native.md#ci-releases-github-actions)）：
 
 ```bash
-git tag v1.1.0 && git push origin v1.1.0
+git tag v1.2.0 && git push origin v1.2.0
 ```
 
 ## 🛠️ 技术栈

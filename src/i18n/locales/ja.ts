@@ -305,6 +305,7 @@ export const ja = {
   },
   about: {
     title: "クレジット",
+    version: "バージョン",
     afdian: "愛発電 (Afdian)",
     reportIssue: "Issue を作成",
     disclaimerTitle: "免責事項",

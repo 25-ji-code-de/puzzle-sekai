@@ -1,7 +1,14 @@
 /**
  * Continuous-space proximity helpers (no Rapier dependency).
  */
-import { BOARD_ORIGIN_X, BOX_SIZE, COLUMNS, LEFT_BORDER } from "../../config";
+import {
+  BOARD_ORIGIN_X,
+  BOARD_ORIGIN_Y,
+  BOX_SIZE,
+  COLUMNS,
+  LEFT_BORDER,
+  ROWS,
+} from "../../config";
 import type { PieceKind } from "../../domain/types";
 import type { LocalPoint } from "./alpha-shape";
 import { aabbGap, poseAabb, type Pose } from "./pose";
@@ -12,6 +19,16 @@ export const CONTACT_GAP = 8;
 export const projectToColumn = (worldX: number): number => {
   const col = Math.floor((worldX - BOARD_ORIGIN_X) / BOX_SIZE);
   return Math.max(0, Math.min(COLUMNS - 1, col));
+};
+
+/**
+ * Map world Y (sprite center / anchor) to a board row index.
+ * Symmetric with {@link projectToColumn}; used when fun plugins need a row
+ * hint under continuous physics (grid path already has cell coords).
+ */
+export const projectToRow = (worldY: number): number => {
+  const row = Math.floor((worldY - BOARD_ORIGIN_Y) / BOX_SIZE);
+  return Math.max(0, Math.min(ROWS - 1, row));
 };
 
 /** Center X of a column (cell center). */

@@ -12,9 +12,11 @@
     "tauri:build": "tauri build",
     "cap:sync": "yarn build:native && cap sync android",
     "android:open": "cap open android",
-    "android:apk": "yarn cap:sync && cd android && ./gradlew assembleRelease",
+    "android:apk": "yarn cap:sync && node scripts/android-apk.mjs",
     "preview": "vite preview",
     "fonts:subset": "node scripts/subset-fonts.mjs",
+    "com:table": "node scripts/gen-com-table.mjs",
+    "i18n:check": "node scripts/check-i18n.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "hooks:install": "simple-git-hooks",
@@ -22,7 +24,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
-    "ci": "yarn test && yarn typecheck && yarn lint && yarn format:check && yarn build"
+    "ci": "yarn test && yarn typecheck && yarn lint && yarn i18n:check && yarn format:check && yarn build"
   },
   "devDependencies": {
     "@capacitor/android": "^7",
