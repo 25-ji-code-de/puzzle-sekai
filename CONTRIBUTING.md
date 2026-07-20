@@ -172,7 +172,7 @@ yarn ci
 - Windows 上 `yarn android:apk` 走 `scripts/android-apk.mjs`（自动选 `gradlew.bat`）
 - 字体子集化与 WebP 转换只在生产 `yarn build` 运行；日常 `yarn start` 保持原图/全字体
 - 本地想快速验证 production bundle 结构、不想等 subset/sharp：`yarn build:fast`（`PUZZLE_SEKAI_FAST_BUILD=1`，**勿用于发布**）
-- 纯工具函数优先放 `src/util/`（clamp / color / pad / format / hash / date-key / css-class / dialog-class / dev-log / nearest）
+- 纯工具函数优先放 `src/util/`（clamp / color / pad / format / hash / date-key / css-class / dialog-class / dev-log / nearest / manhattan / minmax）
 - 回放逻辑从 `src/replay` 导入，不要从 `settings` re-export
 - 最佳努力路径的 soft warn 用 `devWarn`（`src/util/dev-log.ts`），生产构建保持安静
 

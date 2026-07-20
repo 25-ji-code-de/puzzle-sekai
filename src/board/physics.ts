@@ -30,6 +30,7 @@ import {
 } from "../domain/piece";
 import { placeSpriteAtAnchor } from "../presentation/placement";
 import { clamp, nonNegative, unitInterval } from "../util/clamp";
+import { easeInQuad } from "../util/ease";
 
 /** Slightly slower than a snap so the pry-up arc reads clearly. */
 const TIP_ROTATE_FRAMES = 18;
@@ -373,7 +374,7 @@ const animateTip = (plan: TipPlan): Promise<void> => {
       frame += clamp(delta, 0, 3);
       const t = unitInterval(frame / duration);
       // Ease-in: slow at balance, then accelerates (gravity on the lever)
-      const e = t * t;
+      const e = easeInQuad(t);
       const theta = angleEnd * e;
 
       members.forEach(({ sp }, i) => {

@@ -10,7 +10,7 @@ Autonomous hygiene/refactor stream on `main` starting at `d800e57` (not pushed u
 
 ## Highlights shipped
 
-- `src/util/`: clamp (+atLeastOne, unitInterval, clampCount), color, pad, format, hash, date-key, css-class, dialog-class, dev-log, nearest, manhattan, minmax
+- `src/util/`: clamp (+atLeastOne, unitInterval, clampCount), color, pad, format, hash, date-key, css-class, dialog-class, dev-log, nearest, manhattan, minmax, ease
 - Soft `console.warn` on best-effort paths → `devWarn` (prod quiet)
 - Replay parse, hidden-pause, display-policy, contact-math, focus-trap math, live-region math
 - Docs: `docs/architecture.md`, CONTRIBUTING/native notes for `build:fast` / util policy
@@ -22,7 +22,8 @@ yarn test && yarn typecheck && yarn lint && yarn format:check
 # optional full: yarn ci
 ```
 
-Approximate suite size after session: ~560 tests / ~82 files (grows with util tests).
+Approximate suite size after session: ~560+ tests / ~82 files (grows with util tests).
+Local stream: ~42 commits from `d800e57` (not pushed unless asked).
 
 ## Recent tip commits (local)
 

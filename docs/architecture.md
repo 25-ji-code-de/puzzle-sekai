@@ -4,19 +4,19 @@ Short map of `src/` for contributors. Prefer domain purity and thin presentation
 
 ## Layers
 
-| Area         | Path                             | Notes                                                                                                     |
-| ------------ | -------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Boot         | `src/index.ts`, `src/runtime.ts` | PIXI app, tickers; low-perf flag via storage helper                                                       |
-| Domain       | `src/domain/`                    | Pure grid/piece/PRNG/daily — no PIXI                                                                      |
-| Presentation | `src/presentation/`              | Sprite placement / entity-id map                                                                          |
-| Application  | `src/application/`               | Match gate, land/spawn, fun-effect plugins                                                                |
-| Board        | `src/board/`                     | Clear, physics, fun board mutations, dynamics (Rapier)                                                    |
-| Active       | `src/active/`                    | Falling piece controls / fall / RNG                                                                       |
-| Game         | `src/game/`                      | Match FSM (`states`), board-state, time-attack, hidden-pause                                              |
-| Settings     | `src/settings/`                  | Prefs, difficulty, high scores — **not** replay                                                           |
-| Replay       | `src/replay/`                    | Recording/playback + pure `parse.ts`                                                                      |
-| Score        | `src/score/`                     | Model, rank, dan, HUD, performance                                                                        |
-| Util         | `src/util/`                      | Shared pure helpers: clamp, color, pad, format, hash, date-key, css-class, dialog-class, dev-log, nearest |
+| Area         | Path                             | Notes                                                                                                                        |
+| ------------ | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Boot         | `src/index.ts`, `src/runtime.ts` | PIXI app, tickers; low-perf flag via storage helper                                                                          |
+| Domain       | `src/domain/`                    | Pure grid/piece/PRNG/daily — no PIXI                                                                                         |
+| Presentation | `src/presentation/`              | Sprite placement / entity-id map                                                                                             |
+| Application  | `src/application/`               | Match gate, land/spawn, fun-effect plugins                                                                                   |
+| Board        | `src/board/`                     | Clear, physics, fun board mutations, dynamics (Rapier)                                                                       |
+| Active       | `src/active/`                    | Falling piece controls / fall / RNG                                                                                          |
+| Game         | `src/game/`                      | Match FSM (`states`), board-state, time-attack, hidden-pause                                                                 |
+| Settings     | `src/settings/`                  | Prefs, difficulty, high scores — **not** replay                                                                              |
+| Replay       | `src/replay/`                    | Recording/playback + pure `parse.ts`                                                                                         |
+| Score        | `src/score/`                     | Model, rank, dan, HUD, performance                                                                                           |
+| Util         | `src/util/`                      | Shared pure helpers: clamp, color, pad, format, hash, date-key, css-class, dialog-class, dev-log, nearest, manhattan, minmax |
 
 ## Shared utils (`src/util/`)
 
@@ -34,6 +34,7 @@ Short map of `src/` for contributors. Prefer domain purity and thin presentation
 | `minmax.ts`       | `maxOf` / `minOf` array extremes                                                    |
 | `manhattan.ts`    | cell Manhattan distance helpers                                                     |
 | `nearest.ts`      | `nearestIndex` for column lock / snap                                               |
+| `ease.ts`         | `easeInQuad` / `easeOutQuad` / `easeLinear`                                         |
 | `index.ts`        | barrel re-exports                                                                   |
 
 ## Dual physics
