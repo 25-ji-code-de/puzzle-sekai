@@ -70,7 +70,7 @@ export const playBgm = (
   // Never call play() until isLoaded — otherwise pixi-sound re-enters load()
   // and can throw InvalidStateError on AudioBufferSourceNode.buffer.
   if (!s.isLoaded) {
-    console.warn("[audio] playBgm called before sound was loaded");
+    devWarn("[audio] playBgm called before sound was loaded");
     return;
   }
   bgmPlaying = s;

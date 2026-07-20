@@ -9,6 +9,7 @@ import { exportLocalPicoData } from "./export-local";
 import { importLocalPicoData } from "./import-local";
 import { mergePicoData } from "./merge";
 import type { PicoSyncData, SyncMeta } from "./types";
+import { devWarn } from "../util/dev-log";
 
 export type SyncStatus = "idle" | "syncing" | "ok" | "error";
 
@@ -93,7 +94,7 @@ export const pullMergePush = async (): Promise<boolean> => {
       });
       setStatus("ok");
     } catch (e) {
-      console.warn("[sync] pullMergePush", e);
+      devWarn("[sync] pullMergePush", e);
       setStatus("error");
     }
   })();
@@ -135,7 +136,7 @@ export const pushLocal = async (): Promise<boolean> => {
       });
       setStatus("ok");
     } catch (e) {
-      console.warn("[sync] pushLocal", e);
+      devWarn("[sync] pushLocal", e);
       setStatus("error");
     }
   })();

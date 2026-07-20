@@ -32,7 +32,7 @@ export const openExternalUrl = async (url: string): Promise<boolean> => {
     window.open(url, "_blank", "noopener,noreferrer");
     return true;
   } catch (e) {
-    console.warn("[native] openExternalUrl failed", e);
+    devWarn("[native] openExternalUrl failed", e);
     return false;
   }
 };
@@ -96,6 +96,6 @@ export const applyImmersiveSystemUi = async (): Promise<void> => {
       /* optional */
     }
   } catch (e) {
-    console.warn("[native] StatusBar hide failed", e);
+    devWarn("[native] StatusBar hide failed", e);
   }
 };

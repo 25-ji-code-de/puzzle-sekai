@@ -147,7 +147,7 @@ const waitUntilLoaded = (
         return;
       }
       if (Date.now() - t0 > 60_000) {
-        console.warn(`Timed out waiting for BGM ${key}`);
+        devWarn(`Timed out waiting for BGM ${key}`);
         resolve(null);
         return;
       }
@@ -196,7 +196,7 @@ const startLoad = (key: BgmKey): Promise<PIXI.sound.Sound | null> => {
           singleInstance: true,
           loaded: (err, loadedSound) => {
             if (err || !loadedSound) {
-              console.warn(`Failed to load BGM ${key}:`, err);
+              devWarn(`Failed to load BGM ${key}:`, err);
               done(null);
               return;
             }

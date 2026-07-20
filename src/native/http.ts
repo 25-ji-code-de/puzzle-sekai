@@ -6,6 +6,7 @@
  * Web builds keep using fetch().
  */
 import { isNativeBuild } from "../auth/config";
+import { devWarn } from "../util/dev-log";
 
 export type HttpResult = {
   ok: boolean;
@@ -47,7 +48,7 @@ export const postForm = async (
             : "";
       return toResult(Number(res.status) || 0, text);
     } catch (e) {
-      console.warn("[native-http] CapacitorHttp POST failed, falling back", e);
+      devWarn("[native-http] CapacitorHttp POST failed, falling back", e);
     }
   }
 
@@ -83,7 +84,7 @@ export const getJson = async (
             : "";
       return toResult(Number(res.status) || 0, text);
     } catch (e) {
-      console.warn("[native-http] CapacitorHttp GET failed, falling back", e);
+      devWarn("[native-http] CapacitorHttp GET failed, falling back", e);
     }
   }
 

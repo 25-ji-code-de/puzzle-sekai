@@ -17,6 +17,7 @@ import {
   buildDialogShell,
 } from "./dialog-button";
 import { buildGameOverSummary } from "./game-over-summary";
+import { devWarn } from "../util/dev-log";
 
 const GAME_OVER_OVERLAY_ID = "game-over-overlay";
 
@@ -64,7 +65,7 @@ export const showGameOverMenu = (): void => {
             ? String((err as { name: unknown }).name)
             : "";
         if (name === "AbortError") return;
-        console.warn("[share]", err);
+        devWarn("[share]", err);
         shareBtn.textContent = t("gameOver.shareFailed");
         window.setTimeout(() => {
           if (shareBtn.isConnected) shareBtn.textContent = label;

@@ -24,6 +24,7 @@ import {
   type AuthUser,
 } from "./session";
 import { notifyAuthChanged } from "./user";
+import { devWarn } from "../util/dev-log";
 
 export type LoginStartResult =
   { ok: true } | { ok: false; reason: "not_configured" | "crypto" };
@@ -66,7 +67,7 @@ export const startLogin = async (): Promise<LoginStartResult> => {
     window.location.assign(authorizeUrl);
     return { ok: true };
   } catch (e) {
-    console.warn("[auth] startLogin", e);
+    devWarn("[auth] startLogin", e);
     return { ok: false, reason: "crypto" };
   }
 };
@@ -217,7 +218,7 @@ export const handleRedirectCallback = async (): Promise<CallbackResult> => {
     return { handled: true, ok: true, session };
   } catch (e) {
     clearAuthQuery();
-    console.warn("[auth] callback", e);
+    devWarn("[auth] callback", e);
     return { handled: true, ok: false, error: "network" };
   }
 };

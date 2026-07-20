@@ -22,6 +22,7 @@ import {
   type ScoreSummary,
 } from "../score";
 import { getDifficultyColor, getGroupDisplayColor } from "../settings";
+import { devWarn } from "../util/dev-log";
 
 // Portrait share image. Content is sized to fill most of the canvas
 // (not sparse type on a big empty plate) so chat thumbnails still read.
@@ -174,7 +175,7 @@ const loadQrImage = async (
       img.src = dataUrl;
     });
   } catch (e) {
-    console.warn("[share] qr", e);
+    devWarn("[share] qr", e);
     return null;
   }
 };
@@ -635,7 +636,7 @@ export const shareScoreCard = async (summary: ScoreSummary): Promise<void> => {
         ? String((err as { name: unknown }).name)
         : "";
     if (name === "AbortError") return;
-    console.warn("[share] capacitor share failed, falling back", err);
+    devWarn("[share] capacitor share failed, falling back", err);
   }
 
   if (canShareFiles(file)) {

@@ -3,6 +3,7 @@
  * and best-effort fullscreen on game start (mobile browsers only).
  */
 import { isFullscreenOn, isPortraitWith } from "./display-policy";
+import { devWarn } from "../util/dev-log";
 
 const ROTATE_OVERLAY_ID = "rotate-landscape-overlay";
 
@@ -43,7 +44,7 @@ export const requestAppFullscreen = async (): Promise<boolean> => {
       return true;
     }
   } catch (e) {
-    console.warn("Fullscreen request failed:", e);
+    devWarn("Fullscreen request failed:", e);
   }
   return false;
 };

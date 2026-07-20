@@ -2,6 +2,7 @@
  * Auth UI snapshot + listeners.
  */
 import { loadSession, type AuthUser } from "./session";
+import { devWarn } from "../util/dev-log";
 
 export type AuthSnapshot = {
   loggedIn: boolean;
@@ -33,7 +34,7 @@ export const notifyAuthChanged = (): void => {
     try {
       fn(snap);
     } catch (e) {
-      console.warn("[auth] listener", e);
+      devWarn("[auth] listener", e);
     }
   }
 };

@@ -138,6 +138,7 @@ import {
   type TimeAttackSnapshot,
 } from "./time-attack";
 import { hiddenPauseDecision } from "./hidden-pause";
+import { devWarn } from "../util/dev-log";
 
 export { welcome } from "../ui/welcome";
 export { isPlayActive } from "../application/play-session/phase";
@@ -315,7 +316,7 @@ const ensureNextPreview = async (): Promise<void> => {
       nextCharacter.preview ?? nextCharacter.file,
     );
   } catch (e) {
-    console.warn("[start] next preview failed", e);
+    devWarn("[start] next preview failed", e);
   }
 };
 
@@ -362,7 +363,7 @@ const runSpawn = async () => {
       },
     });
   } catch (e) {
-    console.warn("[spawn] failed", e);
+    devWarn("[spawn] failed", e);
     unlockCreate();
   }
 };
@@ -436,7 +437,7 @@ export const start = () => {
       if (isFunModeOn("truePhysics")) {
         const ok = await ensureContinuousReady();
         if (!ok) {
-          console.warn(
+          devWarn(
             "[start] truePhysics unavailable; match continues on grid path",
           );
         }
@@ -599,7 +600,7 @@ const endTopOut = async () => {
       }, 2000);
       return;
     } catch (e) {
-      console.warn("[end] flourish failed, falling back", e);
+      devWarn("[end] flourish failed, falling back", e);
     }
   }
 

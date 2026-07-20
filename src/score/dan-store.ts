@@ -23,6 +23,7 @@ import type {
 } from "../settings";
 import { getStoragePort } from "../settings/storage";
 import { clampInt, nonNegative } from "../util/clamp";
+import { devWarn } from "../util/dev-log";
 
 export type RecordDanRunInput = {
   mode: GameMode;
@@ -192,7 +193,7 @@ export const saveDanState = (state: DanState): void => {
       JSON.stringify({ ...state, version: DAN_STATE_VERSION }),
     );
   } catch (e) {
-    console.warn("[dan] save failed", e);
+    devWarn("[dan] save failed", e);
   }
 };
 

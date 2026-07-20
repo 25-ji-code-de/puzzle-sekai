@@ -10,6 +10,7 @@ import {
   PASS_CLIENT_ID,
   PASS_ISSUER,
 } from "./config";
+import { devWarn } from "../util/dev-log";
 
 export type AuthUser = {
   id: string;
@@ -129,7 +130,7 @@ export const saveSession = (session: AuthSession): void => {
   try {
     getStoragePort().set(AUTH_STORAGE_KEY, JSON.stringify(session));
   } catch (e) {
-    console.warn("[auth] save session failed", e);
+    devWarn("[auth] save session failed", e);
   }
 };
 
@@ -194,7 +195,7 @@ export const getAccessToken = async (): Promise<string | null> => {
     saveSession(next);
     return next.accessToken;
   } catch (e) {
-    console.warn("[auth] refresh failed", e);
+    devWarn("[auth] refresh failed", e);
     clearSession();
     return null;
   }
