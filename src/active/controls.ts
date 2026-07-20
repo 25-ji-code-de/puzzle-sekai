@@ -5,6 +5,7 @@
 import { app, hammerManager } from "../runtime";
 import { isControlsSwapped } from "../fun/effects";
 import { isReplayPlayback, recordReplayAction } from "../settings";
+import { isContinuousPhysics } from "../board/dynamics";
 
 export type PieceControlActions = {
   moveLeft: () => void;
@@ -51,19 +52,68 @@ export const bindPieceControls = (
     return () => {};
   }
 
+  // Key state tracking for continuous physics mode.
+  // In continuous mode, we use a ticker to fire movement at a fixed rate,
+  // so that pressing rotation keys doesn't interrupt held movement keys.
+  const heldKeys = new Set<string>();
+  let moveTicker: ReturnType<typeof setInterval> | undefined;
+  const continuous = isContinuousPhysics();
+
+  const processHeldMoveKeys = () => {
+    if (heldKeys.size === 0) return;
+    const swapped = isControlsSwapped();
+    if (heldKeys.has("arrowleft")) {
+      (swapped ? actions.moveRight : actions.moveLeft)();
+    }
+    if (heldKeys.has("arrowright")) {
+      (swapped ? actions.moveLeft : actions.moveRight)();
+    }
+  };
+
+  const ensureMoveTicker = () => {
+    if (moveTicker !== undefined) return;
+    moveTicker = setInterval(processHeldMoveKeys, 16);
+  };
+
+  const clearMoveTicker = () => {
+    if (moveTicker !== undefined) {
+      clearInterval(moveTicker);
+      moveTicker = undefined;
+    }
+  };
+
   const handleKeyPress = (event: KeyboardEvent) => {
     // Settings / dialogs: don't steal arrows/space from form fields.
     if (isTypingTarget(event.target)) return;
 
     const swapped = isControlsSwapped();
     let handled = true;
-    switch (event.key.toLowerCase()) {
+    const key = event.key.toLowerCase();
+
+    switch (key) {
       case "arrowleft":
-        (swapped ? actions.moveRight : actions.moveLeft)();
+        if (continuous) {
+          heldKeys.add("arrowleft");
+          // Fire immediately on first press; ticker handles repeats
+          if (!event.repeat) {
+            (swapped ? actions.moveRight : actions.moveLeft)();
+          }
+          ensureMoveTicker();
+        } else {
+          (swapped ? actions.moveRight : actions.moveLeft)();
+        }
         recordReplayAction(swapped ? "R" : "L");
         break;
       case "arrowright":
-        (swapped ? actions.moveLeft : actions.moveRight)();
+        if (continuous) {
+          heldKeys.add("arrowright");
+          if (!event.repeat) {
+            (swapped ? actions.moveLeft : actions.moveRight)();
+          }
+          ensureMoveTicker();
+        } else {
+          (swapped ? actions.moveLeft : actions.moveRight)();
+        }
         recordReplayAction(swapped ? "L" : "R");
         break;
       case "arrowup":
@@ -106,6 +156,13 @@ export const bindPieceControls = (
       event.preventDefault();
       actions.normalSpeed();
       recordReplayAction("ND");
+    }
+    // Release tracked movement keys in continuous mode
+    if (continuous) {
+      heldKeys.delete(event.key.toLowerCase());
+      if (!heldKeys.has("arrowleft") && !heldKeys.has("arrowright")) {
+        clearMoveTicker();
+      }
     }
   };
 
@@ -169,6 +226,7 @@ export const bindPieceControls = (
   return () => {
     window.removeEventListener("keydown", handleKeyPress, false);
     window.removeEventListener("keyup", handleKeyUp, false);
+    clearMoveTicker();
 
     hammerManager.off("swiperight", handleSwipeRight);
     hammerManager.off("tap", handleTap);

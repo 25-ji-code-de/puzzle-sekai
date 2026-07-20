@@ -30,3 +30,6 @@ export const avatar_Y = 175;
 
 export const FALL_DELAY = 10;
 export const FALL_SPEED = 8 * SPEED;
+
+/** Pixels per horizontal input event in continuous (truePhysics) mode. */
+export const CONTINUOUS_MOVE_STEP = 8;

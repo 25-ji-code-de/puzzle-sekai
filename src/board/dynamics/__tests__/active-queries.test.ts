@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   geometricCenter,
+  hullsIntersect,
   maxShiftX,
   originFromCenter,
   poseIntersectsSolids,
@@ -88,5 +89,65 @@ describe("partial edge slide", () => {
     if (blocked !== null) {
       expect(blocked).toBeLessThanOrEqual(col0);
     }
+  });
+});
+
+describe("hullsIntersect (SAT)", () => {
+  // Helper to create a square hull centered at origin
+  const squareHull = (size: number) => [
+    { x: -size / 2, y: -size / 2 },
+    { x: size / 2, y: -size / 2 },
+    { x: size / 2, y: size / 2 },
+    { x: -size / 2, y: size / 2 },
+  ];
+
+  it("returns false for two non-overlapping squares", () => {
+    const a = squareHull(100);
+    const b = squareHull(100);
+    const poseA = { x: 0, y: 0, rotation: 0 };
+    const poseB = { x: 200, y: 0, rotation: 0 };
+    expect(hullsIntersect(a, poseA, b, poseB)).toBe(false);
+  });
+
+  it("returns true for two overlapping squares", () => {
+    const a = squareHull(100);
+    const b = squareHull(100);
+    const poseA = { x: 0, y: 0, rotation: 0 };
+    const poseB = { x: 50, y: 0, rotation: 0 };
+    expect(hullsIntersect(a, poseA, b, poseB)).toBe(true);
+  });
+
+  it("returns false for two touching-but-not-overlapping squares (flush edge)", () => {
+    const a = squareHull(100);
+    const b = squareHull(100);
+    const poseA = { x: 0, y: 0, rotation: 0 };
+    const poseB = { x: 100, y: 0, rotation: 0 };
+    expect(hullsIntersect(a, poseA, b, poseB)).toBe(false);
+  });
+
+  it("handles rotated squares correctly", () => {
+    const a = squareHull(100);
+    const b = squareHull(100);
+    // Rotate B by 45 degrees so it extends further horizontally
+    const poseA = { x: 0, y: 0, rotation: 0 };
+    const poseB = { x: 80, y: 0, rotation: Math.PI / 4 };
+    expect(hullsIntersect(a, poseA, b, poseB)).toBe(true);
+  });
+
+  it("returns true for L-shape near corner where AABB would overlap but hulls don't", () => {
+    // Create an L-shaped hull (convex hull of L shape points)
+    const lShape = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 50 },
+      { x: 50, y: 50 },
+      { x: 50, y: 100 },
+      { x: 0, y: 100 },
+    ];
+    const square = squareHull(60);
+    // Position square in the "notch" of the L - AABBs overlap but hulls don't
+    const poseL = { x: 0, y: 0, rotation: 0 };
+    const poseSquare = { x: 55, y: 55, rotation: 0 };
+    expect(hullsIntersect(lShape, poseL, square, poseSquare)).toBe(false);
   });
 });

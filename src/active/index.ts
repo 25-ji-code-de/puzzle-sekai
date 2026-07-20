@@ -13,6 +13,7 @@ import {
   FALL_DELAY,
   FALL_SPEED,
   STAGE_HEIGHT,
+  CONTINUOUS_MOVE_STEP,
 } from "../config";
 import { getGrid } from "../game/board-state";
 import {
@@ -176,6 +177,8 @@ export const createPiece = async (
   const funSpeedMult =
     consumeKanadeSlowForSpawn() * (isKanade ? getKanadeSelfSpeedMult() : 1);
   const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
+  // Scale horizontal move step proportionally to fall speed
+  const moveStep = CONTINUOUS_MOVE_STEP * (baseSpeed / SPEED);
   const activeFall = createActiveFall(piece, baseSpeed);
 
   const currentCol = () =>
@@ -190,8 +193,7 @@ export const createPiece = async (
     if (!isDisplayAlive(piece)) return;
     if (targetCol < 0 || targetCol >= COLUMNS || targetCol === fromCol) return;
     if (isContinuousPhysics()) {
-      // Prefer snap to the target column center; if blocked (wide hull / wall),
-      // slide as far as possible in that direction (partial cell).
+      // Move toward target column center without snapping
       const targetX = LEFT_BORDER + targetCol * BOX_SIZE + BOX_SIZE / 2;
       const dir: -1 | 1 = targetX >= piece.x ? 1 : -1;
       const desired = Math.abs(targetX - piece.x) || BOX_SIZE;
@@ -205,8 +207,7 @@ export const createPiece = async (
         piece,
       );
       if (nx === null) return;
-      // Snap when we fully reached the column center
-      piece.x = Math.abs(nx - targetX) < 0.75 ? targetX : nx;
+      piece.x = nx;
       activeFall.onMoved();
       return;
     }
@@ -253,25 +254,18 @@ export const createPiece = async (
   const moveFree = (direction: -1 | 1) => {
     if (!isDisplayAlive(piece)) return;
     if (isContinuousPhysics()) {
-      // Full cell step, else residual slide to wall / rubble
+      // Small pixel increment scaled to fall speed
       const nx = stepShiftX(
         "cell2",
         piece.x,
         piece.y,
         piece.rotation,
         direction,
-        BOX_SIZE,
+        moveStep,
         piece,
       );
       if (nx === null) return;
-      // If we landed near a column center, snap for discrete feel
-      const col = Math.round((nx - LEFT_BORDER - BOX_SIZE / 2) / BOX_SIZE);
-      const centerX = LEFT_BORDER + col * BOX_SIZE + BOX_SIZE / 2;
-      piece.x =
-        Math.abs(nx - centerX) < 0.75 &&
-        canPlaceAt("cell2", centerX, piece.y, piece.rotation, piece)
-          ? centerX
-          : nx;
+      piece.x = nx;
       activeFall.onMoved();
       return;
     }

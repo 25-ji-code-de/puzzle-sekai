@@ -15,6 +15,7 @@ import {
   FALL_DELAY,
   FALL_SPEED,
   STAGE_HEIGHT,
+  CONTINUOUS_MOVE_STEP,
 } from "../config";
 import { getGrid } from "../game/board-state";
 import { addDropScore } from "../score";
@@ -74,10 +75,12 @@ const tryMovePrimary = (
   dx: number,
   dy: number,
   onMoved: () => void,
+  horizontalStep: number = CONTINUOUS_MOVE_STEP,
 ): boolean => {
   if (!isDisplayAlive(sprite)) return false;
   if (isContinuousPhysics()) {
     if (dx !== 0 && dy === 0) {
+      // Horizontal movement: use step scaled to fall speed
       const dir: -1 | 1 = dx > 0 ? 1 : -1;
       const nx = stepShiftX(
         KIND,
@@ -85,7 +88,7 @@ const tryMovePrimary = (
         sprite.y,
         sprite.rotation,
         dir,
-        Math.abs(dx) * BOX_SIZE,
+        horizontalStep,
         sprite,
       );
       if (nx === null) return false;
@@ -128,18 +131,20 @@ export const createNeneRobo = async (
   const speedMultiplier = getSpeedMultiplier(settings);
   const funSpeedMult = consumeKanadeSlowForSpawn();
   const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
+  // Scale horizontal move step proportionally to fall speed
+  const moveStep = CONTINUOUS_MOVE_STEP * (baseSpeed / SPEED);
   const fall = createActiveFall(nenerobo, baseSpeed);
 
   const canLift = fileIsBig2x2(file);
 
   const moveLeft = () => {
     if (!isDisplayAlive(nenerobo)) return;
-    tryMovePrimary(nenerobo, -1, 0, fall.onMoved);
+    tryMovePrimary(nenerobo, -1, 0, fall.onMoved, moveStep);
   };
 
   const moveRight = () => {
     if (!isDisplayAlive(nenerobo)) return;
-    tryMovePrimary(nenerobo, 1, 0, fall.onMoved);
+    tryMovePrimary(nenerobo, 1, 0, fall.onMoved, moveStep);
   };
 
   /** Easter egg: Shift+↑ / swipe up lifts one cell when free. */

@@ -32,6 +32,117 @@ const BOUND_EPS = 0.5;
 /** Soft overlap margin between piece AABBs so near-touch still moves. */
 const BODY_EPS = 1;
 
+/**
+ * Separating Axis Test (SAT) between two convex polygons in world space.
+ * Both must be convex, wound consistently (CCW), and have >= 3 vertices.
+ * Returns false as soon as a separating axis is found, true if none found.
+ */
+export const hullsIntersect = (
+  a: LocalPoint[],
+  poseA: { x: number; y: number; rotation: number },
+  b: LocalPoint[],
+  poseB: { x: number; y: number; rotation: number },
+): boolean => {
+  const nA = a.length;
+  const nB = b.length;
+
+  // Transform polygon A to world space
+  const ca = Math.cos(poseA.rotation);
+  const sa = Math.sin(poseA.rotation);
+  const wA: [number, number][] = [];
+  for (let i = 0; i < nA; i++) {
+    wA.push([
+      poseA.x + a[i].x * ca - a[i].y * sa,
+      poseA.y + a[i].x * sa + a[i].y * ca,
+    ]);
+  }
+
+  // Transform polygon B to world space
+  const cb = Math.cos(poseB.rotation);
+  const sb = Math.sin(poseB.rotation);
+  const wB: [number, number][] = [];
+  for (let i = 0; i < nB; i++) {
+    wB.push([
+      poseB.x + b[i].x * cb - b[i].y * sb,
+      poseB.y + b[i].x * sb + b[i].y * cb,
+    ]);
+  }
+
+  // Test axes from polygon A edges
+  for (let i = 0; i < nA; i++) {
+    const j = (i + 1) % nA;
+    const nx = -(wA[j][1] - wA[i][1]); // perpendicular (edge normal)
+    const ny = wA[j][0] - wA[i][0];
+    const len = Math.hypot(nx, ny);
+    if (len < 1e-10) continue;
+    const ax = nx / len;
+    const ay = ny / len;
+
+    let minA = Infinity, maxA = -Infinity;
+    for (const [wx, wy] of wA) {
+      const d = wx * ax + wy * ay;
+      if (d < minA) minA = d;
+      if (d > maxA) maxA = d;
+    }
+    let minB = Infinity, maxB = -Infinity;
+    for (const [wx, wy] of wB) {
+      const d = wx * ax + wy * ay;
+      if (d < minB) minB = d;
+      if (d > maxB) maxB = d;
+    }
+    if (maxA <= minB || maxB <= minA) return false; // separating axis found
+  }
+
+  // Test axes from polygon B edges
+  for (let i = 0; i < nB; i++) {
+    const j = (i + 1) % nB;
+    const nx = -(wB[j][1] - wB[i][1]);
+    const ny = wB[j][0] - wB[i][0];
+    const len = Math.hypot(nx, ny);
+    if (len < 1e-10) continue;
+    const ax = nx / len;
+    const ay = ny / len;
+
+    let minA = Infinity, maxA = -Infinity;
+    for (const [wx, wy] of wA) {
+      const d = wx * ax + wy * ay;
+      if (d < minA) minA = d;
+      if (d > maxA) maxA = d;
+    }
+    let minB = Infinity, maxB = -Infinity;
+    for (const [wx, wy] of wB) {
+      const d = wx * ax + wy * ay;
+      if (d < minB) minB = d;
+      if (d > maxB) maxB = d;
+    }
+    if (maxA <= minB || maxB <= minA) return false;
+  }
+
+  return true; // no separating axis → intersection
+};
+
+/**
+ * Check if a convex hull at (x, y, rotation) is within playfield boundaries.
+ * More accurate than AABB boundary check: rejects only when hull actually crosses the wall.
+ */
+const hullInBounds = (
+  localPoints: LocalPoint[],
+  x: number,
+  y: number,
+  rotation: number,
+): boolean => {
+  const c = Math.cos(rotation);
+  const s = Math.sin(rotation);
+  for (const p of localPoints) {
+    const wx = x + p.x * c - p.y * s;
+    const wy = y + p.x * s + p.y * c;
+    if (wx < playLeft() - BOUND_EPS) return false;
+    if (wx > playRight() + BOUND_EPS) return false;
+    if (wy > playBottom() + BOUND_EPS) return false;
+  }
+  return true;
+};
+
 const pointsFor = (
   kind: PieceKind,
   sprite: PIXI.Sprite | undefined,
@@ -171,7 +282,10 @@ export const snapQuarterTurn = (rotation: number): number => {
   return Math.round(rotation / q) * q;
 };
 
-/** Conservative penetration test using AABBs of settled bodies + walls. */
+/**
+ * Conservative penetration test using convex hulls when available, AABBs as fallback.
+ * Uses SAT (Separating Axis Theorem) for hull-hull intersection when both sides have hull data.
+ */
 export const poseIntersectsSolids = (
   kind: PieceKind,
   x: number,
@@ -181,29 +295,47 @@ export const poseIntersectsSolids = (
   self?: PIXI.Sprite,
 ): boolean => {
   const pts = pointsFor(kind, self, x, y, rotation);
-  const aabb = poseAabb(kind, { x, y, rotation }, pts);
-  // Walls / floor — flush contact OK; only reject true out-of-bounds
-  if (aabb.minX < playLeft() - BOUND_EPS) return true;
-  if (aabb.maxX > playRight() + BOUND_EPS) return true;
-  if (aabb.maxY > playBottom() + BOUND_EPS) return true;
 
+  // Boundary check: use hull-aware check when available, else AABB
+  if (pts && pts.length >= 3) {
+    if (!hullInBounds(pts, x, y, rotation)) return true;
+  } else {
+    const aabb = poseAabb(kind, { x, y, rotation }, pts);
+    if (aabb.minX < playLeft() - BOUND_EPS) return true;
+    if (aabb.maxX > playRight() + BOUND_EPS) return true;
+    if (aabb.maxY > playBottom() + BOUND_EPS) return true;
+  }
+
+  // Body collision: use hull-hull SAT when both sides have hull data, else AABB fallback
   for (const entry of allSettledBodies()) {
     if (self && entry.sprite === self) continue;
     const t = entry.body.translation();
-    const other = poseAabb(
-      entry.kind,
-      {
-        x: t.x,
-        y: t.y,
-        rotation: entry.body.rotation(),
-      },
-      entry.localPoints,
-    );
-    const overlapX =
-      aabb.minX < other.maxX - BODY_EPS && aabb.maxX > other.minX + BODY_EPS;
-    const overlapY =
-      aabb.minY < other.maxY - BODY_EPS && aabb.maxY > other.minY + BODY_EPS;
-    if (overlapX && overlapY) return true;
+    const r = entry.body.rotation();
+    const otherPts = entry.localPoints;
+
+    if (pts && pts.length >= 3 && otherPts && otherPts.length >= 3) {
+      // Hull-hull SAT
+      if (hullsIntersect(
+        pts,
+        { x, y, rotation },
+        otherPts,
+        { x: t.x, y: t.y, rotation: r },
+      )) {
+        return true;
+      }
+    } else {
+      // AABB fallback (one or both sides lack hull data)
+      const aabbSelf = poseAabb(kind, { x, y, rotation }, pts);
+      const aabbOther = poseAabb(entry.kind, { x: t.x, y: t.y, rotation: r }, otherPts);
+      if (
+        aabbSelf.minX < aabbOther.maxX - BODY_EPS &&
+        aabbSelf.maxX > aabbOther.minX + BODY_EPS &&
+        aabbSelf.minY < aabbOther.maxY - BODY_EPS &&
+        aabbSelf.maxY > aabbOther.minY + BODY_EPS
+      ) {
+        return true;
+      }
+    }
   }
   return false;
 };
