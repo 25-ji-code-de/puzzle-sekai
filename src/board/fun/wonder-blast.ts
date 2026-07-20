@@ -102,7 +102,8 @@ export const applyWonderBlast = async (
 
   const ruiNeneCount = ruiSprites.length + neneRoboSprites.length;
   const halfBoard = Math.floor((ROWS * COLUMNS) / 2);
-  const blastTarget = Math.min(12, halfBoard, 2 + 2 * ruiNeneCount);
+  const blastCap = Math.min(12, halfBoard);
+  const blastTarget = Math.min(blastCap, 2 + 2 * ruiNeneCount);
   if (blastTarget <= 0) return false;
 
   // Only remaining board pieces — the Rui/NeneRobo clear already finished its VFX.

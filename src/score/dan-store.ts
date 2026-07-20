@@ -167,10 +167,11 @@ export const parseDanState = (raw: string | null): DanState => {
     runs.sort((a, b) => a.playedAt - b.playedAt);
     const trimmed =
       runs.length > DAN_RUN_CAP ? runs.slice(runs.length - DAN_RUN_CAP) : runs;
-    const maxComboPeak = Math.max(
-      0,
-      Number(obj.maxComboPeak) || 0,
-      ...trimmed.map((r) => r.maxCombo),
+    const maxComboPeak = nonNegative(
+      Math.max(
+        Number(obj.maxComboPeak) || 0,
+        ...trimmed.map((r) => r.maxCombo),
+      ),
     );
     return { version: DAN_STATE_VERSION, runs: trimmed, maxComboPeak };
   } catch {

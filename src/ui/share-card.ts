@@ -23,7 +23,7 @@ import {
 } from "../score";
 import { getDifficultyColor, getGroupDisplayColor } from "../settings";
 import { devWarn } from "../util/dev-log";
-import { atLeastOne, unitInterval } from "../util/clamp";
+import { atLeastOne, clamp, unitInterval } from "../util/clamp";
 
 // Portrait share image. Content is sized to fill most of the canvas
 // (not sparse type on a big empty plate) so chat thumbnails still read.
@@ -438,9 +438,10 @@ const drawCard = (
   const comboTop = bottomTop;
 
   const groupCount = atLeastOne(groups.length);
-  const groupRowH = Math.min(
+  const groupRowH = clamp(
+    Math.floor((bottomBottom - bottomTop - 8) / groupCount),
+    48,
     64,
-    Math.max(48, Math.floor((bottomBottom - bottomTop - 8) / groupCount)),
   );
   const groupCountX = leftX + Math.floor(CARD_W * 0.48);
 
