@@ -47,17 +47,13 @@ export const LOW_PERF_RESOLUTION = 0.5;
 /**
  * Read persisted low-performance flag without importing the full settings graph
  * (runtime is loaded before store; avoid circular init).
+ * Logic lives in settings/storage so boot and store share one shape.
  */
-const readLowPerformanceFlag = (): boolean => {
-  try {
-    const raw = localStorage.getItem("puzzleSekaiSettings");
-    if (!raw) return false;
-    const parsed = JSON.parse(raw);
-    return parsed?.lowPerformance === true;
-  } catch {
-    return false;
-  }
-};
+import { readStorageJsonFlag } from "./settings/storage";
+import { SETTINGS_KEY } from "./settings/types";
+
+const readLowPerformanceFlag = (): boolean =>
+  readStorageJsonFlag(SETTINGS_KEY, "lowPerformance");
 
 const initialLowPerf = readLowPerformanceFlag();
 const initialResolution = initialLowPerf

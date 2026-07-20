@@ -155,6 +155,23 @@ git rebase upstream/main
 - 为新功能添加测试（如果适用）
 - 手动测试你的更改
 
+### 本地完整检查（CI 等价）
+
+```bash
+# 与 package.json `ci` 脚本一致
+yarn test && yarn typecheck && yarn lint && yarn i18n:check && yarn format:check && yarn build
+# 或
+yarn ci
+```
+
+注意：
+
+- Node **18+** 可用；CI 使用 **Node 24** + Corepack Yarn **4.17.0**
+- 启用 Corepack：`corepack enable && corepack prepare yarn@4.17.0 --activate`
+- 不要给 `actions/setup-node` 使用 `cache: yarn`（会误用 Yarn 1）；本仓库 CI 用独立的 Yarn Berry 缓存目录
+- Windows 上 `yarn android:apk` 走 `scripts/android-apk.mjs`（自动选 `gradlew.bat`）
+- 字体子集化与 WebP 转换只在生产 `yarn build` 运行；日常 `yarn start` 保持原图/全字体
+
 ## 🔍 代码审查
 
 所有 Pull Request 都需要经过代码审查：
