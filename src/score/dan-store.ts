@@ -23,6 +23,7 @@ import type {
 } from "../settings";
 import { getStoragePort } from "../settings/storage";
 import { clampInt, nonNegative } from "../util/clamp";
+import { maxOf } from "../util/minmax";
 import { devWarn } from "../util/dev-log";
 
 export type RecordDanRunInput = {
@@ -168,9 +169,9 @@ export const parseDanState = (raw: string | null): DanState => {
     const trimmed =
       runs.length > DAN_RUN_CAP ? runs.slice(runs.length - DAN_RUN_CAP) : runs;
     const maxComboPeak = nonNegative(
-      Math.max(
-        Number(obj.maxComboPeak) || 0,
-        ...trimmed.map((r) => r.maxCombo),
+      maxOf(
+        [Number(obj.maxComboPeak) || 0, ...trimmed.map((r) => r.maxCombo)],
+        0,
       ),
     );
     return { version: DAN_STATE_VERSION, runs: trimmed, maxComboPeak };

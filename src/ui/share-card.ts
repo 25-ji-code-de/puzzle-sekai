@@ -24,6 +24,7 @@ import {
 import { getDifficultyColor, getGroupDisplayColor } from "../settings";
 import { devWarn } from "../util/dev-log";
 import { atLeastOne, clamp, unitInterval } from "../util/clamp";
+import { minOf } from "../util/minmax";
 
 // Portrait share image. Content is sized to fill most of the canvas
 // (not sparse type on a big empty plate) so chat thumbnails still read.
@@ -145,7 +146,7 @@ const roundRect = (
   h: number,
   r: number,
 ) => {
-  const radius = Math.min(r, w / 2, h / 2);
+  const radius = minOf([r, w / 2, h / 2]);
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
   ctx.arcTo(x + w, y, x + w, y + h, radius);
