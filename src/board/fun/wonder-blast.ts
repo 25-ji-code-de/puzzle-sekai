@@ -5,6 +5,8 @@ import { addScore } from "../../score";
 import { ROWS, COLUMNS } from "../../config";
 import { SpriteData, sprites } from "../../game/board-state";
 import { onKanadeCleared } from "../../fun/effects";
+import { SFX_EFFECT_BASE } from "../../settings";
+import { playLoadedSfx } from "../../audio/sfx";
 import { createParticles } from "../particles";
 import { removeSpritesFromBoard } from "../mutate";
 import { anyPairAdjacent, shuffleInPlace } from "../grid";
@@ -117,6 +119,10 @@ export const applyWonderBlast = (cleared: SpriteData[]): boolean => {
   if (remove.some((sp) => sp.character?.name === CHAR.Kanade)) {
     onKanadeCleared();
   }
+
+  // Rui + NeneRobo showtime: random pick of the two blast lines.
+  const blastKey = Math.random() < 0.5 ? "wonderBlastA" : "wonderBlastB";
+  playLoadedSfx(blastKey, "sfx", SFX_EFFECT_BASE);
 
   addScore(cellsCleared);
   createParticles(remove);

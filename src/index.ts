@@ -22,6 +22,8 @@ import emuShrinkSfx from "./assets/sounds/effects/47_004_007.mp3";
 import carrotAkitoSfx from "./assets/sounds/effects/2509_004_002.mp3";
 import carrotEnaSfx from "./assets/sounds/effects/2509_004_003.mp3";
 import nomSfx from "./assets/sounds/effects/nom.mp3";
+import wonderBlastASfx from "./assets/sounds/effects/099_0156_06_013.mp3";
+import wonderBlastBSfx from "./assets/sounds/effects/099_0156_10_014.mp3";
 import bg from "./assets/bg.png";
 import welcomeImg from "./assets/welcome.png";
 import { initializeFontSystem } from "./ui/fonts";
@@ -81,6 +83,8 @@ app.loader
   .add("carrotAkito", carrotAkitoSfx)
   .add("carrotEna", carrotEnaSfx)
   .add("nom", nomSfx)
+  .add("wonderBlastA", wonderBlastASfx)
+  .add("wonderBlastB", wonderBlastBSfx)
   .add("welcome", welcomeImg)
   .load((_loader, resources) => {
     setWelcomeLoadProgress(100);
