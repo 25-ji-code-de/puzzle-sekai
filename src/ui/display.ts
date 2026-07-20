@@ -2,12 +2,13 @@
  * Display helpers: orientation detection, rotate-to-landscape gate,
  * and best-effort fullscreen on game start (mobile browsers only).
  */
+import { isFullscreenOn, isPortraitWith } from "./display-policy";
 
 const ROTATE_OVERLAY_ID = "rotate-landscape-overlay";
 
 export const isPortrait = (): boolean =>
   typeof window !== "undefined" &&
-  window.matchMedia("(orientation: portrait)").matches;
+  isPortraitWith(window.matchMedia?.bind(window));
 
 /** True when the document is currently in a fullscreen element. */
 export const isFullscreen = (): boolean => {
@@ -15,11 +16,7 @@ export const isFullscreen = (): boolean => {
     webkitFullscreenElement?: Element | null;
     msFullscreenElement?: Element | null;
   };
-  return !!(
-    doc.fullscreenElement ||
-    doc.webkitFullscreenElement ||
-    doc.msFullscreenElement
-  );
+  return isFullscreenOn(doc);
 };
 
 /**

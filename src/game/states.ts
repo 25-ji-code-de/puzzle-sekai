@@ -137,6 +137,7 @@ import {
   stopTimeAttackClock,
   type TimeAttackSnapshot,
 } from "./time-attack";
+import { hiddenPauseDecision } from "./hidden-pause";
 
 export { welcome } from "../ui/welcome";
 export { isPlayActive } from "../application/play-session/phase";
@@ -243,18 +244,14 @@ const bindHiddenPauseLifecycle = () => {
   hiddenPauseBound = true;
   document.addEventListener("visibilitychange", () => {
     const phase = getPlayPhase();
-    if (document.visibilityState === "hidden") {
-      if (phase.type === "playing") {
-        pausePlay("hidden");
-      }
-      return;
-    }
-    if (
-      document.visibilityState === "visible" &&
-      phase.type === "paused" &&
-      phase.reason === "hidden" &&
-      !isPauseMenuOpen()
-    ) {
+    const decision = hiddenPauseDecision(
+      document.visibilityState,
+      phase,
+      isPauseMenuOpen(),
+    );
+    if (decision.action === "pause") {
+      pausePlay("hidden");
+    } else if (decision.action === "showPauseMenu") {
       showPauseMenu();
     }
   });

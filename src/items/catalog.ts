@@ -43,34 +43,39 @@ const itemGroups: string[][] = [
 
 /** Group A: carrot materials (にんじん) — used by itemAllergy fun mode */
 export const CARROT_ITEMS = [material008, material013];
+
+/** Extract `materialNNN` tokens from import URLs (for hashed CDN path matching). */
+const materialTokensFromUrls = (urls: readonly string[]): string[] => {
+  const out: string[] = [];
+  for (const url of urls) {
+    const m = String(url)
+      .toLowerCase()
+      .match(/material\d+/g);
+    if (m) out.push(...m);
+  }
+  return [...new Set(out)];
+};
+
+const CARROT_TOKENS = materialTokensFromUrls(CARROT_ITEMS);
+
 /** Match by import URL equality or path substring (robust to hashed URLs). */
 export const isCarrotItem = (file: string): boolean => {
   if (!file) return false;
   if (CARROT_ITEMS.includes(file)) return true;
   const lower = file.toLowerCase();
-  return lower.includes("material008") || lower.includes("material013");
+  return CARROT_TOKENS.some((t) => lower.includes(t));
 };
 
 /** Group B: fries / ポテト / 薯条 — used by mizukiShift fun mode */
 export const FRIES_ITEMS: readonly string[] = itemGroups[1];
+const FRIES_TOKENS = materialTokensFromUrls(FRIES_ITEMS);
+
 /** Match by import URL equality or path substring (robust to hashed URLs). */
 export const isFriesItem = (file: string): boolean => {
   if (!file) return false;
   if (FRIES_ITEMS.includes(file)) return true;
   const lower = file.toLowerCase();
-  // Group B material ids (see itemGroups[1])
-  return (
-    lower.includes("material044") ||
-    lower.includes("material105") ||
-    lower.includes("material106") ||
-    lower.includes("material107") ||
-    lower.includes("material108") ||
-    lower.includes("material109") ||
-    lower.includes("material110") ||
-    lower.includes("material111") ||
-    lower.includes("material112") ||
-    lower.includes("material113")
-  );
+  return FRIES_TOKENS.some((t) => lower.includes(t));
 };
 
 import { randomInt } from "../domain/prng";
