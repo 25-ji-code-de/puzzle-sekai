@@ -1,67 +1,26 @@
-import { ROWS, COLUMNS } from "../config";
+/**
+ * Item / character contact helpers for fun modes (allergy, mizuki lock).
+ * Pure grid math lives in contact-math.ts (unit-testable without PIXI).
+ */
 import { sprites, getGrid } from "../game/board-state";
 import { isFunModeOn } from "../fun/effects";
 import { isCarrotItem, isFriesItem } from "../items";
-import { manhattan } from "./grid";
-import { footprintFromPrimary } from "../domain/piece";
-import {
-  isContinuousPhysics,
-  projectToColumn,
-  entitiesTouching,
-} from "./dynamics";
+import { isContinuousPhysics, entitiesTouching } from "./dynamics";
 import { pieceKindFrom } from "../domain/types";
+import {
+  contactColumnsForItemOnGrid,
+  continuousContactColumnsForItem,
+} from "./contact-math";
 
-/** Same cell or orthogonal neighbor */
-const cellsTouch = (ax: number, ay: number, bx: number, by: number) =>
-  manhattan(ax, ay, bx, by) <= 1;
+export {
+  cellsTouch,
+  contactColumnsForItemOnGrid,
+  continuousContactColumnsForItem,
+  landYInColumnFromGrid,
+} from "./contact-math";
 
-/**
- * Landing row (bottom cell) for a piece falling in `col` under gravity,
- * assuming the column is a solid stack from the bottom (post-gravity).
- * Returns -1 if the column is full.
- */
-const landYInColumn = (col: number): number => {
-  if (col < 0 || col >= COLUMNS) return -1;
-  const grid = getGrid();
-  for (let y = 0; y < ROWS; y++) {
-    if (grid[y][col] != null) {
-      return y - 1;
-    }
-  }
-  return ROWS - 1;
-};
-
-/**
- * ContactColumns: columns where a default-orientation character, after falling and
- * landing under gravity, would touch the given item (same cell or edge-adjacent).
- */
-const contactColumnsForItem = (itemX: number, itemY: number): number[] => {
-  const cols: number[] = [];
-  for (let col = 0; col < COLUMNS; col++) {
-    const landY = landYInColumn(col);
-    // Default spawn is vertical head-down (orient 0); need room for upper cell.
-    if (landY < 1) continue;
-    const cells = footprintFromPrimary({ x: col, y: landY }, 0, "cell2");
-    if (cells.some(([x, y]) => cellsTouch(x, y, itemX, itemY))) {
-      cols.push(col);
-    }
-  }
-  return cols;
-};
-
-/**
- * Continuous: columns whose center is near the item body, or would touch via
- * proximity when a virtual cell2 rests near the item X.
- */
-const continuousContactColumnsForItem = (itemSpriteX: number): number[] => {
-  const centerCol = projectToColumn(itemSpriteX);
-  const cols = new Set<number>();
-  for (const d of [-1, 0, 1]) {
-    const c = centerCol + d;
-    if (c >= 0 && c < COLUMNS) cols.add(c);
-  }
-  return [...cols].sort((a, b) => a - b);
-};
+const contactColumnsForItem = (itemX: number, itemY: number): number[] =>
+  contactColumnsForItemOnGrid(getGrid(), itemX, itemY);
 
 /**
  * Unified ContactColumns for all items matching `itemPred`.

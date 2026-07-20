@@ -15,7 +15,7 @@ export type NetworkHints = {
   verySlow: boolean;
 };
 
-type NavConnection = {
+export type NavConnection = {
   saveData?: boolean;
   effectiveType?: string;
 };
@@ -29,14 +29,19 @@ const readConnection = (): NavConnection | null => {
   }
 };
 
-export const getNetworkHints = (): NetworkHints => {
-  const c = readConnection();
+/** Pure mapping from Network Information API fields (testable without navigator). */
+export const networkHintsFromConnection = (
+  c: NavConnection | null | undefined,
+): NetworkHints => {
   const saveData = c?.saveData === true;
   const et = (c?.effectiveType ?? "").toLowerCase();
   const verySlow = saveData || et === "slow-2g" || et === "2g";
   const slow = verySlow || et === "3g";
   return { saveData, slow, verySlow };
 };
+
+export const getNetworkHints = (): NetworkHints =>
+  networkHintsFromConnection(readConnection());
 
 /** Default hold window — long enough for one PNG on slow 3G, not forever. */
 const DEFAULT_DEADLINE_MS = 4000;

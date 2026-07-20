@@ -6,6 +6,7 @@ import {
   enterVisualCritical,
   isVisualCritical,
   leaveVisualCritical,
+  networkHintsFromConnection,
   whenAudioAllowed,
 } from "./bandwidth-gate";
 
@@ -59,5 +60,37 @@ describe("visual critical window", () => {
     vi.advanceTimersByTime(200);
     await p;
     expect(isVisualCritical()).toBe(false);
+  });
+});
+
+describe("networkHintsFromConnection", () => {
+  it("defaults to fast when no connection object", () => {
+    expect(networkHintsFromConnection(null)).toEqual({
+      saveData: false,
+      slow: false,
+      verySlow: false,
+    });
+  });
+
+  it("marks 2g / slow-2g / saveData as verySlow", () => {
+    expect(networkHintsFromConnection({ effectiveType: "2g" }).verySlow).toBe(
+      true,
+    );
+    expect(
+      networkHintsFromConnection({ effectiveType: "slow-2g" }).verySlow,
+    ).toBe(true);
+    expect(networkHintsFromConnection({ saveData: true }).verySlow).toBe(true);
+  });
+
+  it("marks 3g as slow but not verySlow", () => {
+    const h = networkHintsFromConnection({ effectiveType: "3g" });
+    expect(h.slow).toBe(true);
+    expect(h.verySlow).toBe(false);
+  });
+
+  it("treats 4g as fast", () => {
+    const h = networkHintsFromConnection({ effectiveType: "4g" });
+    expect(h.slow).toBe(false);
+    expect(h.verySlow).toBe(false);
   });
 });
