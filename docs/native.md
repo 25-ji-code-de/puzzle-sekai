@@ -33,6 +33,8 @@ Web / PWA at <https://pico.nightcord.de5.net/> is unchanged.
 ```bash
 # Web (PWA, production) — unchanged
 yarn build
+# Local-only faster build (skips WebP + font subset — do NOT ship)
+yarn build:fast
 
 # Shared native frontend bundle (no service worker, VITE_NATIVE=1)
 yarn build:native
@@ -45,6 +47,10 @@ yarn tauri:build    # runs build:native then packages installers
 yarn cap:sync       # build:native + cap sync android
 yarn android:open   # open Android Studio
 yarn android:apk    # release APK via Gradle (cross-platform: scripts/android-apk.mjs)
+
+# Asset tooling
+yarn com:table      # regenerate Rapier COM table after collider assets change
+yarn i18n:check     # fail if en/ja/zh nested keys diverge
 ```
 
 Artifacts:

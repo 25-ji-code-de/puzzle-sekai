@@ -77,6 +77,8 @@ Web 版仍然是主交付物。可选的原生壳（Tauri 桌面 + Capacitor And
 
 详见 **[docs/native.md](./docs/native.md)**（Rust / Android SDK 前置、OAuth `puzzlesekai://` 注册、打包命令）。
 
+架构分层简述见 **[docs/architecture.md](./docs/architecture.md)**。
+
 ```bash
 yarn build:native   # 无 Service Worker 的壳用前端产物
 yarn tauri:build    # 需 Rust 工具链
