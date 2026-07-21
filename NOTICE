@@ -26,23 +26,70 @@ Pazuru-Pico
 Runtime libraries (shipped to clients)
 --------------------------------------
 
-pixi.js
-pixi.js-legacy
+Web / PWA bundle and native shells embed the following (directly or via the
+shared Vite frontend). Versions below match the resolved install used when
+this NOTICE was last refreshed.
+
+pixi.js-legacy (and pixi.js core it re-exports)
   License: MIT
   Copyright (c) 2013-2017 Mathew Groves, Chad Engler
   Homepage: https://pixijs.com/
   Repository: https://github.com/pixijs/pixijs
+  Version (resolved): 5.3.x
 
 pixi-sound
   License: MIT
   Copyright (c) 2017 Matt Karl, LLC
   Repository: https://github.com/pixijs/sound
+  Version (resolved): 3.0.x
 
 hammer.js
   License: MIT
   Copyright (C) 2011-2014 by Jorik Tangelder (Eight Media)
   Homepage: https://hammerjs.github.io/
   Repository: https://github.com/hammerjs/hammer.js
+  Version (resolved): 2.0.8
+
+qrcode
+  License: MIT
+  Copyright (c) 2012 Ryan Day
+  Homepage: https://github.com/soldair/node-qrcode
+  Version (resolved): 1.5.x
+
+@dimforge/rapier2d-compat
+  License: Apache License 2.0
+  Homepage: https://rapier.rs
+  Repository: https://github.com/dimforge/rapier
+  Version (resolved): 0.19.x
+
+
+Native shell SDKs (packaged apps only)
+--------------------------------------
+
+Desktop (Tauri 2) and Android (Capacitor 7) shells wrap the same frontend.
+These packages ship with their respective installers / APK, not the pure web
+bundle alone.
+
+@tauri-apps/api
+@tauri-apps/plugin-deep-link
+@tauri-apps/plugin-opener
+  License: Apache-2.0 OR MIT (dual)
+  Copyright (c) 2017 - Present Tauri Apps Contributors
+  Homepage: https://tauri.app
+  Repository: https://github.com/tauri-apps/tauri
+  Plugins workspace: https://github.com/tauri-apps/plugins-workspace
+
+@capacitor/core
+@capacitor/app
+@capacitor/browser
+@capacitor/filesystem
+@capacitor/share
+@capacitor/status-bar
+@capacitor/android
+  License: MIT
+  Copyright (c) 2017-present Drifty Co. / Ionic Team
+  Homepage: https://capacitorjs.com
+  Repository: https://github.com/ionic-team/capacitor
 
 
 Fonts
@@ -55,16 +102,20 @@ license metadata are retained in font name tables where applicable.
 MaokenAssortedSans-Lite (猫啃什锦黑 Lite)
   License: SIL Open Font License 1.1
   Source:  https://github.com/Skr-ZERO/MaokenAssortedSans
+  File:    src/assets/fonts/MaokenAssortedSans-Lite.woff2
 
 Nishiki-teki
   License: SIL Open Font License 1.1
   Copyright: 2008-2026 Umihotaru
   Designer URL: https://umihotaru.work
+  File:    src/assets/fonts/nishiki-teki.woff2
 
-Droid Sans Mono
+Roboto (Regular + SemiBold)
   License: Apache License 2.0
-  Copyright: Digitized data copyright © 2007, Google Corporation.
-  License URL (embedded): http://www.apache.org/licenses/LICENSE-2.0
+  Copyright: Digitized data copyright Google Inc.
+  Source:  https://github.com/googlefonts/roboto
+  Files:   src/assets/fonts/Roboto-Regular.woff2
+           src/assets/fonts/Roboto-SemiBold.woff2
 
 
 Build-time / development tools (not shipped as app code)
@@ -74,14 +125,26 @@ The following are used only for development or production builds. Their
 license texts remain with their packages under node_modules / the package
 registry. Listed for completeness:
 
-  TypeScript          Apache-2.0
-  Vite                MIT
-  vite-plugin-pwa     MIT
-  sass (Dart Sass)    MIT
-  prettier            MIT
-  sharp               Apache-2.0
-  subset-font         BSD-3-Clause
-  @types/hammerjs     MIT
+  TypeScript                 Apache-2.0
+  Vite                       MIT
+  vite-plugin-pwa            MIT
+  Vitest                     MIT
+  sass (Dart Sass)           MIT
+  Prettier                   MIT
+  ESLint                     MIT
+  @eslint/js                 MIT
+  typescript-eslint          MIT
+  eslint-plugin-unicorn      MIT
+  globals                    MIT
+  lint-staged                MIT
+  simple-git-hooks           MIT
+  sharp                      Apache-2.0
+  subset-font                BSD-3-Clause
+  png-to-ico                 MIT
+  @capacitor/cli             MIT
+  @tauri-apps/cli            Apache-2.0 OR MIT
+  @types/hammerjs            MIT
+  @types/qrcode              MIT
 
 
 Game content disclaimer
@@ -107,3 +170,4 @@ Full license texts
 - SIL OFL 1.1:   https://scripts.sil.org/OFL
 - Apache-2.0:    https://www.apache.org/licenses/LICENSE-2.0
 - MIT:           https://opensource.org/licenses/MIT
+- BSD-3-Clause:  https://opensource.org/licenses/BSD-3-Clause
