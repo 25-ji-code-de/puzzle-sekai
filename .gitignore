@@ -15,7 +15,15 @@ pids
 
 # Dependency directory
 node_modules
-.yarn/
+
+# Yarn Berry — ignore local install artifacts; keep patches/plugins/releases/sdks/versions.
+# .pnp.cjs / .pnp.loader.mjs are committed so resolvers match lock without regenerating first.
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
 # Coverage
 coverage
@@ -28,9 +36,6 @@ build/Release
 .idea/
 out/
 .idea_modules/
-
-# Yarn
-.yarn/install-state.gz
 
 # Build
 /dist/

@@ -73,5 +73,31 @@
     "pixi.js-legacy": "^5.3.2",
     "qrcode": "^1.5.4"
   },
-  "packageManager": "yarn@4.17.0"
+  "packageManager": "yarn@4.17.0",
+  "dependenciesMeta": {
+    "@capacitor/android": {
+      "unplugged": true
+    },
+    "@capacitor/app": {
+      "unplugged": true
+    },
+    "@capacitor/browser": {
+      "unplugged": true
+    },
+    "@capacitor/cli": {
+      "unplugged": true
+    },
+    "@capacitor/core": {
+      "unplugged": true
+    },
+    "@capacitor/filesystem": {
+      "unplugged": true
+    },
+    "@capacitor/share": {
+      "unplugged": true
+    },
+    "@capacitor/status-bar": {
+      "unplugged": true
+    }
+  }
 }

@@ -1,0 +1,3 @@
+# Yarn PnP maps are generated; keep blame / PR stats clean.
+.pnp.cjs linguist-generated=true
+.pnp.loader.mjs linguist-generated=true
