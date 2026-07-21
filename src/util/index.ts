@@ -28,3 +28,4 @@ export { manhattan, minManhattanToCells } from "./manhattan";
 export { maxOf, minOf } from "./minmax";
 export { easeInQuad, easeLinear, easeOutQuad } from "./ease";
 export { safeJsonParse } from "./json";
+export { toFiniteNumber, toNonNegInt } from "./number";

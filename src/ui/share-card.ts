@@ -24,7 +24,7 @@ import {
 import { getDifficultyColor, getGroupDisplayColor } from "../settings";
 import { devWarn } from "../util/dev-log";
 import { atLeastOne, clamp, unitInterval } from "../util/clamp";
-import { minOf } from "../util/minmax";
+import { maxOf, minOf } from "../util/minmax";
 
 // Portrait share image. Content is sized to fill most of the canvas
 // (not sparse type on a big empty plate) so chat thumbnails still read.
@@ -362,7 +362,7 @@ const drawCard = (
   }
 
   // Clear the rank block before hero score.
-  y = Math.max(y + 70, rankTop + RANK_PX + 44);
+  y = maxOf([y + 70, rankTop + RANK_PX + 44]);
 
   // —— Hero score (dominates the card) ——
   ctx.textAlign = "center";

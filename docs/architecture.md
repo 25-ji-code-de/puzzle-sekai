@@ -36,6 +36,7 @@ Short map of `src/` for contributors. Prefer domain purity and thin presentation
 | `nearest.ts`      | `nearestIndex` for column lock / snap                                               |
 | `ease.ts`         | `easeInQuad` / `easeOutQuad` / `easeLinear`                                         |
 | `json.ts`         | `safeJsonParse` for storage blobs                                                   |
+| `number.ts`       | `toFiniteNumber` / `toNonNegInt`                                                    |
 | `index.ts`        | barrel re-exports                                                                   |
 
 ## Dual physics

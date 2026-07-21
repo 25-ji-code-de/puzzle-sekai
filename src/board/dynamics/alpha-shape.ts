@@ -4,6 +4,7 @@
  */
 import type * as PIXI from "pixi.js-legacy";
 import { atLeastOne, unitInterval } from "../../util/clamp";
+import { maxOf } from "../../util/minmax";
 import { devWarn } from "../../util/dev-log";
 
 export type LocalPoint = { x: number; y: number };
@@ -136,7 +137,7 @@ export const buildAlphaShape = (sprite: PIXI.Sprite): AlphaShape | null => {
   const frame = tex.frame;
   const fw = atLeastOne(Math.floor(frame.width));
   const fh = atLeastOne(Math.floor(frame.height));
-  const scale = unitInterval(MAX_SAMPLE / Math.max(fw, fh));
+  const scale = unitInterval(MAX_SAMPLE / maxOf([fw, fh], 1));
   const sw = atLeastOne(Math.floor(fw * scale));
   const sh = atLeastOne(Math.floor(fh * scale));
 

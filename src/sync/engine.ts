@@ -11,6 +11,7 @@ import { mergePicoData } from "./merge";
 import type { PicoSyncData, SyncMeta } from "./types";
 import { devWarn } from "../util/dev-log";
 import { safeJsonParse } from "../util/json";
+import { toNonNegInt } from "../util/number";
 
 export type SyncStatus = "idle" | "syncing" | "ok" | "error";
 
@@ -44,8 +45,8 @@ export const loadSyncMeta = (): SyncMeta => {
   const o = safeJsonParse<Partial<SyncMeta>>(raw);
   if (!o) return { version: 0, updatedAt: 0 };
   return {
-    version: Number(o.version) || 0,
-    updatedAt: Number(o.updatedAt) || 0,
+    version: toNonNegInt(o.version),
+    updatedAt: toNonNegInt(o.updatedAt),
   };
 };
 

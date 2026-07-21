@@ -15,6 +15,7 @@ import { getStoragePort } from "./storage";
 import { utcDateKey } from "../domain/daily";
 import { clampInt } from "../util/clamp";
 import { safeJsonParse } from "../util/json";
+import { toNonNegInt } from "../util/number";
 
 const DIFFICULTIES: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7];
 const ENT_TAGS = ["std", "ent"] as const;
@@ -82,14 +83,14 @@ export function parseRecord(raw: string | null): HighScoreRecord {
   if (raw.startsWith("{")) {
     const obj = safeJsonParse<Partial<HighScoreRecord>>(raw);
     if (!obj) return emptyRecord();
-    const score = Number(obj.score) || 0;
-    const difficultyLevel = Number(obj.difficultyLevel) || 0;
+    const score = toNonNegInt(obj.score);
+    const difficultyLevel = toNonNegInt(obj.difficultyLevel);
     const entertainment = obj.entertainment === true;
-    const updatedAt = Number(obj.updatedAt) || 0;
+    const updatedAt = toNonNegInt(obj.updatedAt);
     return { score, difficultyLevel, entertainment, updatedAt };
   }
   // Defensive: plain number string
-  const score = parseInt(raw, 10) || 0;
+  const score = toNonNegInt(raw);
   return { ...emptyRecord(), score };
 }
 

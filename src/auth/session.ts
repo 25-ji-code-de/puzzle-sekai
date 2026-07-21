@@ -12,6 +12,7 @@ import {
 } from "./config";
 import { devWarn } from "../util/dev-log";
 import { safeJsonParse } from "../util/json";
+import { toNonNegInt } from "../util/number";
 
 export type AuthUser = {
   id: string;
@@ -110,7 +111,7 @@ export const loadSession = (): AuthSession | null => {
     return {
       accessToken: o.accessToken,
       refreshToken: o.refreshToken,
-      expiresAt: Number(o.expiresAt) || 0,
+      expiresAt: toNonNegInt(o.expiresAt),
       user: {
         id: o.user.id,
         username: o.user.username,
