@@ -22,8 +22,8 @@ yarn test && yarn typecheck && yarn lint && yarn format:check
 # optional full: yarn ci
 ```
 
-Approximate suite size after session: ~566 tests / ~84 files (grows with util tests).
-Local stream: ~45+ commits from `d800e57` (not pushed unless asked).
+Approximate suite size after session: ~566+ tests / ~84 files (grows with util tests).
+Local stream: ~46+ commits from `d800e57` (not pushed unless asked).
 
 ## Recent tip commits (local)
 

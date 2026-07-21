@@ -15,9 +15,10 @@ describe("toHttpResult", () => {
     expect(toHttpResult(0, "").ok).toBe(false);
   });
 
-  it("json() parses body or null", () => {
+  it("json() parses body or null; garbage is null", () => {
     expect(toHttpResult(200, '{"a":1}').json()).toEqual({ a: 1 });
     expect(toHttpResult(200, "").json()).toBeNull();
+    expect(toHttpResult(200, "{nope").json()).toBeNull();
   });
 
   it("preserves status and text", () => {

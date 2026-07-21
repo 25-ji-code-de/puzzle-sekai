@@ -7,6 +7,7 @@
  */
 import { isNativeBuild } from "../auth/config";
 import { devWarn } from "../util/dev-log";
+import { safeJsonParse } from "../util/json";
 
 export type HttpResult = {
   ok: boolean;
@@ -20,7 +21,8 @@ export const toHttpResult = (status: number, text: string): HttpResult => ({
   ok: status >= 200 && status < 300,
   status,
   text,
-  json: <T = unknown>() => JSON.parse(text || "null") as T,
+  json: <T = unknown>() =>
+    safeJsonParse<T>(text || "null", null as T | null) as T,
 });
 
 const toResult = toHttpResult;

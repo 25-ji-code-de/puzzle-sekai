@@ -31,6 +31,7 @@ import {
 import { placeSpriteAtAnchor } from "../presentation/placement";
 import { clamp, nonNegative, unitInterval } from "../util/clamp";
 import { easeInQuad } from "../util/ease";
+import { maxOf, minOf } from "../util/minmax";
 
 /** Slightly slower than a snap so the pry-up arc reads clearly. */
 const TIP_ROTATE_FRAMES = 18;
@@ -248,10 +249,10 @@ const planTipForRoot = (
   // Unstable only when some bottom cells are held and some hang
   if (supportedBottom.length === 0 || hangBottom.length === 0) return null;
 
-  const maxSupX = Math.max(...supportedBottom.map(([x]) => x));
-  const minSupX = Math.min(...supportedBottom.map(([x]) => x));
-  const minHangX = Math.min(...hangBottom.map(([x]) => x));
-  const maxHangX = Math.max(...hangBottom.map(([x]) => x));
+  const maxSupX = maxOf(supportedBottom.map(([x]) => x));
+  const minSupX = minOf(supportedBottom.map(([x]) => x));
+  const minHangX = minOf(hangBottom.map(([x]) => x));
+  const maxHangX = maxOf(hangBottom.map(([x]) => x));
   // Hang must be entirely on one side of the support span
   const hangRight = minHangX > maxSupX;
   const hangLeft = maxHangX < minSupX;
