@@ -33,3 +33,7 @@ export const FALL_SPEED = 8 * SPEED;
 
 /** Pixels per horizontal input event in continuous (truePhysics) mode. */
 export const CONTINUOUS_MOVE_STEP = 8;
+
+/** Horizontal step scaled to the piece's fall speed (faster fall → faster strafe). */
+export const continuousMoveStep = (baseSpeed: number): number =>
+  CONTINUOUS_MOVE_STEP * (baseSpeed / SPEED);

@@ -95,8 +95,8 @@ export {
   tryRotate,
   maxShiftX,
   stepShiftX,
-  hullsIntersect,
 } from "./active-queries";
+export { hullsIntersect, hullWithinBounds } from "./pose";
 export { commitLandContinuous } from "./continuous-land";
 export { findClearEntities } from "./clear-entities";
 export { massOfKind } from "./colliders";

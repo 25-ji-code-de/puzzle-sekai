@@ -13,7 +13,7 @@ import {
   FALL_DELAY,
   FALL_SPEED,
   STAGE_HEIGHT,
-  CONTINUOUS_MOVE_STEP,
+  continuousMoveStep,
 } from "../config";
 import { getGrid } from "../game/board-state";
 import {
@@ -47,6 +47,7 @@ import {
 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
+import { startHoldMove } from "./hold-move";
 import { isDisplayAlive, registerActivePiece } from "./lifecycle";
 import { loadTexture } from "../assets/load-texture";
 import {
@@ -177,8 +178,7 @@ export const createPiece = async (
   const funSpeedMult =
     consumeKanadeSlowForSpawn() * (isKanade ? getKanadeSelfSpeedMult() : 1);
   const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
-  // Scale horizontal move step proportionally to fall speed
-  const moveStep = CONTINUOUS_MOVE_STEP * (baseSpeed / SPEED);
+  const moveStep = continuousMoveStep(baseSpeed);
   const activeFall = createActiveFall(piece, baseSpeed);
 
   const currentCol = () =>
@@ -399,7 +399,14 @@ export const createPiece = async (
     tryLift: canLift ? moveUp : undefined,
   };
 
-  const unbind = bindPieceControls(controls);
+  // Continuous mode: hold-to-move on gameTicker (not browser key-repeat).
+  const hold = isContinuousPhysics()
+    ? startHoldMove({
+        moveLeft: controls.moveLeft,
+        moveRight: controls.moveRight,
+      })
+    : undefined;
+  const unbind = bindPieceControls(controls, hold);
   setReplayLiveControlTarget(controls);
 
   app.stage.addChild(piece);

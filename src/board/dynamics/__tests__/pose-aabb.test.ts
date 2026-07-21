@@ -3,7 +3,13 @@
  * (filename avoids clashing with other dynamics suites)
  */
 import { describe, it, expect } from "vitest";
-import { aabbGap, poseAabb, poseAabbFromPoints } from "../pose";
+import {
+  aabbGap,
+  hullsIntersect,
+  hullWithinBounds,
+  poseAabb,
+  poseAabbFromPoints,
+} from "../pose";
 import { BOX_SIZE } from "../../../config";
 
 describe("poseAabbFromPoints", () => {
@@ -73,5 +79,86 @@ describe("aabbGap", () => {
     const a = { minX: 0, minY: 0, maxX: 1, maxY: 1 };
     const b = { minX: 4, minY: 5, maxX: 6, maxY: 7 };
     expect(aabbGap(a, b)).toBeCloseTo(Math.hypot(3, 4));
+  });
+});
+
+describe("hullsIntersect (SAT)", () => {
+  const squareHull = (size: number) => [
+    { x: -size / 2, y: -size / 2 },
+    { x: size / 2, y: -size / 2 },
+    { x: size / 2, y: size / 2 },
+    { x: -size / 2, y: size / 2 },
+  ];
+
+  it("returns false for two non-overlapping squares", () => {
+    expect(
+      hullsIntersect(
+        squareHull(100),
+        { x: 0, y: 0, rotation: 0 },
+        squareHull(100),
+        { x: 200, y: 0, rotation: 0 },
+      ),
+    ).toBe(false);
+  });
+
+  it("returns true for two overlapping squares", () => {
+    expect(
+      hullsIntersect(
+        squareHull(100),
+        { x: 0, y: 0, rotation: 0 },
+        squareHull(100),
+        { x: 50, y: 0, rotation: 0 },
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false for flush edge contact", () => {
+    expect(
+      hullsIntersect(
+        squareHull(100),
+        { x: 0, y: 0, rotation: 0 },
+        squareHull(100),
+        { x: 100, y: 0, rotation: 0 },
+      ),
+    ).toBe(false);
+  });
+
+  it("handles rotated squares", () => {
+    expect(
+      hullsIntersect(
+        squareHull(100),
+        { x: 0, y: 0, rotation: 0 },
+        squareHull(100),
+        { x: 80, y: 0, rotation: Math.PI / 4 },
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("hullWithinBounds", () => {
+  const square = [
+    { x: -10, y: -10 },
+    { x: 10, y: -10 },
+    { x: 10, y: 10 },
+    { x: -10, y: 10 },
+  ];
+  const bounds = { minX: 0, maxX: 100, maxY: 100 };
+
+  it("accepts a hull fully inside", () => {
+    expect(
+      hullWithinBounds(square, { x: 50, y: 50, rotation: 0 }, bounds),
+    ).toBe(true);
+  });
+
+  it("rejects a hull past the right wall", () => {
+    expect(
+      hullWithinBounds(square, { x: 95, y: 50, rotation: 0 }, bounds),
+    ).toBe(false);
+  });
+
+  it("allows flush contact within eps", () => {
+    expect(
+      hullWithinBounds(square, { x: 90, y: 50, rotation: 0 }, bounds, 0.5),
+    ).toBe(true);
   });
 });

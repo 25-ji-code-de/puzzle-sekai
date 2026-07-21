@@ -1,11 +1,14 @@
 /**
  * Shared keyboard + Hammer bindings for the active falling piece.
  * Handles control-swap (Shizuku fun mode) for both standard and 2×2 pieces.
+ *
+ * Pure input binding only: maps events → action callbacks. Continuous hold
+ * repeat lives on gameTicker via hold-move.ts (passed in as optional bridge).
  */
 import { app, hammerManager } from "../runtime";
 import { isControlsSwapped } from "../fun/effects";
 import { isReplayPlayback, recordReplayAction } from "../settings";
-import { isContinuousPhysics } from "../board/dynamics";
+import type { HoldMove } from "./hold-move";
 
 export type PieceControlActions = {
   moveLeft: () => void;
@@ -44,43 +47,18 @@ const isTypingTarget = (target: EventTarget | null): boolean => {
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 };
 
-/** Bind controls; returns a dispose function that removes every listener. */
+/**
+ * Bind controls; returns a dispose function that removes every listener.
+ * Pass `hold` in continuous mode so left/right key edges update hold-move
+ * state (browser key-repeat is suppressed; hold-move ticks instead).
+ */
 export const bindPieceControls = (
   actions: PieceControlActions,
+  hold?: HoldMove,
 ): (() => void) => {
   if (isReplayPlayback()) {
     return () => {};
   }
-
-  // Key state tracking for continuous physics mode.
-  // In continuous mode, we use a ticker to fire movement at a fixed rate,
-  // so that pressing rotation keys doesn't interrupt held movement keys.
-  const heldKeys = new Set<string>();
-  let moveTicker: ReturnType<typeof setInterval> | undefined;
-  const continuous = isContinuousPhysics();
-
-  const processHeldMoveKeys = () => {
-    if (heldKeys.size === 0) return;
-    const swapped = isControlsSwapped();
-    if (heldKeys.has("arrowleft")) {
-      (swapped ? actions.moveRight : actions.moveLeft)();
-    }
-    if (heldKeys.has("arrowright")) {
-      (swapped ? actions.moveLeft : actions.moveRight)();
-    }
-  };
-
-  const ensureMoveTicker = () => {
-    if (moveTicker !== undefined) return;
-    moveTicker = setInterval(processHeldMoveKeys, 16);
-  };
-
-  const clearMoveTicker = () => {
-    if (moveTicker !== undefined) {
-      clearInterval(moveTicker);
-      moveTicker = undefined;
-    }
-  };
 
   const handleKeyPress = (event: KeyboardEvent) => {
     // Settings / dialogs: don't steal arrows/space from form fields.
@@ -92,29 +70,30 @@ export const bindPieceControls = (
 
     switch (key) {
       case "arrowleft":
-        if (continuous) {
-          heldKeys.add("arrowleft");
-          // Fire immediately on first press; ticker handles repeats
+        if (hold) {
+          // Hold mode: edge sets state; first press moves immediately.
+          // Browser repeat is ignored — hold-move drives further steps.
+          hold.setLeftHeld(true);
           if (!event.repeat) {
             (swapped ? actions.moveRight : actions.moveLeft)();
+            recordReplayAction(swapped ? "R" : "L");
           }
-          ensureMoveTicker();
         } else {
           (swapped ? actions.moveRight : actions.moveLeft)();
+          recordReplayAction(swapped ? "R" : "L");
         }
-        recordReplayAction(swapped ? "R" : "L");
         break;
       case "arrowright":
-        if (continuous) {
-          heldKeys.add("arrowright");
+        if (hold) {
+          hold.setRightHeld(true);
           if (!event.repeat) {
             (swapped ? actions.moveLeft : actions.moveRight)();
+            recordReplayAction(swapped ? "L" : "R");
           }
-          ensureMoveTicker();
         } else {
           (swapped ? actions.moveLeft : actions.moveRight)();
+          recordReplayAction(swapped ? "L" : "R");
         }
-        recordReplayAction(swapped ? "L" : "R");
         break;
       case "arrowup":
         if (event.shiftKey && actions.tryLift) {
@@ -157,12 +136,10 @@ export const bindPieceControls = (
       actions.normalSpeed();
       recordReplayAction("ND");
     }
-    // Release tracked movement keys in continuous mode
-    if (continuous) {
-      heldKeys.delete(event.key.toLowerCase());
-      if (!heldKeys.has("arrowleft") && !heldKeys.has("arrowright")) {
-        clearMoveTicker();
-      }
+    if (hold) {
+      const key = event.key.toLowerCase();
+      if (key === "arrowleft") hold.setLeftHeld(false);
+      if (key === "arrowright") hold.setRightHeld(false);
     }
   };
 
@@ -226,7 +203,7 @@ export const bindPieceControls = (
   return () => {
     window.removeEventListener("keydown", handleKeyPress, false);
     window.removeEventListener("keyup", handleKeyUp, false);
-    clearMoveTicker();
+    hold?.stop();
 
     hammerManager.off("swiperight", handleSwipeRight);
     hammerManager.off("tap", handleTap);

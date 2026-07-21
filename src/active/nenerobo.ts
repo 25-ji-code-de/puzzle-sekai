@@ -15,6 +15,7 @@ import {
   FALL_DELAY,
   FALL_SPEED,
   STAGE_HEIGHT,
+  continuousMoveStep,
   CONTINUOUS_MOVE_STEP,
 } from "../config";
 import { getGrid } from "../game/board-state";
@@ -36,6 +37,7 @@ import { primaryFromSprite } from "../presentation/placement";
 import { fileIsBig2x2 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
+import { startHoldMove } from "./hold-move";
 import { isDisplayAlive, registerActivePiece } from "./lifecycle";
 import { loadTexture } from "../assets/load-texture";
 import {
@@ -131,8 +133,7 @@ export const createNeneRobo = async (
   const speedMultiplier = getSpeedMultiplier(settings);
   const funSpeedMult = consumeKanadeSlowForSpawn();
   const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
-  // Scale horizontal move step proportionally to fall speed
-  const moveStep = CONTINUOUS_MOVE_STEP * (baseSpeed / SPEED);
+  const moveStep = continuousMoveStep(baseSpeed);
   const fall = createActiveFall(nenerobo, baseSpeed);
 
   const canLift = fileIsBig2x2(file);
@@ -217,7 +218,10 @@ export const createNeneRobo = async (
     tryLift: canLift ? tryLift : undefined,
   };
 
-  const unbind = bindPieceControls(controls);
+  const hold = isContinuousPhysics()
+    ? startHoldMove({ moveLeft, moveRight })
+    : undefined;
+  const unbind = bindPieceControls(controls, hold);
   setReplayLiveControlTarget(controls);
 
   app.stage.addChild(nenerobo);
