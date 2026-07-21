@@ -25,6 +25,7 @@ import { getStoragePort } from "../settings/storage";
 import { clampInt, nonNegative } from "../util/clamp";
 import { maxOf } from "../util/minmax";
 import { safeJsonParse } from "../util/json";
+import { toFiniteNumber, toNonNegInt } from "../util/number";
 import { devWarn } from "../util/dev-log";
 
 export type RecordDanRunInput = {
@@ -103,11 +104,11 @@ const recomputeRating = (entry: {
 const parseEntry = (raw: unknown): DanRunEntry | null => {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  const score = Number(o.score);
-  const playedAt = Number(o.playedAt);
-  const maxCombo = Number(o.maxCombo);
-  const difficulty = clampDifficulty(Number(o.difficulty));
-  const multiplier = Number(o.multiplier);
+  const score = toFiniteNumber(o.score, Number.NaN);
+  const playedAt = toFiniteNumber(o.playedAt, Number.NaN);
+  const maxCombo = toFiniteNumber(o.maxCombo, Number.NaN);
+  const difficulty = clampDifficulty(toFiniteNumber(o.difficulty, 1));
+  const multiplier = toFiniteNumber(o.multiplier, 1);
   if (!Number.isFinite(score) || score <= 0) return null;
   if (!Number.isFinite(playedAt) || playedAt <= 0) return null;
   const mode: GameMode =
@@ -118,10 +119,11 @@ const parseEntry = (raw: unknown): DanRunEntry | null => {
         : "endless";
   const scoreRank = String(o.scoreRank || "D") as ScoreRank;
   const entertainment = o.entertainment === true;
-  const storedEffective = Number(o.effectiveScore);
+  const storedEffective = toFiniteNumber(o.effectiveScore, Number.NaN);
+  const multSafe = multiplier > 0 ? multiplier : 1;
   const { effective, rating } = recomputeRating({
     score,
-    multiplier: Number.isFinite(multiplier) ? multiplier : 1,
+    multiplier: multSafe,
     difficulty,
     entertainment,
     effectiveScore:
@@ -138,17 +140,17 @@ const parseEntry = (raw: unknown): DanRunEntry | null => {
     maxCombo: Number.isFinite(maxCombo) ? nonNegative(maxCombo) : 0,
     difficulty,
     entertainment,
-    multiplier: Number.isFinite(multiplier) ? multiplier : 1,
+    multiplier: multSafe,
     scoreRank,
     rating,
     effectiveScore: effective,
   };
-  const playedSeconds = Number(o.playedSeconds);
+  const playedSeconds = toFiniteNumber(o.playedSeconds, Number.NaN);
   if (Number.isFinite(playedSeconds) && playedSeconds > 0) {
     entry.playedSeconds = playedSeconds;
   }
   if (mode === "timeAttack") {
-    const dur = Number(o.timeAttackDuration);
+    const dur = toFiniteNumber(o.timeAttackDuration, Number.NaN);
     if (dur === 60 || dur === 90 || dur === 120 || dur === 180) {
       entry.timeAttackDuration = dur;
     }
@@ -171,7 +173,7 @@ export const parseDanState = (raw: string | null): DanState => {
     runs.length > DAN_RUN_CAP ? runs.slice(runs.length - DAN_RUN_CAP) : runs;
   const maxComboPeak = nonNegative(
     maxOf(
-      [Number(obj.maxComboPeak) || 0, ...trimmed.map((r) => r.maxCombo)],
+      [toNonNegInt(obj.maxComboPeak), ...trimmed.map((r) => r.maxCombo)],
       0,
     ),
   );

@@ -5,8 +5,9 @@
 import { DAN_RUN_CAP, type DanRunEntry, type DanState } from "../score/dan";
 import type { HighScoreRecord } from "../settings";
 import { emptyPicoSyncData, type PicoSyncData } from "./types";
-import { clampInt, nonNegative } from "../util/clamp";
+import { clampInt } from "../util/clamp";
 import { maxOf } from "../util/minmax";
+import { toFiniteNumber, toNonNegInt } from "../util/number";
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
@@ -105,14 +106,13 @@ export const parsePicoSyncData = (raw: unknown): PicoSyncData | null => {
   for (const r of runsIn) {
     if (!isRecord(r)) continue;
     const id = String(r.id || "");
-    const score = Number(r.score);
-    const playedAt = Number(r.playedAt);
+    const score = toFiniteNumber(r.score, Number.NaN);
+    const playedAt = toFiniteNumber(r.playedAt, Number.NaN);
     if (!id || !Number.isFinite(score) || score <= 0) continue;
     if (!Number.isFinite(playedAt) || playedAt <= 0) continue;
-    const mult = Number.isFinite(Number(r.multiplier))
-      ? Number(r.multiplier)
-      : 1;
-    const storedEffective = Number(r.effectiveScore);
+    const mult = toFiniteNumber(r.multiplier, 1);
+    const multSafe = mult > 0 ? mult : 1;
+    const storedEffective = toFiniteNumber(r.effectiveScore, Number.NaN);
     const entry: DanRunEntry = {
       id,
       playedAt,
@@ -125,21 +125,21 @@ export const parsePicoSyncData = (raw: unknown): PicoSyncData | null => {
           ? r.timeAttackDuration
           : undefined,
       score: Math.floor(score),
-      maxCombo: nonNegative(Math.floor(Number(r.maxCombo) || 0)),
+      maxCombo: toNonNegInt(r.maxCombo),
       difficulty: clampInt(
-        Math.floor(Number(r.difficulty) || 1),
+        toNonNegInt(r.difficulty, 1),
         1,
         7,
       ) as DanRunEntry["difficulty"],
       entertainment: r.entertainment === true,
-      multiplier: mult,
+      multiplier: multSafe,
       scoreRank: String(r.scoreRank || "D") as DanRunEntry["scoreRank"],
-      rating: nonNegative(Math.floor(Number(r.rating) || 0)),
+      rating: toNonNegInt(r.rating),
     };
     if (Number.isFinite(storedEffective) && storedEffective > 0) {
       entry.effectiveScore = storedEffective;
     }
-    const playedSeconds = Number(r.playedSeconds);
+    const playedSeconds = toFiniteNumber(r.playedSeconds, Number.NaN);
     if (Number.isFinite(playedSeconds) && playedSeconds > 0) {
       entry.playedSeconds = playedSeconds;
     }
@@ -150,17 +150,17 @@ export const parsePicoSyncData = (raw: unknown): PicoSyncData | null => {
   for (const [k, v] of Object.entries(hsRaw)) {
     if (!k.startsWith("hs:")) continue;
     if (!isRecord(v)) continue;
-    const score = Number(v.score) || 0;
+    const score = toNonNegInt(v.score);
     if (score <= 0) continue;
     highScores[k] = {
       score,
-      difficultyLevel: Number(v.difficultyLevel) || 0,
+      difficultyLevel: toNonNegInt(v.difficultyLevel),
       entertainment: v.entertainment === true,
-      updatedAt: Number(v.updatedAt) || 0,
+      updatedAt: toNonNegInt(v.updatedAt),
     };
   }
   const maxComboPeak = maxOf(
-    [Number(danRaw?.maxComboPeak) || 0, ...runs.map((r) => r.maxCombo)],
+    [toNonNegInt(danRaw?.maxComboPeak), ...runs.map((r) => r.maxCombo)],
     0,
   );
   return {

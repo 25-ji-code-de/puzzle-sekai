@@ -8,6 +8,7 @@
 import { isNativeBuild } from "../auth/config";
 import { devWarn } from "../util/dev-log";
 import { safeJsonParse } from "../util/json";
+import { toNonNegInt } from "../util/number";
 
 export type HttpResult = {
   ok: boolean;
@@ -48,7 +49,7 @@ export const postForm = async (
           : res.data != null
             ? JSON.stringify(res.data)
             : "";
-      return toResult(Number(res.status) || 0, text);
+      return toResult(toNonNegInt(res.status), text);
     } catch (e) {
       devWarn("[native-http] CapacitorHttp POST failed, falling back", e);
     }
@@ -84,7 +85,7 @@ export const getJson = async (
           : res.data != null
             ? JSON.stringify(res.data)
             : "";
-      return toResult(Number(res.status) || 0, text);
+      return toResult(toNonNegInt(res.status), text);
     } catch (e) {
       devWarn("[native-http] CapacitorHttp GET failed, falling back", e);
     }
