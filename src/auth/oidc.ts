@@ -25,6 +25,7 @@ import {
 } from "./session";
 import { notifyAuthChanged } from "./user";
 import { devWarn } from "../util/dev-log";
+import { toFiniteNumber } from "../util/number";
 
 export type LoginStartResult =
   { ok: true } | { ok: false; reason: "not_configured" | "crypto" };
@@ -209,7 +210,7 @@ export const handleRedirectCallback = async (): Promise<CallbackResult> => {
     const session: AuthSession = {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
-      expiresAt: Date.now() + (Number(data.expires_in) || 3600) * 1000,
+      expiresAt: Date.now() + toFiniteNumber(data.expires_in, 3600) * 1000,
       user,
     };
     saveSession(session);

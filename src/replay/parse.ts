@@ -17,6 +17,7 @@ import {
   type ReplaySettingsSnapshot,
 } from "./types";
 import { clampInt, nonNegative } from "../util/clamp";
+import { toFiniteNumber } from "../util/number";
 
 export const isReplayInput = (value: unknown): value is ReplayInput => {
   if (!value || typeof value !== "object") return false;
@@ -95,14 +96,14 @@ export const parseReplayEntry = (raw: unknown): ReplayEntry | null => {
           : null;
   if (!mode) return null;
   const inputs = Array.isArray(o.inputs) ? o.inputs.filter(isReplayInput) : [];
-  const score = Number(o.score);
-  const maxCombo = Number(o.maxCombo);
-  const difficulty = Number(o.difficulty);
-  const multiplier = Number(o.multiplier);
-  const playedSeconds = Number(o.playedSeconds);
-  const durationMs = Number(o.durationMs);
-  const seed = Number(o.seed);
-  const savedAt = Number(o.savedAt);
+  const score = toFiniteNumber(o.score, Number.NaN);
+  const maxCombo = toFiniteNumber(o.maxCombo, Number.NaN);
+  const difficulty = toFiniteNumber(o.difficulty, Number.NaN);
+  const multiplier = toFiniteNumber(o.multiplier, Number.NaN);
+  const playedSeconds = toFiniteNumber(o.playedSeconds, Number.NaN);
+  const durationMs = toFiniteNumber(o.durationMs, Number.NaN);
+  const seed = toFiniteNumber(o.seed, Number.NaN);
+  const savedAt = toFiniteNumber(o.savedAt, Number.NaN);
   if (
     !Number.isFinite(score) ||
     !Number.isFinite(maxCombo) ||
