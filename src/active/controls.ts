@@ -47,6 +47,48 @@ const isTypingTarget = (target: EventTarget | null): boolean => {
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 };
 
+/** Fire a one-shot horizontal move (grid path / swipe / replay). */
+const fireHorizontal = (
+  actions: PieceControlActions,
+  swapped: boolean,
+  wantLeft: boolean,
+): void => {
+  const goLeft = wantLeft !== swapped;
+  (goLeft ? actions.moveLeft : actions.moveRight)();
+  recordReplayAction(goLeft ? "L" : "R");
+};
+
+/** Fire a rotation, honouring control-swap. */
+const fireRotate = (
+  actions: PieceControlActions,
+  swapped: boolean,
+  wantCw: boolean,
+): void => {
+  const cw = wantCw !== swapped;
+  (cw ? actions.rotateCW : actions.rotateCCW)();
+  recordReplayAction(cw ? "CW" : "CCW");
+};
+
+/**
+ * Arm continuous hold-strafe on a real key edge (ignore browser key-repeat).
+ * Returns whether the event was consumed.
+ */
+const armHoldEdge = (
+  hold: HoldMove | undefined,
+  side: "left" | "right",
+  event: KeyboardEvent,
+  swapped: boolean,
+): boolean => {
+  if (!hold) return false;
+  if (event.repeat) return true; // consumed, but no re-arm
+  if (side === "left") hold.setLeftHeld(true);
+  else hold.setRightHeld(true);
+  recordReplayAction(
+    side === "left" ? (swapped ? "R" : "L") : swapped ? "L" : "R",
+  );
+  return true;
+};
+
 /**
  * Bind controls; returns a dispose function that removes every listener.
  * Pass `hold` in continuous mode so left/right key edges only arm/disarm
@@ -66,63 +108,38 @@ export const bindPieceControls = (
     if (isTypingTarget(event.target)) return;
 
     const swapped = isControlsSwapped();
-    let handled = true;
     const key = event.key.toLowerCase();
+    let handled = true;
 
-    switch (key) {
-      case "arrowleft":
-        if (hold) {
-          // Continuous: edge arms strafe; browser repeat ignored.
-          if (!event.repeat) {
-            hold.setLeftHeld(true);
-            recordReplayAction(swapped ? "R" : "L");
-          }
-        } else {
-          (swapped ? actions.moveRight : actions.moveLeft)();
-          recordReplayAction(swapped ? "R" : "L");
-        }
-        break;
-      case "arrowright":
-        if (hold) {
-          if (!event.repeat) {
-            hold.setRightHeld(true);
-            recordReplayAction(swapped ? "L" : "R");
-          }
-        } else {
-          (swapped ? actions.moveLeft : actions.moveRight)();
-          recordReplayAction(swapped ? "L" : "R");
-        }
-        break;
-      case "arrowup":
-        if (event.shiftKey && actions.tryLift) {
-          actions.tryLift();
-          recordReplayAction("LF");
-          break;
-        }
-        (swapped ? actions.rotateCCW : actions.rotateCW)();
-        recordReplayAction(swapped ? "CCW" : "CW");
-        break;
-      case "x":
-        (swapped ? actions.rotateCCW : actions.rotateCW)();
-        recordReplayAction(swapped ? "CCW" : "CW");
-        break;
-      case "z":
-      case "control":
-        (swapped ? actions.rotateCW : actions.rotateCCW)();
-        recordReplayAction(swapped ? "CW" : "CCW");
-        break;
-      case "arrowdown":
-        actions.softDrop();
-        recordReplayAction("SD");
-        break;
-      case " ":
-        actions.hardDrop();
-        recordReplayAction("HD");
-        break;
-      default:
-        handled = false;
-        break;
+    if (key === "arrowleft") {
+      if (!armHoldEdge(hold, "left", event, swapped)) {
+        fireHorizontal(actions, swapped, true);
+      }
+    } else if (key === "arrowright") {
+      if (!armHoldEdge(hold, "right", event, swapped)) {
+        fireHorizontal(actions, swapped, false);
+      }
+    } else if (key === "arrowup") {
+      if (event.shiftKey && actions.tryLift) {
+        actions.tryLift();
+        recordReplayAction("LF");
+      } else {
+        fireRotate(actions, swapped, true);
+      }
+    } else if (key === "x") {
+      fireRotate(actions, swapped, true);
+    } else if (key === "z" || key === "control") {
+      fireRotate(actions, swapped, false);
+    } else if (key === "arrowdown") {
+      actions.softDrop();
+      recordReplayAction("SD");
+    } else if (key === " ") {
+      actions.hardDrop();
+      recordReplayAction("HD");
+    } else {
+      handled = false;
     }
+
     // Stop browser scroll / button activation for keys we actually use.
     if (handled) event.preventDefault();
   };
@@ -134,44 +151,23 @@ export const bindPieceControls = (
       actions.normalSpeed();
       recordReplayAction("ND");
     }
-    if (hold) {
-      const key = event.key.toLowerCase();
-      if (key === "arrowleft") hold.setLeftHeld(false);
-      if (key === "arrowright") hold.setRightHeld(false);
-    }
+    if (!hold) return;
+    const key = event.key.toLowerCase();
+    if (key === "arrowleft") hold.setLeftHeld(false);
+    if (key === "arrowright") hold.setRightHeld(false);
   };
 
-  const handleSwipeLeft = () => {
-    if (isControlsSwapped()) {
-      actions.moveRight();
-      recordReplayAction("R");
-      return;
-    }
-    actions.moveLeft();
-    recordReplayAction("L");
-  };
-  const handleSwipeRight = () => {
-    if (isControlsSwapped()) {
-      actions.moveLeft();
-      recordReplayAction("L");
-      return;
-    }
-    actions.moveRight();
-    recordReplayAction("R");
-  };
+  const handleSwipeLeft = () =>
+    fireHorizontal(actions, isControlsSwapped(), true);
+  const handleSwipeRight = () =>
+    fireHorizontal(actions, isControlsSwapped(), false);
   const handleSwipeUp = () => {
     actions.tryLift?.();
     recordReplayAction("LF");
   };
   const handleTap = (e: HammerInput) => {
-    const leftHalf = isLeftHalfOfCanvas(e.center.x);
-    if (isControlsSwapped()) {
-      (leftHalf ? actions.rotateCW : actions.rotateCCW)();
-      recordReplayAction(leftHalf ? "CW" : "CCW");
-    } else {
-      (leftHalf ? actions.rotateCCW : actions.rotateCW)();
-      recordReplayAction(leftHalf ? "CCW" : "CW");
-    }
+    // Left half of canvas → CCW (or CW when swapped).
+    fireRotate(actions, isControlsSwapped(), !isLeftHalfOfCanvas(e.center.x));
   };
   const handlePress = () => {
     actions.softDrop();
@@ -181,7 +177,6 @@ export const bindPieceControls = (
     actions.normalSpeed();
     recordReplayAction("ND");
   };
-
   const handleHardDrop = () => {
     actions.hardDrop();
     recordReplayAction("HD");

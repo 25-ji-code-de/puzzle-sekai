@@ -171,6 +171,74 @@ export const snapQuarterTurn = (rotation: number): number => {
   return Math.round(rotation / q) * q;
 };
 
+/** True when the pose is outside walls / floor (hull-aware when possible). */
+const poseOutOfBounds = (
+  kind: PieceKind,
+  x: number,
+  y: number,
+  rotation: number,
+  pts: LocalPoint[] | undefined,
+): boolean => {
+  if (pts && pts.length >= 3) {
+    return !hullWithinBounds(
+      pts,
+      { x, y, rotation },
+      { minX: playLeft(), maxX: playRight(), maxY: playBottom() },
+      BOUND_EPS,
+    );
+  }
+  const aabb = poseAabb(kind, { x, y, rotation }, pts);
+  return (
+    aabb.minX < playLeft() - BOUND_EPS ||
+    aabb.maxX > playRight() + BOUND_EPS ||
+    aabb.maxY > playBottom() + BOUND_EPS
+  );
+};
+
+/** Soft AABB overlap used when either side lacks a convex hull. */
+const aabbsOverlapSoft = (
+  a: { minX: number; minY: number; maxX: number; maxY: number },
+  b: { minX: number; minY: number; maxX: number; maxY: number },
+): boolean =>
+  a.minX < b.maxX - BODY_EPS &&
+  a.maxX > b.minX + BODY_EPS &&
+  a.minY < b.maxY - BODY_EPS &&
+  a.maxY > b.minY + BODY_EPS;
+
+/** True when the active pose intersects any settled body (hull SAT or AABB). */
+const poseHitsSettled = (
+  kind: PieceKind,
+  x: number,
+  y: number,
+  rotation: number,
+  pts: LocalPoint[] | undefined,
+  self?: PIXI.Sprite,
+): boolean => {
+  const selfPose = { x, y, rotation };
+  const selfHasHull = !!(pts && pts.length >= 3);
+  for (const entry of allSettledBodies()) {
+    if (self && entry.sprite === self) continue;
+    const t = entry.body.translation();
+    const r = entry.body.rotation();
+    const otherPts = entry.localPoints;
+    const otherPose = { x: t.x, y: t.y, rotation: r };
+
+    if (selfHasHull && otherPts && otherPts.length >= 3) {
+      if (hullsIntersect(pts!, selfPose, otherPts, otherPose)) return true;
+      continue;
+    }
+    if (
+      aabbsOverlapSoft(
+        poseAabb(kind, selfPose, pts),
+        poseAabb(entry.kind, otherPose, otherPts),
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
 /**
  * Conservative penetration test using convex hulls when available, AABBs as fallback.
  * Uses SAT (Separating Axis Theorem) for hull-hull intersection when both sides have hull data.
@@ -184,61 +252,8 @@ export const poseIntersectsSolids = (
   self?: PIXI.Sprite,
 ): boolean => {
   const pts = pointsFor(kind, self, x, y, rotation);
-
-  // Boundary check: use hull-aware check when available, else AABB
-  if (pts && pts.length >= 3) {
-    if (
-      !hullWithinBounds(
-        pts,
-        { x, y, rotation },
-        { minX: playLeft(), maxX: playRight(), maxY: playBottom() },
-        BOUND_EPS,
-      )
-    ) {
-      return true;
-    }
-  } else {
-    const aabb = poseAabb(kind, { x, y, rotation }, pts);
-    if (aabb.minX < playLeft() - BOUND_EPS) return true;
-    if (aabb.maxX > playRight() + BOUND_EPS) return true;
-    if (aabb.maxY > playBottom() + BOUND_EPS) return true;
-  }
-
-  // Body collision: hull-hull SAT when both sides have hull data, else AABB
-  for (const entry of allSettledBodies()) {
-    if (self && entry.sprite === self) continue;
-    const t = entry.body.translation();
-    const r = entry.body.rotation();
-    const otherPts = entry.localPoints;
-
-    if (pts && pts.length >= 3 && otherPts && otherPts.length >= 3) {
-      if (
-        hullsIntersect(pts, { x, y, rotation }, otherPts, {
-          x: t.x,
-          y: t.y,
-          rotation: r,
-        })
-      ) {
-        return true;
-      }
-    } else {
-      const aabbSelf = poseAabb(kind, { x, y, rotation }, pts);
-      const aabbOther = poseAabb(
-        entry.kind,
-        { x: t.x, y: t.y, rotation: r },
-        otherPts,
-      );
-      if (
-        aabbSelf.minX < aabbOther.maxX - BODY_EPS &&
-        aabbSelf.maxX > aabbOther.minX + BODY_EPS &&
-        aabbSelf.minY < aabbOther.maxY - BODY_EPS &&
-        aabbSelf.maxY > aabbOther.minY + BODY_EPS
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
+  if (poseOutOfBounds(kind, x, y, rotation, pts)) return true;
+  return poseHitsSettled(kind, x, y, rotation, pts, self);
 };
 
 /** Lowest y the piece can sit without intersecting (scan downward). */
