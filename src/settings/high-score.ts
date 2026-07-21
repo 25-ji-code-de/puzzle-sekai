@@ -13,6 +13,9 @@ import { getDifficultyLevel, isEntertainmentMode } from "./difficulty";
 import { getActiveDailyDateKey, getCurrentSettings } from "./store";
 import { getStoragePort } from "./storage";
 import { utcDateKey } from "../domain/daily";
+import { clampInt } from "../util/clamp";
+import { safeJsonParse } from "../util/json";
+import { toNonNegInt } from "../util/number";
 
 const DIFFICULTIES: DifficultyLevel[] = [1, 2, 3, 4, 5, 6, 7];
 const ENT_TAGS = ["std", "ent"] as const;
@@ -34,39 +37,61 @@ function dailyDateKeyForHs(): string {
  * - hs:endless:{d}:{std|ent}
  * - hs:timeAttack:{dur}:{d}:{std|ent}
  * - hs:daily:{YYYY-MM-DD}:{d}:{std|ent}
+ *
+ * Pure builder (no store / clock). Prefer this in tests; {@link getHighScoreKey}
+ * fills daily date + TA duration from live settings.
  */
+export function highScoreBucketKey(
+  mode: GameMode,
+  difficulty: number,
+  entertainment: boolean,
+  opts?: { timeAttackDuration?: number; dailyDateKey?: string },
+): string {
+  const tag = entTag(entertainment);
+  const d = clampInt(difficulty, 1, 7);
+  if (mode === "endless") return `hs:endless:${d}:${tag}`;
+  if (mode === "daily") {
+    const dateKey = opts?.dailyDateKey || "1970-01-01";
+    return `hs:daily:${dateKey}:${d}:${tag}`;
+  }
+  const duration = opts?.timeAttackDuration || 90;
+  return `hs:timeAttack:${duration}:${d}:${tag}`;
+}
+
 export function getHighScoreKey(
   mode: GameMode,
   difficulty: number,
   entertainment: boolean,
   settings?: GameSettings,
 ): string {
-  const tag = entTag(entertainment);
-  const d = Math.min(7, Math.max(1, difficulty | 0));
-  if (mode === "endless") return `hs:endless:${d}:${tag}`;
-  if (mode === "daily") return `hs:daily:${dailyDateKeyForHs()}:${d}:${tag}`;
-  const duration = settings?.timeAttackDuration || 90;
-  return `hs:timeAttack:${duration}:${d}:${tag}`;
+  if (mode === "daily") {
+    return highScoreBucketKey(mode, difficulty, entertainment, {
+      dailyDateKey: dailyDateKeyForHs(),
+    });
+  }
+  if (mode === "timeAttack") {
+    return highScoreBucketKey(mode, difficulty, entertainment, {
+      timeAttackDuration: settings?.timeAttackDuration || 90,
+    });
+  }
+  return highScoreBucketKey(mode, difficulty, entertainment);
 }
 
 export function parseRecord(raw: string | null): HighScoreRecord {
   if (!raw) return emptyRecord();
-  try {
-    // New format: JSON object
-    if (raw.startsWith("{")) {
-      const obj = JSON.parse(raw) as Partial<HighScoreRecord>;
-      const score = Number(obj.score) || 0;
-      const difficultyLevel = Number(obj.difficultyLevel) || 0;
-      const entertainment = obj.entertainment === true;
-      const updatedAt = Number(obj.updatedAt) || 0;
-      return { score, difficultyLevel, entertainment, updatedAt };
-    }
-    // Defensive: plain number string
-    const score = parseInt(raw, 10) || 0;
-    return { ...emptyRecord(), score };
-  } catch {
-    return emptyRecord();
+  // New format: JSON object
+  if (raw.startsWith("{")) {
+    const obj = safeJsonParse<Partial<HighScoreRecord>>(raw);
+    if (!obj) return emptyRecord();
+    const score = toNonNegInt(obj.score);
+    const difficultyLevel = toNonNegInt(obj.difficultyLevel);
+    const entertainment = obj.entertainment === true;
+    const updatedAt = toNonNegInt(obj.updatedAt);
+    return { score, difficultyLevel, entertainment, updatedAt };
   }
+  // Defensive: plain number string
+  const score = toNonNegInt(raw);
+  return { ...emptyRecord(), score };
 }
 
 function resolveSettings(settings?: GameSettings): GameSettings {
@@ -144,7 +169,7 @@ function loadBucket(
   // Prefer key-derived meta if JSON disagrees.
   return {
     score: record.score,
-    difficultyLevel: Math.min(7, Math.max(1, difficulty | 0)),
+    difficultyLevel: clampInt(difficulty, 1, 7),
     entertainment,
     updatedAt: record.updatedAt,
   };

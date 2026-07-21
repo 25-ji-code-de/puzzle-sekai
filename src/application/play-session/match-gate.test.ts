@@ -19,4 +19,20 @@ describe("match-gate", () => {
     closeMatch();
     expect(isMatchOpen()).toBe(false);
   });
+
+  it("open and close are idempotent", () => {
+    openMatch();
+    openMatch();
+    expect(isMatchOpen()).toBe(true);
+    closeMatch();
+    closeMatch();
+    expect(isMatchOpen()).toBe(false);
+  });
+
+  it("can re-open after close (next match)", () => {
+    openMatch();
+    closeMatch();
+    openMatch();
+    expect(isMatchOpen()).toBe(true);
+  });
 });

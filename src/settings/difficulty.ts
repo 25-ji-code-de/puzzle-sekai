@@ -27,6 +27,10 @@ import {
   isSpawnOrientation,
 } from "./types";
 import { getCurrentSettings } from "./store";
+import { clamp, clampInt } from "../util/clamp";
+import { formatPercent } from "../util/format";
+
+export { hexToPixi } from "../util/color";
 
 export function getSpeedMultiplier(settings: GameSettings): number {
   return SPEED_MULTIPLIERS[settings.speedLevel];
@@ -34,9 +38,9 @@ export function getSpeedMultiplier(settings: GameSettings): number {
 
 /** Difficulty 1–7: speedLevel + (groupCount - 3). More groups = harder. */
 export function getDifficultyLevel(settings: GameSettings): DifficultyLevel {
-  const groups = Math.min(5, Math.max(3, settings.selectedGroups.length));
+  const groups = clampInt(settings.selectedGroups.length, 3, 5);
   const level = settings.speedLevel + (groups - 3);
-  return Math.min(7, Math.max(1, level)) as DifficultyLevel;
+  return clampInt(level, 1, 7) as DifficultyLevel;
 }
 
 /** Get difficulty label (i18n-aware) */
@@ -79,10 +83,7 @@ export function getDifficultyCssColor(level: number): string {
   return getDifficultyColor(level);
 }
 
-/** Convert "#rrggbb" → 0xrrggbb for PixiJS */
-export function hexToPixi(hex: string): number {
-  return parseInt(hex.replace("#", ""), 16);
-}
+// hexToPixi re-exported from ../util/color above
 
 /**
  * Base score mult by ★ (mild curve; rank/dan strip mult so this is display reward).
@@ -145,7 +146,7 @@ export function getScoreMultiplierBreakdown(
   const fun = getFunModeMultiplier(flags, rate);
   const item = ITEM_DROP_SCORE_FACTORS[rate];
   const orient = SPAWN_ORIENTATION_SCORE_FACTORS[orientation];
-  const final = Math.min(4, Math.max(0.3, base * fun * item * orient));
+  const final = clamp(base * fun * item * orient, 0.3, 4);
 
   const lines: ScoreMultLine[] = [
     {
@@ -232,4 +233,4 @@ export const getTimeLabel = (
 ): string => t("settings.ta.duration", { seconds: duration });
 
 export const getItemDropLabel = (rate: ItemDropRate): string =>
-  rate === 0 ? t("settings.item.none") : `${rate}%`;
+  rate === 0 ? t("settings.item.none") : formatPercent(rate);

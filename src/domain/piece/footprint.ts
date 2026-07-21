@@ -22,6 +22,7 @@ import {
   asPrimary,
 } from "../types/cell";
 import { cellToXY, pickMaxX, pickMaxY, pickMinX, pickMinY } from "./cells";
+import { maxOf } from "../../util/minmax";
 
 export type { Orientation, Primary, LoosePrimary };
 export { asOrientation };
@@ -70,8 +71,8 @@ export const anchorFromFootprint = (
   if (!cells.length) return asPrimary({ x: 0, y: 0 });
   if (kind !== "cell2" || cells.length === 1) {
     return asPrimary({
-      x: Math.max(...cells.map(([cx]) => cx)),
-      y: Math.max(...cells.map(([, cy]) => cy)),
+      x: maxOf(cells.map(([cx]) => cx)),
+      y: maxOf(cells.map(([, cy]) => cy)),
     });
   }
   switch (orient) {

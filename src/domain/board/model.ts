@@ -4,7 +4,7 @@
  */
 
 import { COLUMNS, ROWS } from "../../config";
-import type { CellToken, BoardGrid, BoardCell, Cell } from "../types";
+import type { CellToken, BoardGrid, Cell } from "../types";
 import {
   clearFootprint,
   writeFootprint,
@@ -14,6 +14,7 @@ import {
   cloneGrid,
   copyGridInto,
   maxFootprintY,
+  createEmptyBoardGrid,
 } from "../piece";
 
 // findClearChunk stays at board/clear-rules call sites (avoids domain→board cycles).
@@ -36,9 +37,7 @@ export type GravityPlan = {
 };
 
 const emptyGrid = (cols: number, rows: number): BoardGrid =>
-  Array.from({ length: rows }, () =>
-    Array.from({ length: cols }, () => null as BoardCell),
-  );
+  createEmptyBoardGrid(rows, cols);
 
 export class BoardModel {
   readonly cols: number;

@@ -7,6 +7,7 @@ import {
 } from "../../types";
 import { getItemDropLabel } from "../../difficulty";
 import { t, type MessageKey } from "../../../i18n";
+import { formatTimesMult, formatFactor } from "../../../util/format";
 import {
   commitAndRefresh,
   makeChip,
@@ -33,11 +34,11 @@ export const appendItemDropSection = (
           }),
         {
           title: t("settings.item.tooltip", {
-            factor: ITEM_DROP_SCORE_FACTORS[rate].toFixed(2),
+            factor: formatFactor(ITEM_DROP_SCORE_FACTORS[rate]),
           }),
           html: `<div>${getItemDropLabel(rate)}</div>
-      <div class="setting-opt-sub">×${ITEM_DROP_SCORE_FACTORS[rate].toFixed(
-        2,
+      <div class="setting-opt-sub">${formatTimesMult(
+        ITEM_DROP_SCORE_FACTORS[rate],
       )}</div>`,
         },
       ),
@@ -67,9 +68,9 @@ export const appendOrientationSection = (
         {
           title: t(`settings.orientation.${orient}Help` as MessageKey),
           html: `<div>${t(`settings.orientation.${orient}` as MessageKey)}</div>
-      <div class="setting-opt-sub">×${SPAWN_ORIENTATION_SCORE_FACTORS[
-        orient
-      ].toFixed(2)}</div>`,
+      <div class="setting-opt-sub">${formatTimesMult(
+        SPAWN_ORIENTATION_SCORE_FACTORS[orient],
+      )}</div>`,
         },
       ),
     );

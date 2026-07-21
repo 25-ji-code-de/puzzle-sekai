@@ -9,6 +9,10 @@ import {
   HighScoreRecord,
 } from "../settings";
 import { t } from "../i18n";
+import { nextHighScoreCursor } from "./menu-cursor";
+import { padStartDigits } from "../util/pad";
+
+export { nextHighScoreCursor } from "./menu-cursor";
 
 /** CSS inline style for colored difficulty text (supports gradient for Append) */
 export const diffColorStyle = (level: number): string => {
@@ -56,14 +60,10 @@ export const cycleHighScoreColumn = (mode: GameMode): void => {
   const list = listHighScoreRecords(mode, settings);
   if (list.length <= 1) return;
 
-  const advance = (cursor: number | null): number => {
-    if (cursor == null) {
-      const best = loadBestHighScoreRecord(mode, settings);
-      const i = list.findIndex((r) => recordsEqual(r, best));
-      return ((i >= 0 ? i : 0) + 1) % list.length;
-    }
-    return (cursor + 1) % list.length;
-  };
+  const best = loadBestHighScoreRecord(mode, settings);
+  const bestIndex = list.findIndex((r) => recordsEqual(r, best));
+  const advance = (cursor: number | null): number =>
+    nextHighScoreCursor(list.length, cursor, bestIndex)!;
 
   if (mode === "timeAttack") {
     const duration = settings.timeAttackDuration;
@@ -94,7 +94,7 @@ export const highScoreRowHtml = (): string => {
   }
 
   const formatRecord = (score: number, diff: number, ent: boolean) => {
-    const scoreStr = score.toString().padStart(6, "0");
+    const scoreStr = padStartDigits(score, 6);
     const star =
       diff >= 1 && diff <= 7
         ? getDifficultyLabel(diff as DifficultyLevel)

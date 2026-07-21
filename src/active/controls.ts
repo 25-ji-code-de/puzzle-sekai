@@ -7,7 +7,7 @@
  */
 import { app, hammerManager } from "../runtime";
 import { isControlsSwapped } from "../fun/effects";
-import { isReplayPlayback, recordReplayAction } from "../settings";
+import { isReplayPlayback, recordReplayAction } from "../replay";
 import type { HoldMove } from "./hold-move";
 
 export type PieceControlActions = {
@@ -39,12 +39,28 @@ export const isLeftHalfOfCanvas = (
   return clientX < rect.left + rect.width / 2;
 };
 
-/** True when focus is on a field that should keep native key behavior. */
-const isTypingTarget = (target: EventTarget | null): boolean => {
-  if (!(target instanceof HTMLElement)) return false;
-  if (target.isContentEditable) return true;
-  const tag = target.tagName;
+/**
+ * Pure typing-target check (no DOM). Used so settings fields keep arrows/space.
+ */
+export const isTypingTargetLike = (opts: {
+  isElement: boolean;
+  contentEditable?: boolean;
+  tagName?: string;
+}): boolean => {
+  if (!opts.isElement) return false;
+  if (opts.contentEditable) return true;
+  const tag = (opts.tagName || "").toUpperCase();
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+};
+
+/** True when focus is on a field that should keep native key behavior. */
+export const isTypingTarget = (target: EventTarget | null): boolean => {
+  if (!(target instanceof HTMLElement)) return false;
+  return isTypingTargetLike({
+    isElement: true,
+    contentEditable: target.isContentEditable,
+    tagName: target.tagName,
+  });
 };
 
 /** Fire a one-shot horizontal move (grid path / swipe / replay). */

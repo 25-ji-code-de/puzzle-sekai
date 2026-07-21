@@ -9,6 +9,9 @@ import { exportLocalPicoData } from "./export-local";
 import { importLocalPicoData } from "./import-local";
 import { mergePicoData } from "./merge";
 import type { PicoSyncData, SyncMeta } from "./types";
+import { devWarn } from "../util/dev-log";
+import { safeJsonParse } from "../util/json";
+import { toNonNegInt } from "../util/number";
 
 export type SyncStatus = "idle" | "syncing" | "ok" | "error";
 
@@ -37,17 +40,14 @@ const setStatus = (s: SyncStatus) => {
 };
 
 export const loadSyncMeta = (): SyncMeta => {
-  try {
-    const raw = getStoragePort().get(SYNC_META_KEY);
-    if (!raw) return { version: 0, updatedAt: 0 };
-    const o = JSON.parse(raw) as Partial<SyncMeta>;
-    return {
-      version: Number(o.version) || 0,
-      updatedAt: Number(o.updatedAt) || 0,
-    };
-  } catch {
-    return { version: 0, updatedAt: 0 };
-  }
+  const raw = getStoragePort().get(SYNC_META_KEY);
+  if (!raw) return { version: 0, updatedAt: 0 };
+  const o = safeJsonParse<Partial<SyncMeta>>(raw);
+  if (!o) return { version: 0, updatedAt: 0 };
+  return {
+    version: toNonNegInt(o.version),
+    updatedAt: toNonNegInt(o.updatedAt),
+  };
 };
 
 export const saveSyncMeta = (meta: SyncMeta): void => {
@@ -93,7 +93,7 @@ export const pullMergePush = async (): Promise<boolean> => {
       });
       setStatus("ok");
     } catch (e) {
-      console.warn("[sync] pullMergePush", e);
+      devWarn("[sync] pullMergePush", e);
       setStatus("error");
     }
   })();
@@ -135,7 +135,7 @@ export const pushLocal = async (): Promise<boolean> => {
       });
       setStatus("ok");
     } catch (e) {
-      console.warn("[sync] pushLocal", e);
+      devWarn("[sync] pushLocal", e);
       setStatus("error");
     }
   })();

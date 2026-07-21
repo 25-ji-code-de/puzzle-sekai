@@ -12,6 +12,8 @@ import {
   type GameSettings,
   type GroupName,
 } from "../settings/types";
+import { formatUtcDateKey, isUtcDateKeyFormat } from "../util/date-key";
+import { fnv1a32 } from "../util/hash";
 
 /** Canonical salt so seed space does not collide with ad-hoc repro seeds. */
 const DAILY_SEED_SALT = "puzzle-sekai-daily:";
@@ -22,15 +24,12 @@ const DAILY_SEED_SALT = "puzzle-sekai-daily:";
  * rather than flipping at each player’s local midnight.
  */
 export function utcDateKey(date: Date = new Date()): string {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(date.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return formatUtcDateKey(date);
 }
 
 /** True if string looks like a UTC date key (no calendar validation). */
 export function isUtcDateKey(value: unknown): value is string {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+  return isUtcDateKeyFormat(value);
 }
 
 /**
@@ -38,13 +37,12 @@ export function isUtcDateKey(value: unknown): value is string {
  * Same key → same seed on every client / session.
  */
 export function dailySeed(dateKey: string = utcDateKey()): number {
-  const s = DAILY_SEED_SALT + dateKey;
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
+  return fnv1a32(dailySeedMaterial(dateKey));
+}
+
+/** Salt + key string used by {@link dailySeed} (exported for tests / debugging). */
+export function dailySeedMaterial(dateKey: string = utcDateKey()): string {
+  return DAILY_SEED_SALT + dateKey;
 }
 
 /**

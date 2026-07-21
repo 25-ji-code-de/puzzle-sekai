@@ -18,6 +18,7 @@ import {
   unlockAudio,
   type BgmKey,
 } from "./bgm";
+import { devWarn } from "../util/dev-log";
 
 let bgmPlaying: PIXI.sound.Sound | undefined;
 let bgmActive = false;
@@ -55,8 +56,8 @@ export const stopBgm = () => {
   if (bgmPlaying) {
     try {
       bgmPlaying.stop();
-    } catch {
-      /* ignore */
+    } catch (e) {
+      devWarn("[audio] stopBgm failed", e);
     }
   }
   stopAllBgmAliases();
@@ -69,7 +70,7 @@ export const playBgm = (
   // Never call play() until isLoaded — otherwise pixi-sound re-enters load()
   // and can throw InvalidStateError on AudioBufferSourceNode.buffer.
   if (!s.isLoaded) {
-    console.warn("[audio] playBgm called before sound was loaded");
+    devWarn("[audio] playBgm called before sound was loaded");
     return;
   }
   bgmPlaying = s;

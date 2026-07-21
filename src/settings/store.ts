@@ -26,6 +26,8 @@ import {
 } from "./types";
 import { clampVolumePercent } from "./volume";
 import { getStoragePort } from "./storage";
+import { devWarn } from "../util/dev-log";
+import { safeJsonParse } from "../util/json";
 
 const defaultSettings = (): GameSettings => ({
   ...DEFAULT_SETTINGS,
@@ -95,7 +97,7 @@ export function migrateSettingsPayload(parsed: unknown): GameSettings {
     typeof o.version === "number" && Number.isFinite(o.version) ? o.version : 0;
 
   if (version > SETTINGS_VERSION) {
-    console.warn(
+    devWarn(
       `[settings] newer envelope v${version} (app supports v${SETTINGS_VERSION}); best-effort normalize`,
     );
   }
@@ -109,10 +111,11 @@ export function loadSettings(): GameSettings {
   try {
     const saved = getStoragePort().get(SETTINGS_KEY);
     if (saved) {
-      return migrateSettingsPayload(JSON.parse(saved));
+      const parsed = safeJsonParse(saved);
+      if (parsed != null) return migrateSettingsPayload(parsed);
     }
   } catch (e) {
-    console.warn("Failed to load settings:", e);
+    devWarn("Failed to load settings:", e);
   }
   return defaultSettings();
 }
@@ -125,7 +128,7 @@ export function saveSettings(settings: GameSettings): void {
     };
     getStoragePort().set(SETTINGS_KEY, JSON.stringify(envelope));
   } catch (e) {
-    console.warn("Failed to save settings:", e);
+    devWarn("Failed to save settings:", e);
   }
 }
 

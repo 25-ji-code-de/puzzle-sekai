@@ -44,6 +44,9 @@ jobs:
       - name: Lint
         run: yarn lint
 
+      - name: i18n parity
+        run: yarn i18n:check
+
       - name: Format
         run: yarn format:check
 

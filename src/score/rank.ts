@@ -4,6 +4,7 @@
  */
 import type { GameMode } from "../settings";
 import { effectiveScore } from "./performance";
+import { hexToRgba } from "../util/color";
 
 export type ScoreRank =
   | "D"
@@ -150,13 +151,7 @@ export function scoreRankColorStyle(rank: ScoreRank | string): string {
 
 /** rgba glow string for text-shadow / canvas shadowColor. */
 export function getScoreRankGlow(rank: ScoreRank | string): string {
-  const hex = getScoreRankColor(rank);
-  const raw = hex.replace("#", "");
-  if (raw.length !== 6) return "rgba(255, 215, 106, 0.35)";
-  const n = parseInt(raw, 16);
-  if (Number.isNaN(n)) return "rgba(255, 215, 106, 0.35)";
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r}, ${g}, ${b}, 0.4)`;
+  return hexToRgba(getScoreRankColor(rank), 0.4) ?? "rgba(255, 215, 106, 0.35)";
 }
+
+export { hexToRgba } from "../util/color";

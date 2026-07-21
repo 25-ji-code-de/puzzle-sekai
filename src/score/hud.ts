@@ -27,6 +27,9 @@ import {
   loadMatchHighScore,
   seedTimeRemaining,
 } from "./model";
+import { padStartDigits } from "../util/pad";
+import { formatTimesMult } from "../util/format";
+import { hexToPixi } from "../util/color";
 
 let scoreText: PIXI.Container | undefined;
 let highScoreText: PIXI.Container | undefined;
@@ -39,7 +42,7 @@ const SCORE_FONT_SIZE = 48;
 const HIGH_SCORE_FONT_SIZE = 32;
 const COMBO_FONT_SIZE = 44;
 const TIMER_FONT_SIZE = 48;
-const pad = (n: number, len: number) => String(n).padStart(len, "0");
+const pad = (n: number, len: number) => padStartDigits(n, len);
 
 const makePaddedText = (
   num: number,
@@ -120,7 +123,7 @@ const replaceDisplay = (
 };
 
 const formatCurrentMultiplier = (mult: number) => {
-  const parts = [`×${mult.toFixed(2)}`];
+  const parts = [formatTimesMult(mult)];
   if (isEntertainmentMode(getCurrentSettings())) {
     parts.push(t("hsTags.entCompact"));
   }
@@ -140,8 +143,7 @@ const formatRecordDescription = (hsDiff: number, hsEnt: boolean) => {
 
 const getBadgeColor = (hsDiff: number): number => {
   if (hsDiff >= 1 && hsDiff <= 7) {
-    const hex = getDifficultyColor(hsDiff);
-    return parseInt(hex.replace("#", ""), 16);
+    return hexToPixi(getDifficultyColor(hsDiff));
   }
   return 0xaaccff;
 };

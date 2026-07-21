@@ -18,6 +18,7 @@ import {
 } from "../score";
 import { getGroupDisplayColor } from "../settings";
 import { diffColorStyle } from "./menu-utils";
+import { joinClassNames } from "../util/css-class";
 
 /** Leading zeros dim, significant digits solid — mirrors in-game HUD. */
 const makePaddedNumber = (
@@ -27,7 +28,7 @@ const makePaddedNumber = (
   solidColor?: string,
 ): HTMLElement => {
   const el = document.createElement("span");
-  el.className = `${className} font-numeric-strong`;
+  el.className = joinClassNames(className, "font-numeric-strong");
   const { pad, solid } = splitPaddedNumber(n, len);
   if (pad) {
     const g = document.createElement("span");

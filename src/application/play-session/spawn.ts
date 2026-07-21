@@ -23,6 +23,7 @@ import { isMatchOpen } from "./match-gate";
 import type { CharacterData } from "../../characters/data";
 import { highestBodyTop, isContinuousPhysics } from "../../board/dynamics";
 import { BOX_SIZE, ROWS, STAGE_HEIGHT, OFFSET_BOTTOM } from "../../config";
+import { nonNegative, clampInt } from "../../util/clamp";
 
 export type SpawnDeps = {
   /** Current sprites.length before push (land index base). */
@@ -67,8 +68,8 @@ export const spawnNext = async (deps: SpawnDeps): Promise<void> => {
     // Approximate occupied rows from highest body top
     const top = highestBodyTop();
     const floor = STAGE_HEIGHT - OFFSET_BOTTOM;
-    const filledPx = Math.max(0, floor - top);
-    maxHeight = Math.min(ROWS, Math.ceil(filledPx / BOX_SIZE));
+    const filledPx = nonNegative(floor - top);
+    maxHeight = clampInt(Math.ceil(filledPx / BOX_SIZE), 0, ROWS);
   } else {
     maxHeight = maxOccupiedHeight(getGrid());
   }

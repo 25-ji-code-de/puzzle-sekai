@@ -22,6 +22,13 @@ export {
 } from "./store";
 
 export {
+  isReplayInput,
+  parseReplayEntry,
+  sortReplaysNewestFirst,
+  normalizeReplaySettings,
+} from "./parse";
+
+export {
   activateReplayPlayback,
   beginReplayRecording,
   clearReplayPlayback,

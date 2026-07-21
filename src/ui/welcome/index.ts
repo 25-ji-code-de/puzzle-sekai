@@ -3,6 +3,7 @@
  */
 import { setOnBootContinue } from "./boot";
 import { showWelcomePage } from "./menu";
+import { devWarn } from "../../util/dev-log";
 
 /**
  * OAuth callback handling stays separate from the menu shell so logged-out users
@@ -30,7 +31,7 @@ const bootstrapAuthCallback = async (): Promise<void> => {
       );
     }
   } catch (e) {
-    console.warn("[auth] bootstrap callback", e);
+    devWarn("[auth] bootstrap callback", e);
   }
 };
 

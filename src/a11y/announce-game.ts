@@ -5,9 +5,15 @@
 import { t } from "../i18n";
 import { getCombo, getScore, getTimeRemaining } from "../score/model";
 import { announce } from "./live-region";
+import {
+  TIME_CRITICAL_SEC,
+  formatTimerClock,
+  scoreAnnounceKind,
+  shouldAnnounceTimeLow,
+  shouldSpeakScore,
+} from "./announce-format";
 
 const SCORE_DEBOUNCE_MS = 700;
-const TIME_CRITICAL_SEC = 10;
 
 let scoreTimer: ReturnType<typeof setTimeout> | null = null;
 let lastAnnouncedScore = -1;
@@ -57,10 +63,14 @@ export const scheduleScoreAnnounce = (): void => {
     if (!matchLive) return;
     const score = getScore();
     const combo = getCombo();
-    if (score === lastAnnouncedScore && combo === lastAnnouncedCombo) return;
+    if (
+      !shouldSpeakScore(score, combo, lastAnnouncedScore, lastAnnouncedCombo)
+    ) {
+      return;
+    }
     lastAnnouncedScore = score;
     lastAnnouncedCombo = combo;
-    if (combo > 1) {
+    if (scoreAnnounceKind(combo) === "scoreCombo") {
       announce(
         t("a11y.scoreCombo", {
           score: String(score),
@@ -81,12 +91,11 @@ export const announceTimerIfNeeded = (): void => {
     lastAnnouncedTime = sec;
     return;
   }
-  if (sec === lastAnnouncedTime) return;
+  if (!shouldAnnounceTimeLow(sec, lastAnnouncedTime)) return;
   lastAnnouncedTime = sec;
-  const mins = Math.floor(sec / 60);
-  const secs = sec % 60;
-  const time = `${mins}:${String(secs).padStart(2, "0")}`;
-  announce(t("a11y.timeLow", { time }), { politeness: "assertive" });
+  announce(t("a11y.timeLow", { time: formatTimerClock(sec) }), {
+    politeness: "assertive",
+  });
 };
 
 export const announcePaused = (): void => {

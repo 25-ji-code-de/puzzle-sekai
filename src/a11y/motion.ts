@@ -9,10 +9,17 @@ let cached: boolean | null = null;
 let mq: MediaQueryList | null = null;
 const listeners = new Set<() => void>();
 
+/** Pure: interpret a MediaQueryList.matches value (null/undefined → false). */
+export const reducedMotionFromMatches = (
+  matches: boolean | null | undefined,
+): boolean => matches === true;
+
 const read = (): boolean => {
   try {
     if (typeof window === "undefined" || !window.matchMedia) return false;
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    return reducedMotionFromMatches(
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
   } catch {
     return false;
   }

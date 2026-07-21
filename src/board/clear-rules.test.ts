@@ -12,12 +12,9 @@ import {
 import { CHAR } from "../characters/ids";
 import { ITEM_TOKEN, type BoardGrid } from "../domain/types";
 import { COLUMNS, ROWS } from "../config";
+import { emptyBoardGrid } from "../test/empty-grid";
 
-const emptyGrid = (): BoardGrid =>
-  Array.from({ length: ROWS }, () =>
-    Array.from({ length: COLUMNS }, () => null),
-  );
-
+const emptyGrid = (): BoardGrid => emptyBoardGrid(ROWS, COLUMNS);
 describe("characterGroupOf / isMikudayoName", () => {
   it("maps known characters and rejects empty", () => {
     expect(characterGroupOf(CHAR.Ichika)).toBe("Leo/need");

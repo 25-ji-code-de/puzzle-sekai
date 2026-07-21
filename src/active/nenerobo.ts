@@ -25,9 +25,11 @@ import {
   getCurrentSettings,
   getSpeedMultiplier,
   getSpawnRotation,
+} from "../settings";
+import {
   setReplayLiveControlTarget,
   type ReplayControlTarget,
-} from "../settings";
+} from "../replay";
 import { consumeKanadeSlowForSpawn } from "../fun/effects";
 import {
   activeLandPixelY,

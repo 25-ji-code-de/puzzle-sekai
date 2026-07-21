@@ -3,6 +3,7 @@
  * Brands (Cell / Col / Row) live in domain/types — import there.
  */
 import { type Cell, type ReadonlyCell, cell, asCell } from "../types/cell";
+import { maxOf } from "../../util/minmax";
 
 export const cellToXY = (c: ReadonlyCell): { x: number; y: number } => ({
   x: c[0],
@@ -32,13 +33,13 @@ export const pickMaxX = (cells: readonly ReadonlyCell[]): Cell => {
 /** All cells on the lowest row of the footprint. */
 export const bottomCells = (cells: readonly ReadonlyCell[]): Cell[] => {
   if (!cells.length) return [];
-  const maxY = Math.max(...cells.map(([, y]) => y));
+  const maxY = maxOf(cells.map(([, y]) => y));
   return cells.filter(([, y]) => y === maxY).map(asCell);
 };
 
 /** Highest row index in the footprint. */
 export const maxFootprintY = (cells: readonly ReadonlyCell[]): number =>
-  cells.length ? Math.max(...cells.map(([, y]) => y)) : -1;
+  cells.length ? maxOf(cells.map(([, y]) => y)) : -1;
 
 /** Translate every cell by (dx, dy). */
 export const translateCells = (

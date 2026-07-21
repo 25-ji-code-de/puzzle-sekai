@@ -6,6 +6,7 @@
  * Loaded only when `VITE_NATIVE=1` so the web bundle never pulls shell APIs.
  */
 import { isNativeBuild } from "../auth/config";
+import { devWarn } from "../util/dev-log";
 
 const OAUTH_CALLBACK_HOST = "auth/callback";
 
@@ -52,7 +53,7 @@ export const injectOAuthCallback = (url: string): void => {
       }
     });
   } catch (e) {
-    console.warn("[native] injectOAuthCallback", e);
+    devWarn("[native] injectOAuthCallback", e);
   }
 };
 
@@ -76,7 +77,7 @@ const bindCapacitor = async (): Promise<DeepLinkUnlisten | null> => {
       void handle.remove();
     };
   } catch (e) {
-    console.warn("[native] Capacitor deep-link bind failed", e);
+    devWarn("[native] Capacitor deep-link bind failed", e);
     return null;
   }
 };
@@ -102,7 +103,7 @@ const bindTauri = async (): Promise<DeepLinkUnlisten | null> => {
     }
     return typeof unlisten === "function" ? unlisten : () => {};
   } catch (e) {
-    console.warn("[native] Tauri deep-link bind failed", e);
+    devWarn("[native] Tauri deep-link bind failed", e);
     return null;
   }
 };

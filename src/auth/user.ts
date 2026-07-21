@@ -2,6 +2,7 @@
  * Auth UI snapshot + listeners.
  */
 import { loadSession, type AuthUser } from "./session";
+import { devWarn } from "../util/dev-log";
 
 export type AuthSnapshot = {
   loggedIn: boolean;
@@ -33,12 +34,25 @@ export const notifyAuthChanged = (): void => {
     try {
       fn(snap);
     } catch (e) {
-      console.warn("[auth] listener", e);
+      devWarn("[auth] listener", e);
     }
   }
 };
 
+/**
+ * Prefer trimmed displayName; fall back to username.
+ * Pure helper so UI formatting is testable without a session.
+ */
+export const displayNameFromParts = (
+  displayName?: string | null,
+  username?: string | null,
+): string => {
+  const d = displayName?.trim();
+  if (d) return d;
+  return username?.trim() || "";
+};
+
 export const displayNameOf = (user: AuthUser | null): string => {
   if (!user) return "";
-  return user.displayName?.trim() || user.username;
+  return displayNameFromParts(user.displayName, user.username);
 };

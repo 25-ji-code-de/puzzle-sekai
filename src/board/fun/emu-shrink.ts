@@ -26,6 +26,7 @@ import {
   continuousRemoveBody,
 } from "../dynamics";
 import { pieceKindFrom } from "../../domain/types";
+import { minManhattanToCells } from "../../util/manhattan";
 
 const collectMafuyuCells = (): Cell[] => {
   const cells: Cell[] = [];
@@ -50,12 +51,7 @@ const pickKeepCell = (emuCells: Cell[], mafuyuCells: Cell[]): Cell => {
     Math.abs(emuCx - mafuyuCx) >= Math.abs(emuCy - mafuyuCy) ? 0 : 1;
 
   const minDistToMafuyu = (c: Cell) =>
-    Math.min(
-      ...mafuyuCells.map(
-        ([mx, my]) => Math.abs(c[0] - mx) + Math.abs(c[1] - my),
-      ),
-    );
-
+    minManhattanToCells(c[0], c[1], mafuyuCells);
   return emuCells.slice().sort((a, b) => {
     const da = minDistToMafuyu(a);
     const db = minDistToMafuyu(b);

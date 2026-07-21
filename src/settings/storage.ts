@@ -1,12 +1,38 @@
 /**
  * Storage port — single place for localStorage access.
+ *
+ * For boot-time flags that must not import the full settings graph
+ * (e.g. runtime.ts lowPerformance), prefer {@link readStorageJsonFlag}.
  */
+import { devWarn } from "../util/dev-log";
+import { safeJsonParse } from "../util/json";
 export interface StoragePort {
   get(key: string): string | null;
   set(key: string, value: string): void;
   remove(key: string): void;
   keys(): string[];
 }
+
+/**
+ * Read a boolean field from a JSON object stored under `key` without going
+ * through the settings store. Safe for early boot (no import cycles).
+ * Falls back to direct localStorage if the storage port is unavailable.
+ */
+export const readStorageJsonFlag = (
+  key: string,
+  field: string,
+  fallback = false,
+): boolean => {
+  try {
+    const raw =
+      typeof localStorage !== "undefined" ? localStorage.getItem(key) : null;
+    if (!raw) return fallback;
+    const parsed = safeJsonParse<Record<string, unknown>>(raw);
+    return parsed?.[field] === true;
+  } catch {
+    return fallback;
+  }
+};
 
 export const localStoragePort: StoragePort = {
   get(key) {
@@ -20,14 +46,14 @@ export const localStoragePort: StoragePort = {
     try {
       localStorage.setItem(key, value);
     } catch (e) {
-      console.warn("storage set failed", key, e);
+      devWarn("storage set failed", e);
     }
   },
   remove(key) {
     try {
       localStorage.removeItem(key);
     } catch (e) {
-      console.warn("storage remove failed", key, e);
+      devWarn("storage remove failed", e);
     }
   },
   keys() {

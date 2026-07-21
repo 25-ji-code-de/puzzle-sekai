@@ -2,7 +2,8 @@
  * PKCE + OAuth state helpers (Web Crypto).
  */
 
-const b64url = (bytes: ArrayBuffer | Uint8Array): string => {
+/** URL-safe base64 without padding (exported for tests). */
+export const b64url = (bytes: ArrayBuffer | Uint8Array): string => {
   const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   let s = "";
   for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]!);

@@ -9,3 +9,4 @@ public
 android
 src-tauri/target
 src-tauri/gen
+.claude

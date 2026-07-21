@@ -3,12 +3,16 @@ export {
   trapFocus,
   type FocusTrapHandle,
   type FocusTrapOptions,
+  nextTabIndex,
+  shouldWrapTab,
 } from "./focus-trap";
 export {
   ensureLiveRegions,
   announce,
   disposeLiveRegions,
   type AnnounceOptions,
+  prepareLiveMessage,
+  shouldSpeakText,
 } from "./live-region";
 export {
   announceMatchStart,
@@ -20,3 +24,10 @@ export {
   announceGameOver,
   announceMenu,
 } from "./announce-game";
+export {
+  TIME_CRITICAL_SEC,
+  formatTimerClock,
+  shouldAnnounceTimeLow,
+  scoreAnnounceKind,
+  shouldSpeakScore,
+} from "./announce-format";

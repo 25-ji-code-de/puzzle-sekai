@@ -5,6 +5,7 @@ import {
 } from "../../difficulty";
 import { t } from "../../../i18n";
 import { diffColorStyle } from "../../../ui/menu-utils";
+import { formatTimesMult } from "../../../util/format";
 import { makeSettingGroup, type SettingsSectionCtx } from "../widgets";
 
 export const appendDifficultySection = (
@@ -24,7 +25,7 @@ export const appendDifficultySection = (
       (line) =>
         `<div class="diff-line">
           <span>${line.label}</span>
-          <span class="diff-line__factor">×${line.factor.toFixed(2)}</span>
+          <span class="diff-line__factor">${formatTimesMult(line.factor)}</span>
         </div>`,
     )
     .join("");
@@ -40,7 +41,7 @@ export const appendDifficultySection = (
         : ""
     }</div>
     <div class="diff-mult">
-      <span class="font-numeric">×${mult.toFixed(2)}</span>
+      <span class="font-numeric">${formatTimesMult(mult)}</span>
       <span class="diff-info">${t("settings.difficulty.info")}</span>
     </div>
   `;
@@ -53,7 +54,7 @@ export const appendDifficultySection = (
     ${linesHtml}
     <div class="diff-total">
       <span>${t("settings.difficulty.total")}</span>
-      <span class="font-numeric">×${mult.toFixed(2)}</span>
+      <span class="font-numeric">${formatTimesMult(mult)}</span>
     </div>
   `;
   card.appendChild(tip);

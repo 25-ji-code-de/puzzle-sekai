@@ -7,6 +7,8 @@ import {
   playVoicePreview,
 } from "../../../audio/bgm";
 import { makeSettingGroup, type SettingsSectionCtx } from "../widgets";
+import { toFiniteNumber } from "../../../util/number";
+import { formatPercent } from "../../../util/format";
 
 export const appendAudioSection = (
   panel: HTMLElement,
@@ -45,7 +47,7 @@ export const appendAudioSection = (
 
     const value = document.createElement("div");
     value.className = "vol-value";
-    value.textContent = `${slider.value}%`;
+    value.textContent = formatPercent(clampVolumePercent(settings[key]));
 
     const playPreview = (force: boolean) => {
       const now = performance.now();
@@ -66,10 +68,10 @@ export const appendAudioSection = (
       raw: string,
       opts: { preview?: boolean; force?: boolean } = {},
     ) => {
-      const next = clampVolumePercent(Number(raw));
+      const next = clampVolumePercent(toFiniteNumber(raw, settings[key]));
       settings[key] = next;
       slider.value = String(next);
-      value.textContent = `${next}%`;
+      value.textContent = formatPercent(next);
       updateCurrentSettings(settings);
       if (key === "bgmVolume") applyBgmVolume();
       if (opts.preview) playPreview(!!opts.force);

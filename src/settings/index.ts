@@ -103,41 +103,5 @@ export { clearAppData, clearAppCaches } from "./data";
 
 export { getStoragePort, setStoragePort, type StoragePort } from "./storage";
 
-export {
-  REPLAY_LIMIT,
-  REPLAY_STORAGE_KEY,
-  REPLAY_VERSION,
-  appendReplayEntry,
-  activateReplayPlayback,
-  beginReplayRecording,
-  clearReplayEntries,
-  clearReplayPlayback,
-  clearReplayRecording,
-  consumeQueuedReplayPlayback,
-  finishReplayRecording,
-  flushReplayPlayback,
-  getReplayLiveControlTarget,
-  getReplayPlaybackEntry,
-  hasQueuedReplayPlayback,
-  isCurrentRunReplayRecordable,
-  isReplayPlayback,
-  isReplayRecording,
-  listReplaySummaries,
-  loadReplayEntries,
-  loadReplayEntry,
-  pauseReplayPlaybackClock,
-  pauseReplayRecordingClock,
-  queueReplayPlayback,
-  recordReplayAction,
-  replayModeLabel,
-  resumeReplayPlaybackClock,
-  resumeReplayRecordingClock,
-  setReplayLiveControlTarget,
-  type ReplayControlTarget,
-  type ReplayAction,
-  type ReplayEntry,
-  type ReplayInput,
-  type ReplaySettingsSnapshot,
-  type ReplaySummary,
-  type ReplayableSettings,
-} from "../replay";
+// Replay lives in `src/replay` — import from there (not re-exported here).
+// Keeps settings free of session/recording graph and avoids import cycles.

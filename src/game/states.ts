@@ -70,22 +70,24 @@ import {
   beginMatchSettingsOverride,
   clearActiveDailyDateKey,
   clearMatchSettingsOverride,
+  getActiveDailyDateKey,
+  getCurrentGameMode,
+  getCurrentSettings,
+  getUserSettings,
+} from "../settings";
+import {
   consumeQueuedReplayPlayback,
   activateReplayPlayback,
   beginReplayRecording,
   clearReplayPlayback,
   finishReplayRecording,
   flushReplayPlayback,
-  getActiveDailyDateKey,
-  getCurrentGameMode,
-  getCurrentSettings,
-  getUserSettings,
   isReplayPlayback,
   pauseReplayPlaybackClock,
   pauseReplayRecordingClock,
   resumeReplayPlaybackClock,
   resumeReplayRecordingClock,
-} from "../settings";
+} from "../replay";
 import { dailyMatchSettings, dailySeed, utcDateKey } from "../domain/daily";
 import { resetFunEffects, isFunModeOn } from "../fun/effects";
 import { ensurePlayPack } from "../assets/play-pack";
@@ -124,6 +126,19 @@ import {
 } from "../audio/session";
 import { sprites, clearSpritesList, resetGrid } from "./board-state";
 import { ensureContinuousReady, teardownContinuous } from "../board/dynamics";
+import {
+  displaySecondsFromMs,
+  emptyTimeAttackSnapshot,
+  isTimeAttackExpired,
+  pauseTimeAttackClock,
+  remainingMsAt,
+  resumeTimeAttackClock,
+  startTimeAttackClock,
+  stopTimeAttackClock,
+  type TimeAttackSnapshot,
+} from "./time-attack";
+import { hiddenPauseDecision } from "./hidden-pause";
+import { devWarn } from "../util/dev-log";
 
 export { welcome } from "../ui/welcome";
 export { isPlayActive } from "../application/play-session/phase";
@@ -153,34 +168,28 @@ const tickReplayPlayback = () => {
 
 /**
  * Time-attack clock: wall-clock deadline via performance.now(), driven by
- * gameTicker (not setInterval). setInterval(1000) drifts in background tabs
- * and only freezes display while paused without freezing real elapsed time.
+ * gameTicker (not setInterval). Pure transitions live in `./time-attack`.
  *
- * - Running: `timeAttackEndsAt` is the absolute deadline (performance.now scale).
- * - Paused: deadline cleared; remaining ms held in `timeAttackPausedRemainingMs`.
+ * - Running: `snap.endsAt` is the absolute deadline (performance.now scale).
+ * - Paused: deadline cleared; remaining ms held in `snap.pausedRemainingMs`.
  * - Background tab: rAF/gameTicker may stop, but on resume the first tick
  *   re-reads performance.now() so lost wall time is applied correctly.
  */
-let timeAttackEndsAt = 0;
-let timeAttackPausedRemainingMs = 0;
+let timeAttackSnap: TimeAttackSnapshot = emptyTimeAttackSnapshot();
 let timeAttackHooked = false;
 let hiddenPauseBound = false;
 
 const nowMs = () =>
   typeof performance !== "undefined" ? performance.now() : Date.now();
 
-/** Whole seconds left for the HUD (ceil so the last second still shows 1). */
-const displaySecondsFromMs = (remainingMs: number) =>
-  remainingMs <= 0 ? 0 : Math.ceil(remainingMs / 1000);
-
 const tickTimeAttack = () => {
-  if (!timeAttackEndsAt) return;
-  const remainingMs = timeAttackEndsAt - nowMs();
+  if (!timeAttackSnap.endsAt) return;
+  const remainingMs = remainingMsAt(timeAttackSnap.endsAt, nowMs());
   const seconds = displaySecondsFromMs(remainingMs);
   if (seconds !== getTimeRemaining()) {
     setTimeRemaining(seconds);
   }
-  if (remainingMs <= 0) {
+  if (isTimeAttackExpired(timeAttackSnap, nowMs())) {
     stopTimeAttackTimer();
     void endTimeAttack();
   }
@@ -196,16 +205,14 @@ const stopTimeAttackTimer = () => {
     }
     timeAttackHooked = false;
   }
-  timeAttackEndsAt = 0;
-  timeAttackPausedRemainingMs = 0;
+  timeAttackSnap = stopTimeAttackClock();
 };
 
 const startTimeAttackTimer = () => {
   stopTimeAttackTimer();
   const duration = getCurrentSettings().timeAttackDuration;
   setTimeRemaining(duration);
-  timeAttackEndsAt = nowMs() + duration * 1000;
-  timeAttackPausedRemainingMs = 0;
+  timeAttackSnap = startTimeAttackClock(duration, nowMs());
   if (!timeAttackHooked) {
     gameTicker.add(tickTimeAttack);
     timeAttackHooked = true;
@@ -214,17 +221,15 @@ const startTimeAttackTimer = () => {
 
 /** Freeze remaining wall time while gameTicker is stopped (user pause). */
 const pauseTimeAttackTimer = () => {
-  if (!timeAttackEndsAt) return;
-  timeAttackPausedRemainingMs = Math.max(0, timeAttackEndsAt - nowMs());
-  timeAttackEndsAt = 0;
-  setTimeRemaining(displaySecondsFromMs(timeAttackPausedRemainingMs));
+  if (!timeAttackSnap.endsAt) return;
+  timeAttackSnap = pauseTimeAttackClock(timeAttackSnap, nowMs());
+  setTimeRemaining(displaySecondsFromMs(timeAttackSnap.pausedRemainingMs));
 };
 
 /** Resume from frozen remaining after pausePlay → resumePlay. */
 const resumeTimeAttackTimer = () => {
-  if (timeAttackEndsAt || timeAttackPausedRemainingMs <= 0) return;
-  timeAttackEndsAt = nowMs() + timeAttackPausedRemainingMs;
-  timeAttackPausedRemainingMs = 0;
+  if (timeAttackSnap.endsAt || timeAttackSnap.pausedRemainingMs <= 0) return;
+  timeAttackSnap = resumeTimeAttackClock(timeAttackSnap, nowMs());
   if (!timeAttackHooked) {
     gameTicker.add(tickTimeAttack);
     timeAttackHooked = true;
@@ -240,18 +245,14 @@ const bindHiddenPauseLifecycle = () => {
   hiddenPauseBound = true;
   document.addEventListener("visibilitychange", () => {
     const phase = getPlayPhase();
-    if (document.visibilityState === "hidden") {
-      if (phase.type === "playing") {
-        pausePlay("hidden");
-      }
-      return;
-    }
-    if (
-      document.visibilityState === "visible" &&
-      phase.type === "paused" &&
-      phase.reason === "hidden" &&
-      !isPauseMenuOpen()
-    ) {
+    const decision = hiddenPauseDecision(
+      document.visibilityState,
+      phase,
+      isPauseMenuOpen(),
+    );
+    if (decision.action === "pause") {
+      pausePlay("hidden");
+    } else if (decision.action === "showPauseMenu") {
       showPauseMenu();
     }
   });
@@ -315,7 +316,7 @@ const ensureNextPreview = async (): Promise<void> => {
       nextCharacter.preview ?? nextCharacter.file,
     );
   } catch (e) {
-    console.warn("[start] next preview failed", e);
+    devWarn("[start] next preview failed", e);
   }
 };
 
@@ -362,7 +363,7 @@ const runSpawn = async () => {
       },
     });
   } catch (e) {
-    console.warn("[spawn] failed", e);
+    devWarn("[spawn] failed", e);
     unlockCreate();
   }
 };
@@ -436,7 +437,7 @@ export const start = () => {
       if (isFunModeOn("truePhysics")) {
         const ok = await ensureContinuousReady();
         if (!ok) {
-          console.warn(
+          devWarn(
             "[start] truePhysics unavailable; match continues on grid path",
           );
         }
@@ -599,7 +600,7 @@ const endTopOut = async () => {
       }, 2000);
       return;
     } catch (e) {
-      console.warn("[end] flourish failed, falling back", e);
+      devWarn("[end] flourish failed, falling back", e);
     }
   }
 

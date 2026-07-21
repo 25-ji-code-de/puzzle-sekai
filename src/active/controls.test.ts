@@ -30,6 +30,11 @@ vi.mock("../fun/effects", () => ({
   isControlsSwapped: () => false,
 }));
 
+vi.mock("../replay", () => ({
+  isReplayPlayback: () => false,
+  recordReplayAction: vi.fn(),
+}));
+
 describe("isLeftHalfOfCanvas", () => {
   it("uses canvas mid-x, not window mid-x", async () => {
     const { isLeftHalfOfCanvas } = await import("./controls");
@@ -68,5 +73,29 @@ describe("isLeftHalfOfCanvas", () => {
     } as HTMLElement;
     expect(isLeftHalfOfCanvas(50, view)).toBe(false);
     expect(isLeftHalfOfCanvas(49.9, view)).toBe(true);
+  });
+});
+
+describe("isTypingTargetLike", () => {
+  it("rejects non-elements", async () => {
+    const { isTypingTargetLike } = await import("./controls");
+    expect(isTypingTargetLike({ isElement: false })).toBe(false);
+  });
+
+  it("accepts input/textarea/select and contentEditable", async () => {
+    const { isTypingTargetLike } = await import("./controls");
+    expect(isTypingTargetLike({ isElement: true, tagName: "INPUT" })).toBe(
+      true,
+    );
+    expect(isTypingTargetLike({ isElement: true, tagName: "textarea" })).toBe(
+      true,
+    );
+    expect(isTypingTargetLike({ isElement: true, tagName: "SELECT" })).toBe(
+      true,
+    );
+    expect(isTypingTargetLike({ isElement: true, contentEditable: true })).toBe(
+      true,
+    );
+    expect(isTypingTargetLike({ isElement: true, tagName: "DIV" })).toBe(false);
   });
 });

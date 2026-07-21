@@ -29,6 +29,9 @@ build/Release
 out/
 .idea_modules/
 
+# Claude Code local session / worktrees (never ship)
+.claude/
+
 # Yarn
 .yarn/install-state.gz
 

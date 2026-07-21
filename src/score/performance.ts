@@ -3,6 +3,7 @@
  * to a 90s density baseline. Used by ScoreRank and dan rating.
  */
 import type { GameMode } from "../settings";
+import { clamp, nonNegative } from "../util/clamp";
 
 /** Time-attack / density baseline in seconds. */
 export const PERFORMANCE_BASELINE_SECONDS = 90;
@@ -27,8 +28,7 @@ export type EffectiveScoreInput = {
   playedSeconds?: number;
 };
 
-const safeScore = (score: number): number =>
-  Number.isFinite(score) ? Math.max(0, score) : 0;
+const safeScore = (score: number): number => nonNegative(score);
 
 const safeMult = (multiplier: number): number =>
   Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 0.01;
@@ -56,10 +56,7 @@ export function effectiveScore(input: EffectiveScoreInput): number {
       (input.playedSeconds as number) > 0
         ? (input.playedSeconds as number)
         : PERFORMANCE_BASELINE_SECONDS;
-    const t = Math.min(
-      ENDLESS_DURATION_MAX,
-      Math.max(ENDLESS_DURATION_MIN, raw),
-    );
+    const t = clamp(raw, ENDLESS_DURATION_MIN, ENDLESS_DURATION_MAX);
     e *= PERFORMANCE_BASELINE_SECONDS / t;
   }
 

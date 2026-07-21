@@ -11,11 +11,11 @@ import {
   getDifficultyLevel,
   getScoreMultiplier,
   isEntertainmentMode,
-  isReplayPlayback,
   loadHighScoreRecord,
   saveHighScore,
   type GroupName,
 } from "../settings";
+import { isReplayPlayback } from "../replay";
 import { utcDateKey } from "../domain/daily";
 import { computeScoreRank } from "./rank";
 import { effectiveScore } from "./performance";
@@ -24,6 +24,7 @@ import {
   resetDanSessionLatch,
   type RecordDanRunResult,
 } from "./dan-store";
+import { atLeastOne, clamp, nonNegative } from "../util/clamp";
 
 /** Soft/hard drop contribution factor after the final score mult. */
 export const DROP_SCORE_FACTOR = 0.6;
@@ -69,17 +70,17 @@ export const getTimeRemaining = () => _timeRemaining;
 /** Wall-clock seconds since resetScore (0 if clock not started). */
 export const getPlayedSeconds = (): number => {
   if (!_matchStartedAt || typeof performance === "undefined") return 0;
-  return Math.max(0, (performance.now() - _matchStartedAt) / 1000);
+  return nonNegative((performance.now() - _matchStartedAt) / 1000);
 };
 
 export const setTimeRemaining = (seconds: number) => {
-  _timeRemaining = Math.max(0, seconds);
+  _timeRemaining = nonNegative(seconds);
   onTimerChanged?.();
 };
 
 /** Set timer without HUD refresh (used while building the display). */
 export const seedTimeRemaining = (seconds: number) => {
-  _timeRemaining = Math.max(0, seconds);
+  _timeRemaining = nonNegative(seconds);
 };
 
 export const decrementTime = (): boolean => {
@@ -109,9 +110,9 @@ export const addDropScore = (points: number) => {
  * combo 5 → ×1.8; combo 10 → ×2.8; combo 16+ → ×4.
  */
 export const chainMultiplierOf = (combo: number): number => {
-  const c = Number.isFinite(combo) ? Math.max(1, Math.floor(combo)) : 1;
+  const c = Number.isFinite(combo) ? atLeastOne(Math.floor(combo)) : 1;
   if (c <= 1) return 1;
-  return Math.min(CHAIN_MULT_CAP, 1 + 0.2 * (c - 1));
+  return clamp(1 + 0.2 * (c - 1), 1, CHAIN_MULT_CAP);
 };
 
 export const addScore = (piecesCleared: number) => {

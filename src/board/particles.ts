@@ -7,6 +7,7 @@ import * as PIXI from "pixi.js-legacy";
 import { prefersReducedMotion } from "../a11y";
 import { app, gameTicker } from "../runtime";
 import type { SpriteData } from "../game/board-state";
+import { unitInterval } from "../util/clamp";
 
 const PARTICLE_COUNT = 8;
 const LIFE_FRAMES = 20;
@@ -56,7 +57,7 @@ const tickParticles = (delta: number): void => {
     p.age += delta;
     p.g.x += p.vx * delta;
     p.g.y += p.vy * delta;
-    const t = Math.min(1, p.age / LIFE_FRAMES);
+    const t = unitInterval(p.age / LIFE_FRAMES);
     p.g.alpha = 1 - t;
     p.g.scale.set(1 - t);
     if (p.age >= LIFE_FRAMES) release(p);

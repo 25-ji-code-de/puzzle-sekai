@@ -29,6 +29,9 @@ import {
   cellTopLeftY,
 } from "../domain/piece";
 import { placeSpriteAtAnchor } from "../presentation/placement";
+import { clamp, nonNegative, unitInterval } from "../util/clamp";
+import { easeInQuad } from "../util/ease";
+import { maxOf, minOf } from "../util/minmax";
 
 /** Slightly slower than a snap so the pry-up arc reads clearly. */
 const TIP_ROTATE_FRAMES = 18;
@@ -246,10 +249,10 @@ const planTipForRoot = (
   // Unstable only when some bottom cells are held and some hang
   if (supportedBottom.length === 0 || hangBottom.length === 0) return null;
 
-  const maxSupX = Math.max(...supportedBottom.map(([x]) => x));
-  const minSupX = Math.min(...supportedBottom.map(([x]) => x));
-  const minHangX = Math.min(...hangBottom.map(([x]) => x));
-  const maxHangX = Math.max(...hangBottom.map(([x]) => x));
+  const maxSupX = maxOf(supportedBottom.map(([x]) => x));
+  const minSupX = minOf(supportedBottom.map(([x]) => x));
+  const minHangX = minOf(hangBottom.map(([x]) => x));
+  const maxHangX = maxOf(hangBottom.map(([x]) => x));
   // Hang must be entirely on one side of the support span
   const hangRight = minHangX > maxSupX;
   const hangLeft = maxHangX < minSupX;
@@ -369,10 +372,10 @@ const animateTip = (plan: TipPlan): Promise<void> => {
       : TIP_ROTATE_FRAMES;
     const tick = (delta: number) => {
       // Clamp so a long hitch can't skip the end snap / resolve forever
-      frame += Math.min(delta, 3);
-      const t = Math.min(1, frame / duration);
+      frame += clamp(delta, 0, 3);
+      const t = unitInterval(frame / duration);
       // Ease-in: slow at balance, then accelerates (gravity on the lever)
-      const e = t * t;
+      const e = easeInQuad(t);
       const theta = angleEnd * e;
 
       members.forEach(({ sp }, i) => {
@@ -394,7 +397,7 @@ const animateTip = (plan: TipPlan): Promise<void> => {
         members.forEach(({ sp }, i) => {
           const p = poses[i];
           sp.sprite.rotation = p.startRot + angleEnd;
-          sp.sprite.zIndex = Math.max(0, (sp.sprite.zIndex || 0) - 100);
+          sp.sprite.zIndex = nonNegative((sp.sprite.zIndex || 0) - 100);
           // Commit cells by tip geometry — never via primaryFromSprite re-derive
           commitTipLanding(
             sp,

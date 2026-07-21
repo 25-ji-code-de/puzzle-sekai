@@ -2,6 +2,7 @@
  * Lazy-load Rapier2D WASM for truePhysics.
  * Idempotent; never statically imported from boot shell.
  */
+import { devWarn } from "../../util/dev-log";
 
 export type RapierMod = typeof import("@dimforge/rapier2d-compat");
 
@@ -32,7 +33,7 @@ export const loadRapier = (): Promise<RapierMod> => {
       .catch((err) => {
         loadFailed = true;
         initPromise = null;
-        console.warn("[truePhysics] Rapier failed to load", err);
+        devWarn("[truePhysics] Rapier failed to load", err);
         throw err;
       });
   }

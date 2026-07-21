@@ -5,6 +5,8 @@ import { getAccessToken, logout } from "../auth";
 import { GATEWAY_BASE, SYNC_PROJECT } from "../auth/config";
 import { parsePicoSyncData } from "./merge";
 import type { PicoSyncData } from "./types";
+import { nonNegative } from "../util/clamp";
+import { toNonNegInt } from "../util/number";
 
 export type CloudSyncEnvelope = {
   user_id?: string;
@@ -53,7 +55,7 @@ export const fetchCloudSync = async (): Promise<CloudSyncEnvelope | null> => {
     user_id: json.user_id,
     project: json.project || SYNC_PROJECT,
     data: parsePicoSyncData(json.data),
-    version: Number(json.version) || 0,
+    version: toNonNegInt(json.version),
     updated_at: json.updated_at ?? null,
   };
 };
@@ -73,7 +75,7 @@ export const uploadCloudSync = async (
     headers,
     body: JSON.stringify({
       project: SYNC_PROJECT,
-      version: Math.max(0, cloudVersion),
+      version: nonNegative(cloudVersion),
       data,
     }),
   });
@@ -94,7 +96,7 @@ export const uploadCloudSync = async (
   return {
     success: json.success !== false,
     data: parsed,
-    version: Number(json.version) || cloudVersion + 1,
-    updated_at: Number(json.updated_at) || Date.now(),
+    version: toNonNegInt(json.version, cloudVersion + 1),
+    updated_at: toNonNegInt(json.updated_at, Date.now()),
   };
 };

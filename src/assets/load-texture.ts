@@ -12,6 +12,7 @@
 import * as PIXI from "pixi.js-legacy";
 import { app } from "../runtime";
 import { getNetworkHints } from "./bandwidth-gate";
+import { clamp, clampCount } from "../util/clamp";
 
 /** URL string, or named entry (`resources[name]` ← url). */
 export type LoaderEntry = string | { name: string; url: string };
@@ -152,7 +153,7 @@ const mapPool = async <T, R>(
   const results: R[] = new Array(items.length);
   let next = 0;
   const workers = Array.from(
-    { length: Math.min(limit, items.length) },
+    { length: clampCount(limit, items.length) },
     async () => {
       while (next < items.length) {
         const i = next++;
@@ -196,7 +197,7 @@ export const ensureTextures = async (
   let done = 0;
   const total = list.length;
   const report = () => {
-    onProgress?.(Math.min(100, Math.round((done / total) * 100)));
+    onProgress?.(clamp(Math.round((done / total) * 100), 0, 100));
   };
 
   const limit = concurrency ?? defaultWarmConcurrency();

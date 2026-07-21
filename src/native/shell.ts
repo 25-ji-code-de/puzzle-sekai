@@ -5,6 +5,7 @@
  * Uses static-looking dynamic imports of known package names so Vite can
  * resolve them at build time.
  */
+import { devWarn } from "../util/dev-log";
 
 /** Open an https URL in the OS default browser (not the app webview). */
 export const openExternalUrl = async (url: string): Promise<boolean> => {
@@ -31,7 +32,7 @@ export const openExternalUrl = async (url: string): Promise<boolean> => {
     window.open(url, "_blank", "noopener,noreferrer");
     return true;
   } catch (e) {
-    console.warn("[native] openExternalUrl failed", e);
+    devWarn("[native] openExternalUrl failed", e);
     return false;
   }
 };
@@ -67,8 +68,8 @@ export const applyWindowDisplayMode = async (
     } catch {
       /* already windowed */
     }
-  } catch {
-    /* not Tauri */
+  } catch (e) {
+    devWarn("[native] applyWindowDisplayMode failed (or not Tauri)", e);
   }
 };
 
@@ -95,6 +96,6 @@ export const applyImmersiveSystemUi = async (): Promise<void> => {
       /* optional */
     }
   } catch (e) {
-    console.warn("[native] StatusBar hide failed", e);
+    devWarn("[native] StatusBar hide failed", e);
   }
 };

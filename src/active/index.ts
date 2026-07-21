@@ -30,9 +30,11 @@ import {
   getCurrentSettings,
   getSpeedMultiplier,
   getSpawnRotation,
+} from "../settings";
+import {
   setReplayLiveControlTarget,
   type ReplayControlTarget,
-} from "../settings";
+} from "../replay";
 import {
   onShihoLanded,
   consumeKanadeSlowForSpawn,
@@ -60,26 +62,14 @@ import {
   stepShiftX,
   tryRotate,
 } from "../board/dynamics";
+import { nonNegative } from "../util/clamp";
+import { nearestIndex } from "../util/nearest";
 
 export { nextCharacter, initRNG, randomCharacter } from "./rng";
 export { getMatchSeed } from "../domain/prng";
 export { fly, showNextPiece } from "./preview";
 export { createNeneRobo, neneRoboFall } from "./nenerobo";
 export { disposeAllActivePieces } from "./lifecycle";
-
-/** Index of the value in `list` nearest to `target`. Assumes list is non-empty. */
-const nearestIndex = (list: number[], target: number): number => {
-  let idx = 0;
-  let best = Math.abs(list[0] - target);
-  for (let i = 1; i < list.length; i++) {
-    const d = Math.abs(list[i] - target);
-    if (d < best) {
-      best = d;
-      idx = i;
-    }
-  }
-  return idx;
-};
 
 /** Land / drop pixel Y for a live standard piece. */
 const landYFor = (sprite: PIXI.Sprite): number => {
@@ -188,7 +178,7 @@ export const createPiece = async (
 
   const pieceY = () => {
     const rawY = (piece.y - BOX_SIZE / 2) / BOX_SIZE;
-    return Math.max(0, Math.ceil(rawY));
+    return Math.ceil(nonNegative(rawY));
   };
 
   const tryShiftToCol = (fromCol: number, targetCol: number, y: number) => {

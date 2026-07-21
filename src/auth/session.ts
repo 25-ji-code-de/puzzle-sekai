@@ -10,6 +10,9 @@ import {
   PASS_CLIENT_ID,
   PASS_ISSUER,
 } from "./config";
+import { devWarn } from "../util/dev-log";
+import { safeJsonParse } from "../util/json";
+import { toNonNegInt } from "../util/number";
 
 export type AuthUser = {
   id: string;
@@ -79,20 +82,16 @@ export const savePkcePending = (p: PkcePending): void => {
 };
 
 export const loadPkcePending = (): PkcePending | null => {
-  try {
-    const raw = readPkceRaw();
-    if (!raw) return null;
-    const o = JSON.parse(raw) as Partial<PkcePending>;
-    if (!o.verifier || !o.state || !o.redirectUri) return null;
-    return {
-      verifier: o.verifier,
-      state: o.state,
-      nonce: o.nonce || "",
-      redirectUri: o.redirectUri,
-    };
-  } catch {
-    return null;
-  }
+  const raw = readPkceRaw();
+  if (!raw) return null;
+  const o = safeJsonParse<Partial<PkcePending>>(raw);
+  if (!o?.verifier || !o.state || !o.redirectUri) return null;
+  return {
+    verifier: o.verifier,
+    state: o.state,
+    nonce: o.nonce || "",
+    redirectUri: o.redirectUri,
+  };
 };
 
 export const clearPkcePending = (): void => {
@@ -107,12 +106,12 @@ export const loadSession = (): AuthSession | null => {
   try {
     const raw = getStoragePort().get(AUTH_STORAGE_KEY);
     if (!raw) return null;
-    const o = JSON.parse(raw) as Partial<AuthSession>;
-    if (!o.accessToken || !o.user?.id || !o.user?.username) return null;
+    const o = safeJsonParse<Partial<AuthSession>>(raw);
+    if (!o?.accessToken || !o.user?.id || !o.user?.username) return null;
     return {
       accessToken: o.accessToken,
       refreshToken: o.refreshToken,
-      expiresAt: Number(o.expiresAt) || 0,
+      expiresAt: toNonNegInt(o.expiresAt),
       user: {
         id: o.user.id,
         username: o.user.username,
@@ -129,7 +128,7 @@ export const saveSession = (session: AuthSession): void => {
   try {
     getStoragePort().set(AUTH_STORAGE_KEY, JSON.stringify(session));
   } catch (e) {
-    console.warn("[auth] save session failed", e);
+    devWarn("[auth] save session failed", e);
   }
 };
 
@@ -194,7 +193,7 @@ export const getAccessToken = async (): Promise<string | null> => {
     saveSession(next);
     return next.accessToken;
   } catch (e) {
-    console.warn("[auth] refresh failed", e);
+    devWarn("[auth] refresh failed", e);
     clearSession();
     return null;
   }

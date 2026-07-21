@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 
+/** Injected from package.json via vite.config `define` — single ship version. */
+declare const __APP_VERSION__: string;
+
 interface ImportMetaEnv {
   readonly VITE_SEKAI_PASS_ISSUER?: string;
   readonly VITE_SEKAI_PASS_CLIENT_ID?: string;

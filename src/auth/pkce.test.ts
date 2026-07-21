@@ -3,6 +3,7 @@
  */
 import { describe, it, expect } from "vitest";
 import {
+  b64url,
   generateCodeChallenge,
   generateCodeVerifier,
   generateNonce,
@@ -24,6 +25,22 @@ describe("randomString", () => {
     const b = randomString(8);
     // astronomically unlikely to collide
     expect(a).not.toBe(b);
+  });
+});
+
+describe("b64url", () => {
+  it("encodes without + / =", () => {
+    // bytes that produce + and / in standard base64
+    const bytes = new Uint8Array([0xfb, 0xff, 0xfe]);
+    const s = b64url(bytes);
+    expect(s).toMatch(/^[A-Za-z0-9_-]*$/);
+    expect(s.includes("+")).toBe(false);
+    expect(s.includes("/")).toBe(false);
+    expect(s.includes("=")).toBe(false);
+  });
+
+  it("handles empty buffer", () => {
+    expect(b64url(new Uint8Array(0))).toBe("");
   });
 });
 

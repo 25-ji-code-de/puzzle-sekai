@@ -2,17 +2,22 @@
  * Auth / gateway endpoints from Vite env.
  * client_id is public; never put a client_secret in the frontend.
  */
-export const PASS_ISSUER = (
-  import.meta.env.VITE_SEKAI_PASS_ISSUER || "https://id.nightcord.de5.net"
-).replace(/\/$/, "");
+
+/** Strip a trailing slash from origin/base URLs. */
+export const stripTrailingSlash = (url: string): string =>
+  url.replace(/\/$/, "");
+
+export const PASS_ISSUER = stripTrailingSlash(
+  import.meta.env.VITE_SEKAI_PASS_ISSUER || "https://id.nightcord.de5.net",
+);
 
 export const PASS_CLIENT_ID = String(
   import.meta.env.VITE_SEKAI_PASS_CLIENT_ID || "",
 ).trim();
 
-export const GATEWAY_BASE = (
-  import.meta.env.VITE_GATEWAY_BASE || "https://api.nightcord.de5.net"
-).replace(/\/$/, "");
+export const GATEWAY_BASE = stripTrailingSlash(
+  import.meta.env.VITE_GATEWAY_BASE || "https://api.nightcord.de5.net",
+);
 
 export const SYNC_PROJECT = String(
   import.meta.env.VITE_SYNC_PROJECT || "pico",
@@ -34,23 +39,34 @@ export const NATIVE_REDIRECT_URI = String(
 ).trim();
 
 /**
+ * Build a web redirect_uri from origin + pathname (pure).
+ * Native shells do not use this — they use NATIVE_REDIRECT_URI.
+ */
+export const webRedirectUriFromLocation = (
+  origin: string,
+  pathname: string,
+): string => {
+  if (pathname.endsWith(".html")) {
+    const dir = pathname.replace(/[^/]+$/, "");
+    return `${origin}${dir}`;
+  }
+  const base = pathname.endsWith("/")
+    ? pathname
+    : pathname.replace(/[^/]*$/, "");
+  return `${origin}${base || "/"}`;
+};
+
+/**
  * OAuth redirect_uri must match Pass applications.redirect_uris exactly.
  * Native shells use a fixed custom scheme; web uses the current page origin.
  */
 export const redirectUri = (): string => {
   if (isNativeBuild()) return NATIVE_REDIRECT_URI;
   if (typeof window === "undefined") return "http://localhost:7426/";
-  const { origin, pathname } = window.location;
-  // Static site at root (or subpath). Prefer origin + directory of index.
-  if (pathname.endsWith(".html")) {
-    const dir = pathname.replace(/[^/]+$/, "");
-    return `${origin}${dir}`;
-  }
-  // Ensure trailing slash for consistency with registered URIs.
-  const base = pathname.endsWith("/")
-    ? pathname
-    : pathname.replace(/[^/]*$/, "");
-  return `${origin}${base || "/"}`;
+  return webRedirectUriFromLocation(
+    window.location.origin,
+    window.location.pathname,
+  );
 };
 
 export const isAuthConfigured = (): boolean => PASS_CLIENT_ID.length > 0;

@@ -6,6 +6,7 @@
  * - restores focus to the previously focused element on release
  * - optional Escape → onEscape
  */
+import { nextTabIndex, shouldWrapTab } from "./focus-trap-math";
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -107,19 +108,26 @@ export const trapFocus = (
       return;
     }
 
-    const first = list[0];
-    const last = list[list.length - 1];
     const active = document.activeElement as HTMLElement | null;
+    const activeIndex =
+      active && root.contains(active) ? list.indexOf(active) : -1;
 
-    if (e.shiftKey) {
-      if (!active || active === first || !root.contains(active)) {
-        e.preventDefault();
-        last.focus();
-      }
-    } else if (!active || active === last || !root.contains(active)) {
-      e.preventDefault();
-      first.focus();
+    if (!shouldWrapTab(list.length, activeIndex, e.shiftKey)) {
+      // Browser moves focus naturally inside the list.
+      return;
     }
+
+    e.preventDefault();
+    const next = nextTabIndex(list.length, activeIndex, e.shiftKey);
+    if (next == null) {
+      try {
+        root.focus({ preventScroll: true });
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    list[next]!.focus();
   };
 
   // Capture so game hotkeys (Esc / P) don't steal while a menu dialog is open.
@@ -149,3 +157,5 @@ export const trapFocus = (
 
   return { release };
 };
+
+export { nextTabIndex, shouldWrapTab } from "./focus-trap-math";

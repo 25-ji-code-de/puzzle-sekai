@@ -6,6 +6,9 @@
  * Web builds keep using fetch().
  */
 import { isNativeBuild } from "../auth/config";
+import { devWarn } from "../util/dev-log";
+import { safeJsonParse } from "../util/json";
+import { toNonNegInt } from "../util/number";
 
 export type HttpResult = {
   ok: boolean;
@@ -14,13 +17,16 @@ export type HttpResult = {
   json: <T = unknown>() => T;
 };
 
-const toResult = (status: number, text: string): HttpResult => ({
+/** Pure: map status + body into HttpResult (exported for tests). */
+export const toHttpResult = (status: number, text: string): HttpResult => ({
   ok: status >= 200 && status < 300,
   status,
   text,
-  json: <T = unknown>() => JSON.parse(text || "null") as T,
+  json: <T = unknown>() =>
+    safeJsonParse<T>(text || "null", null as T | null) as T,
 });
 
+const toResult = toHttpResult;
 /** POST application/x-www-form-urlencoded. */
 export const postForm = async (
   url: string,
@@ -43,9 +49,9 @@ export const postForm = async (
           : res.data != null
             ? JSON.stringify(res.data)
             : "";
-      return toResult(Number(res.status) || 0, text);
+      return toResult(toNonNegInt(res.status), text);
     } catch (e) {
-      console.warn("[native-http] CapacitorHttp POST failed, falling back", e);
+      devWarn("[native-http] CapacitorHttp POST failed, falling back", e);
     }
   }
 
@@ -79,9 +85,9 @@ export const getJson = async (
           : res.data != null
             ? JSON.stringify(res.data)
             : "";
-      return toResult(Number(res.status) || 0, text);
+      return toResult(toNonNegInt(res.status), text);
     } catch (e) {
-      console.warn("[native-http] CapacitorHttp GET failed, falling back", e);
+      devWarn("[native-http] CapacitorHttp GET failed, falling back", e);
     }
   }
 

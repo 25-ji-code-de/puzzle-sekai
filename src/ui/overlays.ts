@@ -1,5 +1,6 @@
 import { t } from "../i18n";
 import type { FocusTrapHandle } from "../a11y";
+import { APP_VERSION } from "../config";
 import {
   armDialogFocus,
   buildDialogButton,
@@ -184,6 +185,7 @@ export const showAboutOverlay = () => {
     return span;
   };
 
+  card.appendChild(row(t("about.version"), APP_VERSION));
   card.appendChild(
     row(
       t("footer.original"),

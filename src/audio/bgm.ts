@@ -21,6 +21,7 @@ import bgm182_1 from "../assets/sounds/182.1.mp3";
 import bgm182_2 from "../assets/sounds/182.2.mp3";
 import { getNetworkHints, whenAudioAllowed } from "../assets/bandwidth-gate";
 import { getVolumeScale } from "../settings";
+import { devWarn } from "../util/dev-log";
 
 export type BgmKey =
   "bgm038" | "bgm168" | "bgm161_1" | "bgm161_2" | "bgm182_1" | "bgm182_2";
@@ -53,8 +54,8 @@ export const setLiveBgm = (s: PIXI.sound.Sound | null): void => {
   if (s) {
     try {
       s.volume = getVolumeScale("bgm");
-    } catch {
-      /* ignore */
+    } catch (e) {
+      devWarn("[audio] setLiveBgm volume failed", e);
     }
   }
 };
@@ -64,15 +65,15 @@ export const applyBgmVolume = (): void => {
   const scale = getVolumeScale("bgm");
   try {
     if (liveBgm) liveBgm.volume = scale;
-  } catch {
-    /* ignore */
+  } catch (e) {
+    devWarn("[audio] applyBgmVolume live failed", e);
   }
   // Keep idle cached tracks in sync so the next play isn't stuck at an old gain.
   cache.forEach((s) => {
     try {
       s.volume = scale;
-    } catch {
-      /* ignore */
+    } catch (e) {
+      devWarn("[audio] applyBgmVolume cache failed", e);
     }
   });
 };
@@ -146,7 +147,7 @@ const waitUntilLoaded = (
         return;
       }
       if (Date.now() - t0 > 60_000) {
-        console.warn(`Timed out waiting for BGM ${key}`);
+        devWarn(`Timed out waiting for BGM ${key}`);
         resolve(null);
         return;
       }
@@ -195,7 +196,7 @@ const startLoad = (key: BgmKey): Promise<PIXI.sound.Sound | null> => {
           singleInstance: true,
           loaded: (err, loadedSound) => {
             if (err || !loadedSound) {
-              console.warn(`Failed to load BGM ${key}:`, err);
+              devWarn(`Failed to load BGM ${key}:`, err);
               done(null);
               return;
             }

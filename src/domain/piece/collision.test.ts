@@ -3,12 +3,10 @@
  */
 import { describe, it, expect } from "vitest";
 import { footprintCollides, willCollidePrimary } from "./collision";
-import type { BoardGrid } from "./grid-write";
 import { cell } from "../types/cell";
+import { emptyBoardGrid } from "../../test/empty-grid";
 
-const emptyGrid = (rows = 4, cols = 4): BoardGrid =>
-  Array.from({ length: rows }, () => Array.from({ length: cols }, () => null));
-
+const emptyGrid = (rows = 4, cols = 4) => emptyBoardGrid(rows, cols);
 describe("footprintCollides", () => {
   it("empty footprint never collides", () => {
     expect(footprintCollides(emptyGrid(), [])).toBe(false);

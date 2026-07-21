@@ -2,7 +2,7 @@
  * clearAppData / clearAppCaches — StoragePort + Cache Storage isolation.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { clearAppCaches, clearAppData } from "./data";
+import { clearAppCaches, clearAppData, isAppStorageKey } from "./data";
 import { SETTINGS_KEY } from "./types";
 import { localStoragePort, setStoragePort, type StoragePort } from "./storage";
 
@@ -37,6 +37,28 @@ beforeEach(() => {
 
 afterEach(() => {
   setStoragePort(localStoragePort);
+});
+
+describe("isAppStorageKey", () => {
+  it("matches settings, locale, dan, replays, sync meta, hs buckets", () => {
+    expect(isAppStorageKey(SETTINGS_KEY)).toBe(true);
+    expect(isAppStorageKey("puzzleSekaiLocale")).toBe(true);
+    expect(isAppStorageKey("puzzleSekaiDan")).toBe(true);
+    expect(isAppStorageKey("puzzleSekaiReplays")).toBe(true);
+    expect(isAppStorageKey("puzzleSekaiSyncMeta")).toBe(true);
+    expect(isAppStorageKey("hs:endless:4:std")).toBe(true);
+    expect(isAppStorageKey("hs:timeAttack:90:3:ent")).toBe(true);
+    expect(isAppStorageKey("hs:daily:2026-07-19:2:std")).toBe(true);
+    expect(isAppStorageKey("highScore_endless")).toBe(true);
+    expect(isAppStorageKey("highScore_endless_difficulty")).toBe(true);
+    expect(isAppStorageKey("highScore_timeAttack_90")).toBe(true);
+  });
+
+  it("never matches auth or unrelated keys", () => {
+    expect(isAppStorageKey("puzzleSekaiAuth")).toBe(false);
+    expect(isAppStorageKey("unrelated-key")).toBe(false);
+    expect(isAppStorageKey("hs:other:1")).toBe(false);
+  });
 });
 
 describe("clearAppData", () => {

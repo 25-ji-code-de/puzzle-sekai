@@ -6,8 +6,15 @@
 import { ROWS } from "../../config";
 import type { BoardCell, BoardGrid, Cell } from "../types";
 import { bottomCells, translateCells } from "./cells";
+import { minOf } from "../../util/minmax";
 
 export type { BoardGrid, Cell };
+
+/** Allocate an empty rectangular occupancy grid. */
+export const createEmptyBoardGrid = (rows: number, cols: number): BoardGrid =>
+  Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => null as BoardCell),
+  );
 
 /** Write token into each footprint cell (in-bounds only). */
 export const writeFootprint = (
@@ -41,16 +48,16 @@ export const maxDropDistance = (
   rows: number = ROWS,
 ): number => {
   if (!coords.length) return 0;
-  let drop = Infinity;
+  const drops: number[] = [];
   for (const [x, y] of coords) {
     let d = 0;
     for (let ny = y + 1; ny < rows; ny++) {
       if (grid[ny]?.[x] != null) break;
       d++;
     }
-    drop = Math.min(drop, d);
+    drops.push(d);
   }
-  return drop === Infinity ? 0 : drop;
+  return minOf(drops, 0);
 };
 
 /** True if every bottom cell has empty space (or is above floor) beneath it. */

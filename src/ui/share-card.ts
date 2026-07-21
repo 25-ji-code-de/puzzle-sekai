@@ -22,6 +22,9 @@ import {
   type ScoreSummary,
 } from "../score";
 import { getDifficultyColor, getGroupDisplayColor } from "../settings";
+import { devWarn } from "../util/dev-log";
+import { atLeastOne, clamp, unitInterval } from "../util/clamp";
+import { maxOf, minOf } from "../util/minmax";
 
 // Portrait share image. Content is sized to fill most of the canvas
 // (not sparse type on a big empty plate) so chat thumbnails still read.
@@ -143,7 +146,7 @@ const roundRect = (
   h: number,
   r: number,
 ) => {
-  const radius = Math.min(r, w / 2, h / 2);
+  const radius = minOf([r, w / 2, h / 2]);
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
   ctx.arcTo(x + w, y, x + w, y + h, radius);
@@ -174,7 +177,7 @@ const loadQrImage = async (
       img.src = dataUrl;
     });
   } catch (e) {
-    console.warn("[share] qr", e);
+    devWarn("[share] qr", e);
     return null;
   }
 };
@@ -344,7 +347,7 @@ const drawCard = (
     ctx.font = `600 28px ${mono}`;
     const capW = ctx.measureText(caption).width;
     const targetW = letterW * 0.9;
-    const s = capW > 0 ? Math.min(1, targetW / capW) : 1;
+    const s = capW > 0 ? unitInterval(targetW / capW) : 1;
     ctx.save();
     ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
     ctx.textAlign = "center";
@@ -359,7 +362,7 @@ const drawCard = (
   }
 
   // Clear the rank block before hero score.
-  y = Math.max(y + 70, rankTop + RANK_PX + 44);
+  y = maxOf([y + 70, rankTop + RANK_PX + 44]);
 
   // —— Hero score (dominates the card) ——
   ctx.textAlign = "center";
@@ -435,10 +438,11 @@ const drawCard = (
   const bottomBottom = CARD_H - PAD - footerReserve;
   const comboTop = bottomTop;
 
-  const groupCount = Math.max(1, groups.length);
-  const groupRowH = Math.min(
+  const groupCount = atLeastOne(groups.length);
+  const groupRowH = clamp(
+    Math.floor((bottomBottom - bottomTop - 8) / groupCount),
+    48,
     64,
-    Math.max(48, Math.floor((bottomBottom - bottomTop - 8) / groupCount)),
   );
   const groupCountX = leftX + Math.floor(CARD_W * 0.48);
 
@@ -635,7 +639,7 @@ export const shareScoreCard = async (summary: ScoreSummary): Promise<void> => {
         ? String((err as { name: unknown }).name)
         : "";
     if (name === "AbortError") return;
-    console.warn("[share] capacitor share failed, falling back", err);
+    devWarn("[share] capacitor share failed, falling back", err);
   }
 
   if (canShareFiles(file)) {
