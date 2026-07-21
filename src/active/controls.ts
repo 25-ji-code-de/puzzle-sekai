@@ -49,8 +49,9 @@ const isTypingTarget = (target: EventTarget | null): boolean => {
 
 /**
  * Bind controls; returns a dispose function that removes every listener.
- * Pass `hold` in continuous mode so left/right key edges update hold-move
- * state (browser key-repeat is suppressed; hold-move ticks instead).
+ * Pass `hold` in continuous mode so left/right key edges only arm/disarm
+ * hold-strafe (per-frame motion lives on gameTicker — no discrete first step,
+ * no browser key-repeat).
  */
 export const bindPieceControls = (
   actions: PieceControlActions,
@@ -71,11 +72,9 @@ export const bindPieceControls = (
     switch (key) {
       case "arrowleft":
         if (hold) {
-          // Hold mode: edge sets state; first press moves immediately.
-          // Browser repeat is ignored — hold-move drives further steps.
-          hold.setLeftHeld(true);
+          // Continuous: edge arms strafe; browser repeat ignored.
           if (!event.repeat) {
-            (swapped ? actions.moveRight : actions.moveLeft)();
+            hold.setLeftHeld(true);
             recordReplayAction(swapped ? "R" : "L");
           }
         } else {
@@ -85,9 +84,8 @@ export const bindPieceControls = (
         break;
       case "arrowright":
         if (hold) {
-          hold.setRightHeld(true);
           if (!event.repeat) {
-            (swapped ? actions.moveLeft : actions.moveRight)();
+            hold.setRightHeld(true);
             recordReplayAction(swapped ? "L" : "R");
           }
         } else {

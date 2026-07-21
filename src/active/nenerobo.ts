@@ -16,6 +16,7 @@ import {
   FALL_SPEED,
   STAGE_HEIGHT,
   continuousMoveStep,
+  continuousStrafeSpeed,
   CONTINUOUS_MOVE_STEP,
 } from "../config";
 import { getGrid } from "../game/board-state";
@@ -134,6 +135,7 @@ export const createNeneRobo = async (
   const funSpeedMult = consumeKanadeSlowForSpawn();
   const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
   const moveStep = continuousMoveStep(baseSpeed);
+  const strafeSpeed = continuousStrafeSpeed(baseSpeed);
   const fall = createActiveFall(nenerobo, baseSpeed);
 
   const canLift = fileIsBig2x2(file);
@@ -219,7 +221,27 @@ export const createNeneRobo = async (
   };
 
   const hold = isContinuousPhysics()
-    ? startHoldMove({ moveLeft, moveRight })
+    ? startHoldMove(
+        {
+          shift: (direction, distance) => {
+            if (!isDisplayAlive(nenerobo)) return false;
+            const nx = stepShiftX(
+              KIND,
+              nenerobo.x,
+              nenerobo.y,
+              nenerobo.rotation,
+              direction,
+              distance,
+              nenerobo,
+            );
+            if (nx === null) return false;
+            nenerobo.x = nx;
+            fall.onMoved();
+            return true;
+          },
+        },
+        strafeSpeed,
+      )
     : undefined;
   const unbind = bindPieceControls(controls, hold);
   setReplayLiveControlTarget(controls);

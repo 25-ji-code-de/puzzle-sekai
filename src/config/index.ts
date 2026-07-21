@@ -31,9 +31,24 @@ export const avatar_Y = 175;
 export const FALL_DELAY = 10;
 export const FALL_SPEED = 8 * SPEED;
 
-/** Pixels per horizontal input event in continuous (truePhysics) mode. */
+/**
+ * Continuous (truePhysics) horizontal strafe speed, in px per PIXI ticker
+ * delta unit (≈ px/frame at 60fps). Matches the fall integration style so
+ * hold-to-move feels as smooth as gravity.
+ * 4 → ~240 px/s ≈ 1.8 cells/s at base SPEED.
+ */
+export const CONTINUOUS_STRAFE_SPEED = 4;
+
+/** Strafe speed scaled to the piece's fall speed (faster fall → faster strafe). */
+export const continuousStrafeSpeed = (baseSpeed: number): number =>
+  CONTINUOUS_STRAFE_SPEED * (baseSpeed / SPEED);
+
+/**
+ * One-shot horizontal nudge (swipe / replay / tap-via-action) in continuous mode.
+ * Hold-to-move does NOT use this — it integrates per frame instead.
+ */
 export const CONTINUOUS_MOVE_STEP = 8;
 
-/** Horizontal step scaled to the piece's fall speed (faster fall → faster strafe). */
+/** One-shot step scaled to fall speed. */
 export const continuousMoveStep = (baseSpeed: number): number =>
   CONTINUOUS_MOVE_STEP * (baseSpeed / SPEED);

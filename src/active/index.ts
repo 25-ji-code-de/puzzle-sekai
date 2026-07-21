@@ -14,6 +14,7 @@ import {
   FALL_SPEED,
   STAGE_HEIGHT,
   continuousMoveStep,
+  continuousStrafeSpeed,
 } from "../config";
 import { getGrid } from "../game/board-state";
 import {
@@ -179,6 +180,7 @@ export const createPiece = async (
     consumeKanadeSlowForSpawn() * (isKanade ? getKanadeSelfSpeedMult() : 1);
   const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
   const moveStep = continuousMoveStep(baseSpeed);
+  const strafeSpeed = continuousStrafeSpeed(baseSpeed);
   const activeFall = createActiveFall(piece, baseSpeed);
 
   const currentCol = () =>
@@ -399,12 +401,29 @@ export const createPiece = async (
     tryLift: canLift ? moveUp : undefined,
   };
 
-  // Continuous mode: hold-to-move on gameTicker (not browser key-repeat).
+  // Continuous mode: per-frame strafe on gameTicker (smooth like gravity).
   const hold = isContinuousPhysics()
-    ? startHoldMove({
-        moveLeft: controls.moveLeft,
-        moveRight: controls.moveRight,
-      })
+    ? startHoldMove(
+        {
+          shift: (direction, distance) => {
+            if (!isDisplayAlive(piece)) return false;
+            const nx = stepShiftX(
+              "cell2",
+              piece.x,
+              piece.y,
+              piece.rotation,
+              direction,
+              distance,
+              piece,
+            );
+            if (nx === null) return false;
+            piece.x = nx;
+            activeFall.onMoved();
+            return true;
+          },
+        },
+        strafeSpeed,
+      )
     : undefined;
   const unbind = bindPieceControls(controls, hold);
   setReplayLiveControlTarget(controls);
