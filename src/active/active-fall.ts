@@ -58,6 +58,9 @@ export const createActiveFall = (
   let dropScore = 0;
   let landTimer: number | undefined;
   let falling = false;
+  /** Throttle move clicks so continuous ARR (~30 Hz) does not thrash audio. */
+  let lastMoveSfxAt = 0;
+  const MOVE_SFX_MIN_MS = 55;
 
   const clearLandTimer = () => {
     if (landTimer !== undefined) {
@@ -79,7 +82,11 @@ export const createActiveFall = (
 
   const onMoved = () => {
     clearLandTimer();
-    if (moveSfx) replayLoadedSfx("move", "sfx", SFX_MOVE_BASE);
+    if (!moveSfx) return;
+    const now = performance.now();
+    if (now - lastMoveSfxAt < MOVE_SFX_MIN_MS) return;
+    lastMoveSfxAt = now;
+    replayLoadedSfx("move", "sfx", SFX_MOVE_BASE);
   };
 
   const fireLand = (getLandY: () => number, onLand: () => void) => {

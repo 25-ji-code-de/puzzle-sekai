@@ -17,7 +17,7 @@ import type { LocalPoint } from "./alpha-shape";
 import { buildAlphaShape } from "./alpha-shape";
 import { colliderSpecFor } from "./colliders";
 import { resolveComOffset, type ComOffset } from "./com-table";
-import { poseAabb } from "./pose";
+import { hullsIntersect, hullWithinBounds, poseAabb } from "./pose";
 import { allSettledBodies, getActiveBody, localPointsForSprite } from "./world";
 
 const playLeft = () => BOARD_ORIGIN_X;
@@ -171,7 +171,78 @@ export const snapQuarterTurn = (rotation: number): number => {
   return Math.round(rotation / q) * q;
 };
 
-/** Conservative penetration test using AABBs of settled bodies + walls. */
+/** True when the pose is outside walls / floor (hull-aware when possible). */
+const poseOutOfBounds = (
+  kind: PieceKind,
+  x: number,
+  y: number,
+  rotation: number,
+  pts: LocalPoint[] | undefined,
+): boolean => {
+  if (pts && pts.length >= 3) {
+    return !hullWithinBounds(
+      pts,
+      { x, y, rotation },
+      { minX: playLeft(), maxX: playRight(), maxY: playBottom() },
+      BOUND_EPS,
+    );
+  }
+  const aabb = poseAabb(kind, { x, y, rotation }, pts);
+  return (
+    aabb.minX < playLeft() - BOUND_EPS ||
+    aabb.maxX > playRight() + BOUND_EPS ||
+    aabb.maxY > playBottom() + BOUND_EPS
+  );
+};
+
+/** Soft AABB overlap used when either side lacks a convex hull. */
+const aabbsOverlapSoft = (
+  a: { minX: number; minY: number; maxX: number; maxY: number },
+  b: { minX: number; minY: number; maxX: number; maxY: number },
+): boolean =>
+  a.minX < b.maxX - BODY_EPS &&
+  a.maxX > b.minX + BODY_EPS &&
+  a.minY < b.maxY - BODY_EPS &&
+  a.maxY > b.minY + BODY_EPS;
+
+/** True when the active pose intersects any settled body (hull SAT or AABB). */
+const poseHitsSettled = (
+  kind: PieceKind,
+  x: number,
+  y: number,
+  rotation: number,
+  pts: LocalPoint[] | undefined,
+  self?: PIXI.Sprite,
+): boolean => {
+  const selfPose = { x, y, rotation };
+  const selfHasHull = !!(pts && pts.length >= 3);
+  for (const entry of allSettledBodies()) {
+    if (self && entry.sprite === self) continue;
+    const t = entry.body.translation();
+    const r = entry.body.rotation();
+    const otherPts = entry.localPoints;
+    const otherPose = { x: t.x, y: t.y, rotation: r };
+
+    if (selfHasHull && otherPts && otherPts.length >= 3) {
+      if (hullsIntersect(pts!, selfPose, otherPts, otherPose)) return true;
+      continue;
+    }
+    if (
+      aabbsOverlapSoft(
+        poseAabb(kind, selfPose, pts),
+        poseAabb(entry.kind, otherPose, otherPts),
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
+/**
+ * Conservative penetration test using convex hulls when available, AABBs as fallback.
+ * Uses SAT (Separating Axis Theorem) for hull-hull intersection when both sides have hull data.
+ */
 export const poseIntersectsSolids = (
   kind: PieceKind,
   x: number,
@@ -181,31 +252,8 @@ export const poseIntersectsSolids = (
   self?: PIXI.Sprite,
 ): boolean => {
   const pts = pointsFor(kind, self, x, y, rotation);
-  const aabb = poseAabb(kind, { x, y, rotation }, pts);
-  // Walls / floor — flush contact OK; only reject true out-of-bounds
-  if (aabb.minX < playLeft() - BOUND_EPS) return true;
-  if (aabb.maxX > playRight() + BOUND_EPS) return true;
-  if (aabb.maxY > playBottom() + BOUND_EPS) return true;
-
-  for (const entry of allSettledBodies()) {
-    if (self && entry.sprite === self) continue;
-    const t = entry.body.translation();
-    const other = poseAabb(
-      entry.kind,
-      {
-        x: t.x,
-        y: t.y,
-        rotation: entry.body.rotation(),
-      },
-      entry.localPoints,
-    );
-    const overlapX =
-      aabb.minX < other.maxX - BODY_EPS && aabb.maxX > other.minX + BODY_EPS;
-    const overlapY =
-      aabb.minY < other.maxY - BODY_EPS && aabb.maxY > other.minY + BODY_EPS;
-    if (overlapX && overlapY) return true;
-  }
-  return false;
+  if (poseOutOfBounds(kind, x, y, rotation, pts)) return true;
+  return poseHitsSettled(kind, x, y, rotation, pts, self);
 };
 
 /** Lowest y the piece can sit without intersecting (scan downward). */

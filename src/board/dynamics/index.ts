@@ -97,6 +97,7 @@ export {
   maxShiftX,
   stepShiftX,
 } from "./active-queries";
+export { hullsIntersect, hullWithinBounds } from "./pose";
 export { commitLandContinuous } from "./continuous-land";
 export { findClearEntities } from "./clear-entities";
 export { massOfKind } from "./colliders";

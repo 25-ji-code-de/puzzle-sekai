@@ -13,6 +13,8 @@ import {
   FALL_DELAY,
   FALL_SPEED,
   STAGE_HEIGHT,
+  continuousMoveStep,
+  continuousStrafeSpeed,
 } from "../config";
 import { getGrid } from "../game/board-state";
 import {
@@ -48,6 +50,7 @@ import {
 } from "../characters/ids";
 import { bindPieceControls } from "./controls";
 import { createActiveFall } from "./active-fall";
+import { startHoldMove } from "./hold-move";
 import { isDisplayAlive, registerActivePiece } from "./lifecycle";
 import { loadTexture } from "../assets/load-texture";
 import {
@@ -166,6 +169,8 @@ export const createPiece = async (
   const funSpeedMult =
     consumeKanadeSlowForSpawn() * (isKanade ? getKanadeSelfSpeedMult() : 1);
   const baseSpeed = SPEED * speedMultiplier * funSpeedMult;
+  const moveStep = continuousMoveStep(baseSpeed);
+  const strafeSpeed = continuousStrafeSpeed(baseSpeed);
   const activeFall = createActiveFall(piece, baseSpeed);
 
   const currentCol = () =>
@@ -180,8 +185,7 @@ export const createPiece = async (
     if (!isDisplayAlive(piece)) return;
     if (targetCol < 0 || targetCol >= COLUMNS || targetCol === fromCol) return;
     if (isContinuousPhysics()) {
-      // Prefer snap to the target column center; if blocked (wide hull / wall),
-      // slide as far as possible in that direction (partial cell).
+      // Move toward target column center without snapping
       const targetX = LEFT_BORDER + targetCol * BOX_SIZE + BOX_SIZE / 2;
       const dir: -1 | 1 = targetX >= piece.x ? 1 : -1;
       const desired = Math.abs(targetX - piece.x) || BOX_SIZE;
@@ -195,8 +199,7 @@ export const createPiece = async (
         piece,
       );
       if (nx === null) return;
-      // Snap when we fully reached the column center
-      piece.x = Math.abs(nx - targetX) < 0.75 ? targetX : nx;
+      piece.x = nx;
       activeFall.onMoved();
       return;
     }
@@ -243,25 +246,18 @@ export const createPiece = async (
   const moveFree = (direction: -1 | 1) => {
     if (!isDisplayAlive(piece)) return;
     if (isContinuousPhysics()) {
-      // Full cell step, else residual slide to wall / rubble
+      // Small pixel increment scaled to fall speed
       const nx = stepShiftX(
         "cell2",
         piece.x,
         piece.y,
         piece.rotation,
         direction,
-        BOX_SIZE,
+        moveStep,
         piece,
       );
       if (nx === null) return;
-      // If we landed near a column center, snap for discrete feel
-      const col = Math.round((nx - LEFT_BORDER - BOX_SIZE / 2) / BOX_SIZE);
-      const centerX = LEFT_BORDER + col * BOX_SIZE + BOX_SIZE / 2;
-      piece.x =
-        Math.abs(nx - centerX) < 0.75 &&
-        canPlaceAt("cell2", centerX, piece.y, piece.rotation, piece)
-          ? centerX
-          : nx;
+      piece.x = nx;
       activeFall.onMoved();
       return;
     }
@@ -395,7 +391,31 @@ export const createPiece = async (
     tryLift: canLift ? moveUp : undefined,
   };
 
-  const unbind = bindPieceControls(controls);
+  // Continuous mode: per-frame strafe on gameTicker (smooth like gravity).
+  const hold = isContinuousPhysics()
+    ? startHoldMove(
+        {
+          shift: (direction, distance) => {
+            if (!isDisplayAlive(piece)) return false;
+            const nx = stepShiftX(
+              "cell2",
+              piece.x,
+              piece.y,
+              piece.rotation,
+              direction,
+              distance,
+              piece,
+            );
+            if (nx === null) return false;
+            piece.x = nx;
+            activeFall.onMoved();
+            return true;
+          },
+        },
+        strafeSpeed,
+      )
+    : undefined;
+  const unbind = bindPieceControls(controls, hold);
   setReplayLiveControlTarget(controls);
 
   app.stage.addChild(piece);
