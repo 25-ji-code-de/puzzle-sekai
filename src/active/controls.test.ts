@@ -18,11 +18,10 @@ vi.mock("../runtime", () => ({
         y: 0,
         toJSON: () => ({}),
       }),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      setPointerCapture: vi.fn(),
     },
-  },
-  hammerManager: {
-    on: vi.fn(),
-    off: vi.fn(),
   },
 }));
 
@@ -33,6 +32,10 @@ vi.mock("../fun/effects", () => ({
 vi.mock("../replay", () => ({
   isReplayPlayback: () => false,
   recordReplayAction: vi.fn(),
+}));
+
+vi.mock("../board/dynamics", () => ({
+  isContinuousPhysics: () => false,
 }));
 
 describe("isLeftHalfOfCanvas", () => {

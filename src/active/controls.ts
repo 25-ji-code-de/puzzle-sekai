@@ -1,14 +1,17 @@
 /**
- * Shared keyboard + Hammer bindings for the active falling piece.
+ * Shared keyboard + touch bindings for the active falling piece.
  * Handles control-swap (Shizuku fun mode) for both standard and 2×2 pieces.
  *
  * Pure input binding only: maps events → action callbacks. Continuous hold
  * repeat lives on gameTicker via hold-move.ts (passed in as optional bridge).
+ * Touch direct-drag lives in touch-controls.ts (Pointer Events, no Hammer).
  */
-import { app, hammerManager } from "../runtime";
+import { app } from "../runtime";
 import { isControlsSwapped } from "../fun/effects";
 import { isReplayPlayback, recordReplayAction } from "../replay";
 import type { HoldMove } from "./hold-move";
+import { bindTouchControls } from "./touch-controls";
+import { isContinuousPhysics } from "../board/dynamics";
 
 export type PieceControlActions = {
   moveLeft: () => void;
@@ -19,10 +22,15 @@ export type PieceControlActions = {
   softDrop: () => void;
   normalSpeed: () => void;
   /**
-   * Optional easter-egg lift (Shift+↑ / swipe up).
+   * Optional easter-egg lift (Shift+↑ / flick up).
    * Called only when the piece opts in (Emu / NeneRobo).
    */
   tryLift?: () => void;
+  /**
+   * Continuous (truePhysics) touch drag: shift by stage pixels.
+   * Return true if the piece actually moved.
+   */
+  shiftBy?: (stageDx: number) => boolean;
 };
 
 /**
@@ -63,7 +71,7 @@ export const isTypingTarget = (target: EventTarget | null): boolean => {
   });
 };
 
-/** Fire a one-shot horizontal move (grid path / swipe / replay). */
+/** Fire a one-shot horizontal move (grid path / replay). */
 const fireHorizontal = (
   actions: PieceControlActions,
   swapped: boolean,
@@ -173,53 +181,17 @@ export const bindPieceControls = (
     if (key === "arrowright") hold.setRightHeld(false);
   };
 
-  const handleSwipeLeft = () =>
-    fireHorizontal(actions, isControlsSwapped(), true);
-  const handleSwipeRight = () =>
-    fireHorizontal(actions, isControlsSwapped(), false);
-  const handleSwipeUp = () => {
-    actions.tryLift?.();
-    recordReplayAction("LF");
-  };
-  const handleTap = (e: HammerInput) => {
-    // Left half of canvas → CCW (or CW when swapped).
-    fireRotate(actions, isControlsSwapped(), !isLeftHalfOfCanvas(e.center.x));
-  };
-  const handlePress = () => {
-    actions.softDrop();
-    recordReplayAction("SD");
-  };
-  const handlePressUp = () => {
-    actions.normalSpeed();
-    recordReplayAction("ND");
-  };
-  const handleHardDrop = () => {
-    actions.hardDrop();
-    recordReplayAction("HD");
-  };
-
   window.addEventListener("keydown", handleKeyPress, false);
   window.addEventListener("keyup", handleKeyUp, false);
 
-  hammerManager.on("swipeleft", handleSwipeLeft);
-  hammerManager.on("swiperight", handleSwipeRight);
-  hammerManager.on("swipedown", handleHardDrop);
-  hammerManager.on("swipeup", handleSwipeUp);
-  hammerManager.on("press", handlePress);
-  hammerManager.on("pressup", handlePressUp);
-  hammerManager.on("tap", handleTap);
+  const unbindTouch = bindTouchControls(actions, {
+    continuous: isContinuousPhysics(),
+  });
 
   return () => {
     window.removeEventListener("keydown", handleKeyPress, false);
     window.removeEventListener("keyup", handleKeyUp, false);
     hold?.stop();
-
-    hammerManager.off("swiperight", handleSwipeRight);
-    hammerManager.off("tap", handleTap);
-    hammerManager.off("swipeleft", handleSwipeLeft);
-    hammerManager.off("swipedown", handleHardDrop);
-    hammerManager.off("swipeup", handleSwipeUp);
-    hammerManager.off("press", handlePress);
-    hammerManager.off("pressup", handlePressUp);
+    unbindTouch();
   };
 };

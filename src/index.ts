@@ -44,7 +44,6 @@ export {
   app,
   bgSprite,
   setBgSprite,
-  hammerManager,
   gameTicker,
   resetGameTicker,
   setState,

@@ -380,7 +380,26 @@ export const createPiece = async (
     activeFall.onMoved();
   };
 
-  const controls: ReplayControlTarget = {
+  const shiftContinuous = (direction: -1 | 1, distance: number): boolean => {
+    if (!isDisplayAlive(piece)) return false;
+    const nx = stepShiftX(
+      "cell2",
+      piece.x,
+      piece.y,
+      piece.rotation,
+      direction,
+      distance,
+      piece,
+    );
+    if (nx === null) return false;
+    piece.x = nx;
+    activeFall.onMoved();
+    return true;
+  };
+
+  const controls: ReplayControlTarget & {
+    shiftBy?: (stageDx: number) => boolean;
+  } = {
     moveLeft: () => moveToAllowedCol(-1),
     moveRight: () => moveToAllowedCol(1),
     rotateCW,
@@ -389,31 +408,19 @@ export const createPiece = async (
     softDrop: activeFall.softDrop,
     normalSpeed: activeFall.normalSpeed,
     tryLift: canLift ? moveUp : undefined,
+    // truePhysics touch drag: follow finger in stage px.
+    shiftBy: continuous
+      ? (stageDx: number) => {
+          if (!stageDx || !Number.isFinite(stageDx)) return false;
+          const direction: -1 | 1 = stageDx < 0 ? -1 : 1;
+          return shiftContinuous(direction, Math.abs(stageDx));
+        }
+      : undefined,
   };
 
   // Continuous mode: per-frame strafe on gameTicker (smooth like gravity).
-  const hold = isContinuousPhysics()
-    ? startHoldMove(
-        {
-          shift: (direction, distance) => {
-            if (!isDisplayAlive(piece)) return false;
-            const nx = stepShiftX(
-              "cell2",
-              piece.x,
-              piece.y,
-              piece.rotation,
-              direction,
-              distance,
-              piece,
-            );
-            if (nx === null) return false;
-            piece.x = nx;
-            activeFall.onMoved();
-            return true;
-          },
-        },
-        strafeSpeed,
-      )
+  const hold = continuous
+    ? startHoldMove({ shift: shiftContinuous }, strafeSpeed)
     : undefined;
   const unbind = bindPieceControls(controls, hold);
   setReplayLiveControlTarget(controls);
@@ -427,7 +434,7 @@ export const createPiece = async (
   }
 
   // Match teardown must unbind / stop fall / drop kinematic body before
-  // sprites are destroyed — otherwise key/swipe handlers hit null transform.
+  // sprites are destroyed — otherwise key/touch handlers hit null transform.
   const release = registerActivePiece(() => {
     setReplayLiveControlTarget(null);
     unbind();

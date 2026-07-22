@@ -96,8 +96,8 @@ export const showControlsOverlay = () => {
     ["", t("controls.pause")],
     [t("controls.mobile"), t("controls.swipeMove"), "mobile"],
     ["", t("controls.tapRotate")],
-    ["", t("controls.swipeHardDrop")],
     ["", t("controls.pressSoftDrop")],
+    ["", t("controls.swipeHardDrop")],
     ["", t("controls.easterEgg"), "note"],
   ];
   for (const [label, value, kind] of rows) {

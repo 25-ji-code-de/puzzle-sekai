@@ -59,3 +59,57 @@ export const CONTINUOUS_MOVE_STEP = 8;
 /** One-shot step scaled to fall speed. */
 export const continuousMoveStep = (baseSpeed: number): number =>
   CONTINUOUS_MOVE_STEP * (baseSpeed / SPEED);
+
+/**
+ * Touch direct-drag tuning — **stage / cell units**, not raw CSS px.
+ * Convert client → stage via letterbox scale, then compare to BOX_SIZE fractions
+ * so phones of different sizes feel the same relative to the board.
+ */
+/** Max press duration that still counts as a rotate tap (ms). */
+export const TOUCH_TAP_MAX_MS = 280;
+/** Dead zone before pan vs tap lock (cells of stage travel). */
+export const TOUCH_DEAD_ZONE_CELLS = 0.2;
+/** Grid: stage travel per column step (cells). Higher = less twitchy. */
+export const TOUCH_GRID_STEP_CELLS = 0.85;
+/**
+ * truePhysics drag gain: stage dx *= gain (1 = 1:1 finger).
+ * Below 1 damps twitch without changing collision step size.
+ */
+export const TOUCH_CONTINUOUS_GAIN = 0.6;
+/** Soft-drop arm distance (cells down from touch origin). */
+export const TOUCH_SOFT_DROP_CELLS = 0.32;
+/**
+ * Soft-drop + steer: extra lateral cells from origin before H is allowed
+ * while soft-dropping (on top of dead zone).
+ */
+export const TOUCH_SOFT_STEER_CELLS = 0.28;
+/** Min |stage dy| for a flick (cells). */
+export const TOUCH_FLICK_MIN_CELLS = 0.55;
+/**
+ * Flick velocity in **stage px / ms** (down positive for hard drop).
+ * Independent of CSS pixel density after letterbox conversion.
+ * ~2.6 ≈ intentional snap, not a slow drag release.
+ */
+export const TOUCH_FLICK_HARD_VEL_STAGE = 2.6;
+export const TOUCH_FLICK_LIFT_VEL_STAGE = 2.2;
+/**
+ * Axis dominance: |primary| must exceed |secondary| * ratio to lock H/V.
+ * Higher = less accidental H lock on mostly-vertical flicks.
+ */
+export const TOUCH_AXIS_DOMINANCE = 1.45;
+/**
+ * Flick must be this much more vertical than horizontal (|dy| >= ratio * |dx|).
+ */
+export const TOUCH_FLICK_VERTICAL_RATIO = 1.8;
+
+/** Stage-px thresholds derived from cell fractions (single source for BOX_SIZE). */
+export const touchStageThresholds = (boxSize: number = BOX_SIZE) => {
+  const b = boxSize > 0 ? boxSize : BOX_SIZE;
+  return {
+    deadZone: b * TOUCH_DEAD_ZONE_CELLS,
+    gridStep: b * TOUCH_GRID_STEP_CELLS,
+    softDrop: b * TOUCH_SOFT_DROP_CELLS,
+    softSteer: b * TOUCH_SOFT_STEER_CELLS,
+    flickMin: b * TOUCH_FLICK_MIN_CELLS,
+  };
+};

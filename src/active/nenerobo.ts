@@ -152,7 +152,7 @@ export const createNeneRobo = async (
     tryMovePrimary(nenerobo, 1, 0, fall.onMoved, moveStep);
   };
 
-  /** Easter egg: Shift+↑ / swipe up lifts one cell when free. */
+  /** Easter egg: Shift+↑ / flick up lifts one cell when free. */
   const tryLift = () => {
     if (!canLift || !isDisplayAlive(nenerobo)) return;
     tryMovePrimary(nenerobo, 0, -1, fall.onMoved);
@@ -211,7 +211,28 @@ export const createNeneRobo = async (
     fall.onMoved();
   };
 
-  const controls: ReplayControlTarget = {
+  const continuous = isContinuousPhysics();
+
+  const shiftContinuous = (direction: -1 | 1, distance: number): boolean => {
+    if (!isDisplayAlive(nenerobo)) return false;
+    const nx = stepShiftX(
+      KIND,
+      nenerobo.x,
+      nenerobo.y,
+      nenerobo.rotation,
+      direction,
+      distance,
+      nenerobo,
+    );
+    if (nx === null) return false;
+    nenerobo.x = nx;
+    fall.onMoved();
+    return true;
+  };
+
+  const controls: ReplayControlTarget & {
+    shiftBy?: (stageDx: number) => boolean;
+  } = {
     moveLeft,
     moveRight,
     rotateCW,
@@ -220,30 +241,17 @@ export const createNeneRobo = async (
     softDrop: fall.softDrop,
     normalSpeed: fall.normalSpeed,
     tryLift: canLift ? tryLift : undefined,
+    shiftBy: continuous
+      ? (stageDx: number) => {
+          if (!stageDx || !Number.isFinite(stageDx)) return false;
+          const direction: -1 | 1 = stageDx < 0 ? -1 : 1;
+          return shiftContinuous(direction, Math.abs(stageDx));
+        }
+      : undefined,
   };
 
-  const hold = isContinuousPhysics()
-    ? startHoldMove(
-        {
-          shift: (direction, distance) => {
-            if (!isDisplayAlive(nenerobo)) return false;
-            const nx = stepShiftX(
-              KIND,
-              nenerobo.x,
-              nenerobo.y,
-              nenerobo.rotation,
-              direction,
-              distance,
-              nenerobo,
-            );
-            if (nx === null) return false;
-            nenerobo.x = nx;
-            fall.onMoved();
-            return true;
-          },
-        },
-        strafeSpeed,
-      )
+  const hold = continuous
+    ? startHoldMove({ shift: shiftContinuous }, strafeSpeed)
     : undefined;
   const unbind = bindPieceControls(controls, hold);
   setReplayLiveControlTarget(controls);

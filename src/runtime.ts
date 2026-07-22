@@ -4,7 +4,6 @@
  * pulling the full loader/boot graph and to break index ↔ states cycles.
  */
 import * as PIXI from "pixi.js-legacy";
-import * as Hammer from "hammerjs";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./config";
 import { atLeastOne } from "./util/clamp";
 
@@ -138,11 +137,6 @@ export let bgSprite: PIXI.Sprite;
 export const setBgSprite = (s: PIXI.Sprite) => {
   bgSprite = s;
 };
-
-export const hammerManager = new Hammer.Manager(app.view);
-hammerManager.add(new Hammer.Swipe());
-hammerManager.add(new Hammer.Tap());
-hammerManager.add(new Hammer.Press());
 
 export let gameTicker = new PIXI.Ticker();
 export const resetGameTicker = () => {

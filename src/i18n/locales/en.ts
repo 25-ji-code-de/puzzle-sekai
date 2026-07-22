@@ -283,12 +283,12 @@ export const en = {
     hardDrop: "Space Hard drop",
     restart: "R Restart",
     pause: "Esc / P Pause (or the top-left button)",
-    swipeMove: "← → Swipe to move",
-    tapRotate: "Tap left half CCW / right half CW",
-    swipeHardDrop: "Swipe down to hard drop",
-    pressSoftDrop: "Hold to soft drop",
+    swipeMove: "Drag to steer",
+    tapRotate: "Short-tap left half CCW / right half CW",
+    swipeHardDrop: "Fast flick down to hard drop",
+    pressSoftDrop: "Drag down to soft drop (still steerable)",
     easterEgg:
-      "While falling, Emu / NeneRobo — keyboard Shift+↑ · touch swipe up — lift one cell",
+      "While falling, Emu / NeneRobo — keyboard Shift+↑ · fast flick up — lift one cell",
   },
   noscript: {
     title: "Browser Not Supported",

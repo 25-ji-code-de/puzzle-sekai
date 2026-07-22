@@ -283,12 +283,12 @@ export const ja = {
     hardDrop: "Space ハードドロップ",
     restart: "R リスタート",
     pause: "Esc / P 一時停止（左上ボタンでも可）",
-    swipeMove: "← → スワイプで左右移動",
-    tapRotate: "左半分タップで反時計 / 右半分で時計回り",
-    swipeHardDrop: "下スワイプでハードドロップ",
-    pressSoftDrop: "長押しで加速落下",
+    swipeMove: "ドラッグで横移動",
+    tapRotate: "左右半分を短くタップで回転（左=反時計 / 右=時計）",
+    swipeHardDrop: "素早い下フリックでハードドロップ",
+    pressSoftDrop: "下へドラッグ長押しでソフトドロップ（横移動と併用可）",
     easterEgg:
-      "えむ / ネネロボ落下中 · キーボード Shift+↑ · タッチ上スワイプ で1マス上昇",
+      "えむ / ネネロボ落下中 · キーボード Shift+↑ · 素早い上フリック で1マス上昇",
   },
   noscript: {
     title: "ブラウザ非対応",
