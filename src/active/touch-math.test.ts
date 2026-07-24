@@ -15,6 +15,7 @@ import {
   softDropWithHysteresis,
   shouldArmSoftDrop,
   shouldReleaseSoftDrop,
+  hitTestZone,
 } from "./touch-math";
 import { BOX_SIZE, touchStageThresholds } from "../config";
 
@@ -139,6 +140,24 @@ describe("isWithinDeadZone", () => {
   it("uses independent axes in stage space", () => {
     expect(isWithinDeadZone(T.deadZone, T.deadZone, T.deadZone)).toBe(true);
     expect(isWithinDeadZone(T.deadZone + 1, 0, T.deadZone)).toBe(false);
+  });
+});
+
+describe("hitTestZone", () => {
+  const rect = { left: 0, top: 0, width: 1000, height: 500 };
+
+  it("hits left / right edges and bottom band", () => {
+    expect(hitTestZone(50, 200, rect)).toBe("left");
+    expect(hitTestZone(950, 200, rect)).toBe("right");
+    expect(hitTestZone(500, 450, rect)).toBe("bottom");
+    expect(hitTestZone(500, 200, rect)).toBe("center");
+    // Just outside 22% edge (220px of 1000)
+    expect(hitTestZone(200, 200, rect)).toBe("left");
+    expect(hitTestZone(221, 200, rect)).toBe("center");
+  });
+
+  it("bottom wins over corners", () => {
+    expect(hitTestZone(20, 480, rect)).toBe("bottom");
   });
 });
 

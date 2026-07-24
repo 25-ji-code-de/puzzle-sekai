@@ -84,6 +84,22 @@ describe("normalizeSettings", () => {
       "fullscreen",
     );
   });
+
+  it("defaults invalid touchControlMode and keeps valid ones", () => {
+    expect(normalizeSettings({}).touchControlMode).toBe("stick");
+    expect(
+      normalizeSettings({ touchControlMode: "virtual-pad" }).touchControlMode,
+    ).toBe("stick");
+    expect(
+      normalizeSettings({ touchControlMode: "gesture" }).touchControlMode,
+    ).toBe("gesture");
+    expect(
+      normalizeSettings({ touchControlMode: "drag" }).touchControlMode,
+    ).toBe("drag");
+    expect(
+      normalizeSettings({ touchControlMode: "zones" }).touchControlMode,
+    ).toBe("zones");
+  });
 });
 
 describe("migrateSettingsPayload", () => {

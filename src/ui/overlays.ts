@@ -1,6 +1,7 @@
 import { t } from "../i18n";
 import type { FocusTrapHandle } from "../a11y";
 import { APP_VERSION } from "../config";
+import { getUserSettings } from "../settings";
 import {
   armDialogFocus,
   buildDialogButton,
@@ -84,6 +85,16 @@ export const showControlsOverlay = () => {
   title.classList.add("ui-dialog__title--spaced");
   overlay.classList.add("ui-overlay--dim");
 
+  const mode = getUserSettings().touchControlMode;
+  const modeKey =
+    mode === "gesture"
+      ? "Gesture"
+      : mode === "drag"
+        ? "Drag"
+        : mode === "zones"
+          ? "Zones"
+          : "Stick";
+
   const table = document.createElement("table");
   table.className = "overlay-table";
   const rows: [string, string, string?][] = [
@@ -94,10 +105,10 @@ export const showControlsOverlay = () => {
     ["", t("controls.hardDrop")],
     ["", t("controls.restart")],
     ["", t("controls.pause")],
-    [t("controls.mobile"), t("controls.swipeMove"), "mobile"],
-    ["", t("controls.tapRotate")],
-    ["", t("controls.pressSoftDrop")],
-    ["", t("controls.swipeHardDrop")],
+    [t("controls.mobile"), t(`controls.mode${modeKey}Move`), "mobile"],
+    ["", t(`controls.mode${modeKey}Rotate`)],
+    ["", t(`controls.mode${modeKey}Soft`)],
+    ["", t(`controls.mode${modeKey}Hard`)],
     ["", t("controls.easterEgg"), "note"],
   ];
   for (const [label, value, kind] of rows) {

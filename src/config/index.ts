@@ -67,15 +67,35 @@ export const continuousMoveStep = (baseSpeed: number): number =>
  */
 /** Max press duration that still counts as a rotate tap (ms). */
 export const TOUCH_TAP_MAX_MS = 280;
+/**
+ * Gesture mode: press-and-hold soft-drop after this many ms (still finger).
+ * Default press time is 251ms.
+ */
+export const TOUCH_GESTURE_PRESS_MS = 251;
+/** Gesture press fails if total stage travel exceeds this many cells. */
+export const TOUCH_GESTURE_PRESS_TOL_CELLS = 0.32;
+/**
+ * Gesture mode: horizontal swipe distance (cells) for one column step.
+ * Larger than dead zone so a light jiggle isn't a move; still one step only.
+ */
+export const TOUCH_GESTURE_SWIPE_CELLS = 0.45;
 /** Dead zone before pan vs tap lock (cells of stage travel). */
 export const TOUCH_DEAD_ZONE_CELLS = 0.2;
 /** Grid: stage travel per column step (cells). Higher = less twitchy. */
 export const TOUCH_GRID_STEP_CELLS = 0.85;
 /**
- * truePhysics drag gain: stage dx *= gain (1 = 1:1 finger).
- * Below 1 damps twitch without changing collision step size.
+ * Drag mode (competitive): continuous finger→piece gain (1 = 1:1 stage px).
+ * Grid still uses TOUCH_GRID_STEP_CELLS accumulation.
  */
-export const TOUCH_CONTINUOUS_GAIN = 0.6;
+export const TOUCH_DRAG_CONTINUOUS_GAIN = 1;
+/** Zones: edge hold column-step interval at full hold (ms). */
+export const TOUCH_ZONES_STEP_MS = 120;
+export const TOUCH_ZONES_STEP_MS_COMPACT = 140;
+/** Zones: first step delay after edge press (ms). */
+export const TOUCH_ZONES_FIRST_STEP_MS = 80;
+/** Zones: center hold charge for hard-drop (ms) — same spirit as stick direct. */
+export const TOUCH_ZONES_HARD_CHARGE_MS = 500;
+export const TOUCH_ZONES_HARD_CHARGE_MS_COMPACT = 540;
 /** Soft-drop arm distance (cells down from touch origin). */
 export const TOUCH_SOFT_DROP_CELLS = 0.32;
 /**

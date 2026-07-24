@@ -22,6 +22,7 @@ import {
   isItemDropRate,
   isSpawnOrientation,
   isDisplayMode,
+  isTouchControlMode,
   isSpeedLevel,
   isTimeAttackDuration,
 } from "./types";
@@ -82,6 +83,9 @@ export function normalizeSettings(raw: unknown): GameSettings {
     displayMode: isDisplayMode(src.displayMode)
       ? src.displayMode
       : resolveDefaultDisplayMode(),
+    touchControlMode: isTouchControlMode(src.touchControlMode)
+      ? src.touchControlMode
+      : DEFAULT_SETTINGS.touchControlMode,
   };
 }
 

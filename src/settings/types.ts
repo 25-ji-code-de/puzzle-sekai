@@ -18,6 +18,15 @@ export type ItemDropRate = 0 | 5 | 10 | 15 | 20 | 30;
  */
 export type DisplayMode = "windowed" | "borderless" | "fullscreen";
 /**
+ * Touch / pointer control scheme (keyboard unchanged).
+ * Applied when the next piece binds controls.
+ * - stick (default): virtual stick + flicks + center charge hard-drop
+ * - gesture: classic swipe / tap / press (no stick UI)
+ * - drag: finger-relative 1:1 steer (competitive)
+ * - zones: edge-hold move + center tap rotate (beginner)
+ */
+export type TouchControlMode = "stick" | "gesture" | "drag" | "zones";
+/**
  * Character spawn facing while falling.
  * - inverted (default): head-down — harder spatial read, ×1.00
  * - upright: head-up — easier, slightly lower score mult
@@ -28,6 +37,13 @@ export const DISPLAY_MODES: readonly DisplayMode[] = [
   "windowed",
   "borderless",
   "fullscreen",
+];
+
+export const TOUCH_CONTROL_MODES: readonly TouchControlMode[] = [
+  "stick",
+  "gesture",
+  "drag",
+  "zones",
 ];
 
 export const SPEED_LEVELS: readonly SpeedLevel[] = [1, 2, 3, 4, 5];
@@ -67,6 +83,10 @@ export interface GameSettings {
   lowPerformance: boolean;
   /** Window / screen mode; applied on start and when the setting changes. */
   displayMode: DisplayMode;
+  /**
+   * Touch control scheme. Read when a piece binds controls (next piece after change).
+   */
+  touchControlMode: TouchControlMode;
 }
 
 export const SPEED_MULTIPLIERS: Record<SpeedLevel, number> = {
@@ -112,6 +132,10 @@ export const isSpawnOrientation = (v: unknown): v is SpawnOrientation =>
 
 export const isDisplayMode = (v: unknown): v is DisplayMode =>
   typeof v === "string" && (DISPLAY_MODES as readonly string[]).includes(v);
+
+export const isTouchControlMode = (v: unknown): v is TouchControlMode =>
+  typeof v === "string" &&
+  (TOUCH_CONTROL_MODES as readonly string[]).includes(v);
 
 export const isItemDropRate = (v: unknown): v is ItemDropRate =>
   typeof v === "number" && (ITEM_DROP_RATES as number[]).includes(v);
@@ -205,6 +229,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
    * resolveDefaultDisplayMode() in load/normalize when the field is absent.
    */
   displayMode: "windowed",
+  /** Default touch scheme — floating stick (current product default). */
+  touchControlMode: "stick",
 };
 
 /**

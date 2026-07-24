@@ -144,6 +144,45 @@ export const canSoftDropSteer = (
   softSteerStage: number,
 ): boolean => Math.abs(stageDxFromOrigin) >= softSteerStage;
 
+/** Zones mode: canvas-relative hit regions (letterbox-safe client coords). */
+export type ZoneKind = "left" | "right" | "bottom" | "center";
+
+export type ZoneLayout = {
+  /** Left/right edge band as fraction of canvas width (0…0.5). */
+  edgeFrac: number;
+  /** Bottom soft-drop band as fraction of canvas height. */
+  bottomFrac: number;
+};
+
+export const DEFAULT_ZONE_LAYOUT: ZoneLayout = {
+  // ~22% each side — easier than 18% without eating the whole half-screen.
+  edgeFrac: 0.22,
+  bottomFrac: 0.2,
+};
+
+/**
+ * Classify a client point into a control zone using the canvas CSS box.
+ * Bottom band wins over left/right in the corners (soft-drop priority).
+ */
+export const hitTestZone = (
+  clientX: number,
+  clientY: number,
+  rect: { left: number; top: number; width: number; height: number },
+  layout: ZoneLayout = DEFAULT_ZONE_LAYOUT,
+): ZoneKind => {
+  const w = rect.width > 0 ? rect.width : 1;
+  const h = rect.height > 0 ? rect.height : 1;
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+  const edge = Math.max(0, Math.min(0.45, layout.edgeFrac)) * w;
+  const bottom = Math.max(0, Math.min(0.5, layout.bottomFrac)) * h;
+
+  if (y >= h - bottom) return "bottom";
+  if (x <= edge) return "left";
+  if (x >= w - edge) return "right";
+  return "center";
+};
+
 /**
  * Virtual stick — **velocity superposition** (stage px, down-positive Y).
  *

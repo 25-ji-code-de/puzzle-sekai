@@ -219,3 +219,158 @@ textarea {
       0 6px 18px rgba(0, 0, 0, 0.35);
   }
 }
+
+/*
+ * Zones hard-drop charge — Cytus II click-note language:
+ * fixed white/cyan inner ring + outer ring that shrinks in from outside.
+ * When they meet → perfect / hard-drop. Crisp strokes, minimal fill.
+ */
+.zones-charge {
+  --zc-r: 26px;
+  --outer-scale: 1.75;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 8500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.08s ease;
+  transform: translate(-50%, -50%);
+
+  &--visible {
+    opacity: 1;
+  }
+
+  /* Soft note body (very light disc, like a hollow click note) */
+  &__fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: calc(var(--zc-r) * 2);
+    height: calc(var(--zc-r) * 2);
+    margin-left: calc(var(--zc-r) * -1);
+    margin-top: calc(var(--zc-r) * -1);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 50% 45%,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(160, 220, 255, 0.06) 55%,
+      transparent 72%
+    );
+  }
+
+  /* Perfect-timing ring (fixed) */
+  &__inner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: calc(var(--zc-r) * 2);
+    height: calc(var(--zc-r) * 2);
+    margin-left: calc(var(--zc-r) * -1);
+    margin-top: calc(var(--zc-r) * -1);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.88);
+    box-shadow:
+      0 0 0 1px rgba(80, 180, 255, 0.35),
+      0 0 10px rgba(120, 210, 255, 0.35);
+    box-sizing: border-box;
+  }
+
+  /* Approach ring — shrinks from outside toward the inner ring */
+  &__outer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: calc(var(--zc-r) * 2);
+    height: calc(var(--zc-r) * 2);
+    margin-left: calc(var(--zc-r) * -1);
+    margin-top: calc(var(--zc-r) * -1);
+    border-radius: 50%;
+    border: 1.5px solid rgba(120, 220, 255, 0.75);
+    box-shadow: 0 0 8px rgba(100, 200, 255, 0.35);
+    box-sizing: border-box;
+    transform: scale(var(--outer-scale));
+    transform-origin: center;
+    opacity: 0;
+    will-change: transform;
+  }
+
+  &--charging &__outer {
+    opacity: 1;
+  }
+
+  /* Thin crosshair ticks (optional aim, very subtle) */
+  &__cross {
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: rgba(200, 240, 255, 0.35);
+    opacity: 0;
+
+    &--h {
+      width: 10px;
+      height: 1px;
+      margin-left: -5px;
+      margin-top: -0.5px;
+    }
+
+    &--v {
+      width: 1px;
+      height: 10px;
+      margin-left: -0.5px;
+      margin-top: -5px;
+    }
+  }
+
+  &--charging &__cross {
+    opacity: 0.55;
+  }
+
+  /* Rings meet → flash ready (hard-drop commits) */
+  &--ready &__inner {
+    border-color: #fff;
+    box-shadow:
+      0 0 0 1px rgba(120, 220, 255, 0.7),
+      0 0 14px rgba(140, 220, 255, 0.75),
+      0 0 28px rgba(100, 180, 255, 0.4);
+    animation: zones-note-flash 0.28s ease-out 1;
+  }
+
+  &--ready &__outer {
+    opacity: 1;
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 12px rgba(160, 230, 255, 0.7);
+    transform: scale(1);
+  }
+
+  &--ready &__fill {
+    background: radial-gradient(
+      circle at 50% 45%,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(140, 210, 255, 0.12) 50%,
+      transparent 70%
+    );
+  }
+
+  &--ready &__cross {
+    opacity: 0.85;
+    background: rgba(255, 255, 255, 0.7);
+  }
+}
+
+@keyframes zones-note-flash {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.7;
+  }
+  55% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

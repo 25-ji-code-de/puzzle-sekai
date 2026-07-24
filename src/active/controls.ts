@@ -9,6 +9,7 @@
 import { app } from "../runtime";
 import { isControlsSwapped } from "../fun/effects";
 import { isReplayPlayback, recordReplayAction } from "../replay";
+import { getUserSettings } from "../settings";
 import type { HoldMove } from "./hold-move";
 import { bindTouchControls } from "./touch-controls";
 import { isContinuousPhysics } from "../board/dynamics";
@@ -206,6 +207,7 @@ export const bindPieceControls = (
   const unbindTouch = bindTouchControls(actions, {
     continuous: isContinuousPhysics(),
     strafeSpeed,
+    mode: getUserSettings().touchControlMode,
   });
 
   return () => {

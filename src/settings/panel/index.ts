@@ -14,6 +14,7 @@ import { appendLanguageSection } from "./sections/language";
 import { appendAudioSection } from "./sections/audio";
 import { appendPerformanceSection } from "./sections/performance";
 import { appendDisplaySection } from "./sections/display";
+import { appendTouchControlSection } from "./sections/touch-controls";
 import {
   appendSpeedSection,
   appendTimeAttackSection,
@@ -132,6 +133,7 @@ export const showSettingsPanel = (options: SettingsPanelOptions = {}) => {
   appendAudioSection(settingsPanel, ctx);
   appendPerformanceSection(settingsPanel, ctx);
   appendDisplaySection(settingsPanel, ctx);
+  appendTouchControlSection(settingsPanel, ctx);
   appendSpeedSection(settingsPanel, ctx);
   appendTimeAttackSection(settingsPanel, ctx);
   appendGroupsSection(settingsPanel, ctx);
