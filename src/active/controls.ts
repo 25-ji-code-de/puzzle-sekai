@@ -4,7 +4,7 @@
  *
  * Pure input binding only: maps events → action callbacks. Continuous hold
  * repeat lives on gameTicker via hold-move.ts (passed in as optional bridge).
- * Touch direct-drag lives in touch-controls.ts (Pointer Events, no Hammer).
+ * Touch direct-drag lives in touch-controls.ts (Pointer Events).
  */
 import { app } from "../runtime";
 import { isControlsSwapped } from "../fun/effects";

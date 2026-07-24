@@ -3034,13 +3034,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/hammerjs@npm:^2.0.36":
-  version: 2.0.46
-  resolution: "@types/hammerjs@npm:2.0.46"
-  checksum: 10c0/f3c1cb20dc2f0523f7b8c76065078544d50d8ae9b0edc1f62fed657210ed814266ff2dfa835d2c157a075991001eec3b64c88bf92e3e6e895c0db78d05711d06
-  languageName: node
-  linkType: hard
-
 "@types/json-schema@npm:^7.0.15":
   version: 7.0.15
   resolution: "@types/json-schema@npm:7.0.15"
@@ -4862,13 +4855,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hammerjs@npm:^2.0.8":
-  version: 2.0.8
-  resolution: "hammerjs@npm:2.0.8"
-  checksum: 10c0/5c95e5774b5ea49492cb3fa8f1949aea67048a0b84af33acb555e7139abfcf3c83aca2b83e0c5008755bc230166df7b5e469d1e3eb6746c48f215f3672609fed
-  languageName: node
-  linkType: hard
-
 "harfbuzzjs@npm:^0.10.3":
   version: 0.10.3
   resolution: "harfbuzzjs@npm:0.10.3"
@@ -6207,12 +6193,10 @@ __metadata:
     "@tauri-apps/cli": "npm:^2"
     "@tauri-apps/plugin-deep-link": "npm:^2"
     "@tauri-apps/plugin-opener": "npm:^2"
-    "@types/hammerjs": "npm:^2.0.36"
     "@types/qrcode": "npm:^1.5.6"
     eslint: "npm:^10.7.0"
     eslint-plugin-unicorn: "npm:^72.0.0"
     globals: "npm:^17.7.0"
-    hammerjs: "npm:^2.0.8"
     lint-staged: "npm:^16.2.6"
     pixi-sound: "npm:^3.0.4"
     pixi.js-legacy: "npm:^5.3.2"

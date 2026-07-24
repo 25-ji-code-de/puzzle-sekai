@@ -25,7 +25,7 @@ A Puyo-style / group-clear puzzle: drop character “pieces,” form connected g
 
 - Rendering: PixiJS v5 (`pixi.js-legacy`)
 - Audio: pixi-sound
-- Input: keyboard + Hammer.js (touch)
+- Input: keyboard + Pointer Events direct-drag touch
 - Build: Vite 5, TypeScript, SCSS
 - PWA: vite-plugin-pwa (optional install)
 
@@ -37,7 +37,8 @@ A Puyo-style / group-clear puzzle: drop character “pieces,” form connected g
 - `src/piece/` — active falling pieces (standard + 2×2)
 - `src/ui/` — DOM menus (welcome, pause, settings chrome)
 - `src/styles/` — SCSS for DOM UI (lazy `ui-chrome.scss`)
-- `src/runtime.ts` — PIXI Application, tickers, Hammer
+- `src/runtime.ts` — PIXI Application, tickers
+- `src/active/touch-controls.ts` — Pointer Events touch
 - `src/index.ts` — boot loader + welcome shell
 
 ## Build & run

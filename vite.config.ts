@@ -185,9 +185,6 @@ export default defineConfig(({ mode }) => {
             if (id.includes("pixi-sound")) {
               return "pixi-sound";
             }
-            if (id.includes("hammerjs")) {
-              return "hammer";
-            }
             if (
               id.includes("@dimforge/rapier2d") ||
               id.includes("rapier2d-compat")

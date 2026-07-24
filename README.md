@@ -95,7 +95,7 @@ git tag v1.2.0 && git push origin v1.2.0
 
 - **渲染**: [PixiJS v5](https://pixijs.com/) (pixi.js-legacy)
 - **音频**: [pixi-sound](https://github.com/pixijs/sound) + Web Audio API
-- **触控**: [Hammer.js](https://hammerjs.github.io/)
+- **触控**: Pointer Events 直拖（`src/active/touch-controls.ts`）
 - **构建**: [Vite](https://vitejs.dev/)
 - **语言**: TypeScript
 - **样式**: SCSS
