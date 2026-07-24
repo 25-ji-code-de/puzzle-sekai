@@ -35,7 +35,8 @@ const defaultSettings = (): GameSettings => ({
   ...DEFAULT_SETTINGS,
   selectedGroups: [...GAME_GROUPS],
   funModes: { ...DEFAULT_FUN_MODES },
-  // Phone → fullscreen, desktop → windowed (only when no saved preference).
+  // Phone / Android tablet → fullscreen; iPadOS / desktop → windowed
+  // (only when no saved preference).
   displayMode: resolveDefaultDisplayMode(),
 });
 

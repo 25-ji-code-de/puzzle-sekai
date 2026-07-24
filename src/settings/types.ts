@@ -10,10 +10,11 @@ export type ItemDropRate = 0 | 5 | 10 | 15 | 20 | 30;
 /**
  * App window / screen mode.
  * - windowed: normal resizable window; no auto-fullscreen on start
- *   (default on large / desktop viewports when unset)
+ *   (default on desktop + iPadOS when unset — iPadOS swipe-down exits
+ *   browser fullscreen, so windowed is the safer first run there)
  * - borderless: full screen without title bar / decorations
  * - fullscreen: exclusive fullscreen
- *   (default on small / phone-like viewports when unset — see
+ *   (default on phone / Android tablet viewports when unset — see
  *   preferredDefaultDisplayMode in ui/display-policy)
  */
 export type DisplayMode = "windowed" | "borderless" | "fullscreen";

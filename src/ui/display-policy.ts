@@ -36,26 +36,64 @@ export const isFullscreenOn = (
   );
 
 /**
- * Phone / tablet / narrow viewport — same bucket as default fullscreen
- * and stick "compact" profile (larger ring, calmer lateral).
+ * Phone / tablet / narrow viewport — stick "compact" profile
+ * (larger ring, calmer lateral). Independent of display-mode default:
+ * iPadOS stays compact even when defaulting to windowed.
  */
 export const isCompactPointerViewport = (
   matchMedia: MatchMediaFn | undefined,
-): boolean => preferredDefaultDisplayMode(matchMedia) === "fullscreen";
+): boolean => {
+  if (!matchMedia) return false;
+  try {
+    if (matchMedia("(hover: none) and (pointer: coarse)").matches) return true;
+    if (matchMedia("(max-width: 900px)").matches) return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
+};
+
+/**
+ * Injectable navigator-ish bits for iPadOS detection (tests pass fakes).
+ * iPadOS 13+ often spoofs a desktop Mac UA; multi-touch is the giveaway.
+ */
+export type PlatformHints = {
+  userAgent?: string;
+  platform?: string;
+  maxTouchPoints?: number;
+};
+
+/**
+ * True on iPad / iPadOS (including desktop-site UA on iPadOS 13+).
+ * Not true for iPhone or Android tablets — those keep phone/tablet defaults.
+ */
+export const isIPadOS = (hints: PlatformHints | undefined): boolean => {
+  if (!hints) return false;
+  const ua = hints.userAgent ?? "";
+  if (/iPad/i.test(ua)) return true;
+  // iPadOS "Request Desktop Website": Macintosh UA + multi-touch trackpad/screen.
+  const macLike = /Macintosh/i.test(ua) || hints.platform === "MacIntel";
+  if (macLike && (hints.maxTouchPoints ?? 0) > 1) return true;
+  return false;
+};
 
 /**
  * First-run / missing `displayMode` default:
- * - phone / tablet (coarse pointer, no hover) or narrow viewport → fullscreen
+ * - iPadOS → windowed (system swipe-down exits browser fullscreen)
+ * - phone / other tablets / narrow viewport → fullscreen
  * - desktop / large → windowed
  *
- * Pure: inject matchMedia for tests. Callers with DOM use
- * {@link resolveDefaultDisplayMode}.
+ * Pure: inject matchMedia + optional platform hints for tests.
+ * Callers with DOM use {@link resolveDefaultDisplayMode}.
  */
 export type DefaultDisplayMode = "windowed" | "fullscreen";
 
 export const preferredDefaultDisplayMode = (
   matchMedia: MatchMediaFn | undefined,
+  platform?: PlatformHints,
 ): DefaultDisplayMode => {
+  // iPadOS only — Android tablets still prefer fullscreen.
+  if (isIPadOS(platform)) return "windowed";
   if (!matchMedia) return "windowed";
   try {
     if (matchMedia("(hover: none) and (pointer: coarse)").matches) {
@@ -78,5 +116,13 @@ export const resolveDefaultDisplayMode = (): DefaultDisplayMode => {
   ) {
     return "windowed";
   }
-  return preferredDefaultDisplayMode(window.matchMedia.bind(window));
+  const nav =
+    typeof navigator !== "undefined"
+      ? {
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          maxTouchPoints: navigator.maxTouchPoints,
+        }
+      : undefined;
+  return preferredDefaultDisplayMode(window.matchMedia.bind(window), nav);
 };
