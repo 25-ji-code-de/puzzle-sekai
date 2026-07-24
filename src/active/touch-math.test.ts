@@ -11,6 +11,8 @@ import {
   isTapGesture,
   isWithinDeadZone,
   resolveAxisLock,
+  sampleStick,
+  softDropWithHysteresis,
   shouldArmSoftDrop,
   shouldReleaseSoftDrop,
 } from "./touch-math";
@@ -47,6 +49,12 @@ describe("touchStageThresholds", () => {
     expect(T.gridStep).toBeCloseTo(BOX_SIZE * 0.85);
     expect(T.softDrop).toBeCloseTo(BOX_SIZE * 0.32);
     expect(T.flickMin).toBeCloseTo(BOX_SIZE * 0.55);
+    expect(T.stickRadius).toBeCloseTo(BOX_SIZE * 1.35);
+  });
+
+  it("accepts compact radius cells", () => {
+    const compact = touchStageThresholds(BOX_SIZE, 1.85);
+    expect(compact.stickRadius).toBeCloseTo(BOX_SIZE * 1.85);
   });
 });
 
@@ -131,5 +139,83 @@ describe("isWithinDeadZone", () => {
   it("uses independent axes in stage space", () => {
     expect(isWithinDeadZone(T.deadZone, T.deadZone, T.deadZone)).toBe(true);
     expect(isWithinDeadZone(T.deadZone + 1, 0, T.deadZone)).toBe(false);
+  });
+});
+
+describe("sampleStick", () => {
+  const radius = T.stickRadius;
+  const opts = {
+    radiusStage: radius,
+    deadFrac: 0.14,
+    softVy: 0.28,
+  };
+
+  it("is idle inside dead zone", () => {
+    const s = sampleStick(radius * 0.05, 0, opts);
+    expect(s.sx).toBe(0);
+    expect(s.sy).toBe(0);
+    expect(s.softDrop).toBe(false);
+  });
+
+  it("pure down: soft only, sx≈0", () => {
+    const s = sampleStick(0, radius * 0.9, opts);
+    expect(s.softDrop).toBe(true);
+    expect(Math.abs(s.sx)).toBeLessThan(0.02);
+    expect(s.sy).toBeGreaterThan(0.5);
+  });
+
+  it("pure right at rim: |sx|≈1, no soft", () => {
+    const s = sampleStick(radius, 0, opts);
+    expect(s.softDrop).toBe(false);
+    expect(s.sx).toBeCloseTo(1, 1);
+    expect(Math.abs(s.sy)).toBeLessThan(0.05);
+  });
+
+  it("diagonal: |sx| smaller than pure side at same radius", () => {
+    // 45° on the rim: each component ≈ √2/2
+    const diag = sampleStick(radius * 0.707, radius * 0.707, opts);
+    const side = sampleStick(radius, 0, opts);
+    expect(Math.abs(diag.sx)).toBeLessThan(Math.abs(side.sx) - 0.05);
+    expect(diag.softDrop).toBe(true);
+  });
+
+  it("upward: no soft-drop", () => {
+    const s = sampleStick(0, -radius * 0.9, opts);
+    expect(s.softDrop).toBe(false);
+    expect(s.sy).toBeLessThan(0);
+  });
+
+  it("outside ring: |sx| > 1 (absolute distance), knob still clamped", () => {
+    const s = sampleStick(radius * 3, 0, opts);
+    expect(s.sx).toBeGreaterThan(2.5);
+    expect(s.magFrac).toBeCloseTo(3);
+    expect(s.knobDx).toBeCloseTo(radius);
+  });
+
+  it("farther travel → larger |sx|", () => {
+    const near = sampleStick(radius * 1.2, 0, opts);
+    const far = sampleStick(radius * 2.5, 0, opts);
+    expect(Math.abs(far.sx)).toBeGreaterThan(Math.abs(near.sx));
+  });
+
+  it("softDropWithHysteresis uses sy release threshold", () => {
+    const edge = sampleStick(0, radius * 0.2, opts);
+    // sy remapped may be near softVyRelease
+    expect(
+      softDropWithHysteresis(
+        { ...edge, softDrop: false, sy: 0.2 },
+        true,
+        0.28,
+        0.14,
+      ),
+    ).toBe(true);
+    expect(
+      softDropWithHysteresis(
+        { ...edge, softDrop: false, sy: 0.05 },
+        true,
+        0.28,
+        0.14,
+      ),
+    ).toBe(false);
   });
 });

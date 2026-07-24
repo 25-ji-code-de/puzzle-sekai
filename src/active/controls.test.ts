@@ -23,6 +23,10 @@ vi.mock("../runtime", () => ({
       setPointerCapture: vi.fn(),
     },
   },
+  gameTicker: {
+    add: vi.fn(),
+    remove: vi.fn(),
+  },
 }));
 
 vi.mock("../fun/effects", () => ({

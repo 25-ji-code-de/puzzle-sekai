@@ -1,6 +1,6 @@
 /**
  * Display helpers: orientation detection, rotate-to-landscape gate,
- * and best-effort fullscreen on game start (mobile browsers only).
+ * best-effort fullscreen + Screen Orientation lock on game start (mobile).
  */
 import { isFullscreenOn, isPortraitWith } from "./display-policy";
 import { devWarn } from "../util/dev-log";
@@ -20,33 +20,101 @@ export const isFullscreen = (): boolean => {
   return isFullscreenOn(doc);
 };
 
+type OrientationWithLock = ScreenOrientation & {
+  lock?: (orientation: string) => Promise<void>;
+  unlock?: () => void;
+};
+
 /**
- * Request fullscreen on the document element. Must be called from a
- * user-gesture handler (click / tap). Best-effort: rejects quietly when
- * the browser blocks it (iOS Safari, desktop policy, etc.).
+ * Prefer landscape lock on touch / phone-like viewports.
+ * Desktop usually rejects lock; skip the noisy attempt when clearly a mouse UI.
+ */
+export const shouldLockLandscape = (
+  matchMedia:
+    ((q: string) => { matches: boolean }) | undefined = typeof window !==
+  "undefined"
+    ? window.matchMedia?.bind(window)
+    : undefined,
+): boolean => {
+  if (!matchMedia) return false;
+  try {
+    // Primary: phones / tablets (no hover, coarse pointer).
+    if (matchMedia("(hover: none) and (pointer: coarse)").matches) return true;
+    // Fallback: narrow viewport (foldables / hybrid).
+    if (matchMedia("(max-width: 900px)").matches) return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
+};
+
+/**
+ * Best-effort Screen Orientation API lock to landscape.
+ * Must run after (or with) a user gesture; most browsers also require fullscreen.
+ * Rejects quietly on iOS Safari / unsupported desktop.
+ */
+export const lockLandscapeOrientation = async (): Promise<boolean> => {
+  if (typeof screen === "undefined" || !screen.orientation) return false;
+  if (!shouldLockLandscape()) return false;
+  const o = screen.orientation as OrientationWithLock;
+  if (typeof o.lock !== "function") return false;
+  try {
+    await o.lock("landscape");
+    return true;
+  } catch (e1) {
+    // Some Android builds only accept primary/secondary, not the generic token.
+    try {
+      await o.lock!("landscape-primary");
+      return true;
+    } catch (e2) {
+      devWarn("Orientation lock failed:", { first: e1, second: e2 });
+    }
+  }
+  return false;
+};
+
+/** Release orientation lock (e.g. return to menu). No-op when not locked. */
+export const unlockOrientation = (): void => {
+  if (typeof screen === "undefined" || !screen.orientation) return;
+  const o = screen.orientation as OrientationWithLock;
+  try {
+    o.unlock?.();
+  } catch (e) {
+    devWarn("Orientation unlock failed:", e);
+  }
+};
+
+/**
+ * Request fullscreen on the document element, then try landscape orientation
+ * lock (mobile). Must be called from a user-gesture handler (click / tap).
+ * Best-effort: rejects quietly when the browser blocks either step.
  */
 export const requestAppFullscreen = async (): Promise<boolean> => {
   const el = document.documentElement as HTMLElement & {
     webkitRequestFullscreen?: () => Promise<void> | void;
     msRequestFullscreen?: () => Promise<void> | void;
   };
+  let ok = false;
   try {
     if (el.requestFullscreen) {
       await el.requestFullscreen();
-      return true;
-    }
-    if (el.webkitRequestFullscreen) {
+      ok = true;
+    } else if (el.webkitRequestFullscreen) {
       await el.webkitRequestFullscreen();
-      return true;
-    }
-    if (el.msRequestFullscreen) {
+      ok = true;
+    } else if (el.msRequestFullscreen) {
       await el.msRequestFullscreen();
-      return true;
+      ok = true;
     }
   } catch (e) {
     devWarn("Fullscreen request failed:", e);
   }
-  return false;
+
+  // Orientation lock is much more reliable *after* fullscreen on Chromium /
+  // Android. Still best-effort if fullscreen was denied (some PWAs allow lock alone).
+  // Keep this in the same async chain started by the click handler.
+  await lockLandscapeOrientation();
+  return ok;
 };
 
 const ensureOverlay = (message: string): HTMLDivElement => {

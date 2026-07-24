@@ -283,10 +283,11 @@ export const en = {
     hardDrop: "Space Hard drop",
     restart: "R Restart",
     pause: "Esc / P Pause (or the top-left button)",
-    swipeMove: "Drag to steer",
+    swipeMove: "Hold: virtual stick · position adds velocity on top of fall",
     tapRotate: "Short-tap left half CCW / right half CW",
-    swipeHardDrop: "Fast flick down to hard drop",
-    pressSoftDrop: "Drag down to soft drop (still steerable)",
+    swipeHardDrop:
+      "Hold center to charge hard-drop · after moving away, return charges slower (~2.4s)",
+    pressSoftDrop: "Push stick down to soft drop (still steerable)",
     easterEgg:
       "While falling, Emu / NeneRobo — keyboard Shift+↑ · fast flick up — lift one cell",
   },

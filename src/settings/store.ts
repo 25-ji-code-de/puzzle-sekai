@@ -10,6 +10,7 @@
  */
 import { DEFAULT_FUN_MODES, normalizeFunModes } from "../fun/modes";
 import { utcDateKey } from "../domain/daily";
+import { resolveDefaultDisplayMode } from "../ui/display-policy";
 import {
   DEFAULT_SETTINGS,
   GAME_GROUPS,
@@ -33,6 +34,8 @@ const defaultSettings = (): GameSettings => ({
   ...DEFAULT_SETTINGS,
   selectedGroups: [...GAME_GROUPS],
   funModes: { ...DEFAULT_FUN_MODES },
+  // Phone → fullscreen, desktop → windowed (only when no saved preference).
+  displayMode: resolveDefaultDisplayMode(),
 });
 
 /** Coerce selectedGroups to 3–5 known units; else full roster. */
@@ -78,7 +81,7 @@ export function normalizeSettings(raw: unknown): GameSettings {
     lowPerformance: src.lowPerformance === true,
     displayMode: isDisplayMode(src.displayMode)
       ? src.displayMode
-      : DEFAULT_SETTINGS.displayMode,
+      : resolveDefaultDisplayMode(),
   };
 }
 

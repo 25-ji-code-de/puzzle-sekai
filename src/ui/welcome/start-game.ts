@@ -18,6 +18,7 @@ import { t } from "../../i18n";
 import { isNativeBuild } from "../../auth/config";
 import {
   requestAppFullscreen,
+  unlockOrientation,
   waitForLandscape,
   startPlayOrientationGate,
   type OrientationGate,
@@ -38,6 +39,8 @@ export const setStartGameHooks = (hooks: {
 export const disposeOrientationGate = () => {
   orientationGate?.dispose();
   orientationGate = null;
+  // Free the phone to rotate again when leaving a match / menu teardown.
+  unlockOrientation();
 };
 
 const startThroughOrientationGate = () => {

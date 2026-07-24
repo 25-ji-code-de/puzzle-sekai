@@ -253,7 +253,7 @@ export const createNeneRobo = async (
   const hold = continuous
     ? startHoldMove({ shift: shiftContinuous }, strafeSpeed)
     : undefined;
-  const unbind = bindPieceControls(controls, hold);
+  const unbind = bindPieceControls(controls, { hold, strafeSpeed });
   setReplayLiveControlTarget(controls);
 
   app.stage.addChild(nenerobo);

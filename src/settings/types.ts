@@ -9,9 +9,12 @@ export type TimeAttackDuration = 60 | 90 | 120 | 180;
 export type ItemDropRate = 0 | 5 | 10 | 15 | 20 | 30;
 /**
  * App window / screen mode.
- * - windowed (default): normal resizable window; no auto-fullscreen on start
+ * - windowed: normal resizable window; no auto-fullscreen on start
+ *   (default on large / desktop viewports when unset)
  * - borderless: full screen without title bar / decorations
  * - fullscreen: exclusive fullscreen
+ *   (default on small / phone-like viewports when unset — see
+ *   preferredDefaultDisplayMode in ui/display-policy)
  */
 export type DisplayMode = "windowed" | "borderless" | "fullscreen";
 /**
@@ -197,6 +200,10 @@ export const DEFAULT_SETTINGS: GameSettings = {
   sfxVolume: 100,
   voiceVolume: 100,
   lowPerformance: false,
+  /**
+   * Static fallback only (desktop / tests). Live first-run default is
+   * resolveDefaultDisplayMode() in load/normalize when the field is absent.
+   */
   displayMode: "windowed",
 };
 

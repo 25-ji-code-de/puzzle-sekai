@@ -278,10 +278,10 @@ export const zh = {
     hardDrop: "Space 直接落到底部",
     restart: "R 重新开始",
     pause: "Esc / P 暂停（也可点左上角按钮）",
-    swipeMove: "拖移 横向移动",
+    swipeMove: "按下出现摇杆 · 位置=牵连速度（叠在基础下落上）",
     tapRotate: "短点左半屏逆时针 / 右半屏顺时针旋转",
-    swipeHardDrop: "快速下甩 硬降到底",
-    pressSoftDrop: "下拖按住 软降（可同时左右挪）",
+    swipeHardDrop: "中心长按蓄力硬降 · 移出再回中心则慢蓄（约2.4s）",
+    pressSoftDrop: "摇杆下推 软降（可同时左右挪）",
     easterEgg: "笑梦 / NeneRobo 下落时 · 键盘 Shift+↑ · 手机快速上甩 微抬一格",
   },
   noscript: {

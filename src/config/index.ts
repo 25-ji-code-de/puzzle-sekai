@@ -102,14 +102,140 @@ export const TOUCH_AXIS_DOMINANCE = 1.45;
  */
 export const TOUCH_FLICK_VERTICAL_RATIO = 1.8;
 
-/** Stage-px thresholds derived from cell fractions (single source for BOX_SIZE). */
-export const touchStageThresholds = (boxSize: number = BOX_SIZE) => {
+/**
+ * Floating virtual stick (finger-down) — **velocity superposition**:
+ *   v_final = v_base_fall + v_stick(position)
+ *
+ * Stick position in **radii** of the drawn ring (absolute distance):
+ * - **vx** ∝ sx = stageDx / radius  (can exceed ±1 outside the ring → faster)
+ * - **vy** ∝ sy = stageDy / radius  (+sy soft-drop on top of base gravity)
+ * - **hold in center** → charge ring → hard-drop when full
+ *
+ * Rim |sx|=1 is the "full push" reference rate; farther travel is faster.
+ */
+/** Desktop / large: stick base radius in cells. */
+export const TOUCH_STICK_RADIUS_CELLS = 1.35;
+/** Phone / narrow: larger ring. */
+export const TOUCH_STICK_RADIUS_CELLS_COMPACT = 1.85;
+/** Idle when |offset| / radius below this (knob still tracks). */
+export const TOUCH_STICK_DEAD_FRAC = 0.14;
+export const TOUCH_STICK_DEAD_FRAC_COMPACT = 0.16;
+/**
+ * Soft-drop when stick's down component (sy) exceeds this (0…1 after clamp).
+ * Release hysteresis uses a lower threshold.
+ */
+export const TOUCH_STICK_SOFT_VY = 0.28;
+export const TOUCH_STICK_SOFT_VY_COMPACT = 0.3;
+export const TOUCH_STICK_SOFT_VY_RELEASE = 0.14;
+export const TOUCH_STICK_SOFT_VY_RELEASE_COMPACT = 0.15;
+/**
+ * Hard-drop charge: hold stick near center this long (ms) to fill the ring.
+ * - **direct** hold from press (never left center): ~0.5s
+ * - **return** after leaving dead zone then coming back: 3s (intentional, not accidental)
+ * Leaving the charge radius cancels progress.
+ */
+export const TOUCH_STICK_HARD_CHARGE_MS = 480;
+export const TOUCH_STICK_HARD_CHARGE_MS_COMPACT = 520;
+/**
+ * Charge after leaving dead zone then returning (ms).
+ * Longer than direct hold so re-centering after steer doesn't hard-drop by accident;
+ * shorter than 3s so deliberate mid-piece hard-drop still feels usable.
+ * ~2.4s ≈ 3s − 0.6s (user preference).
+ */
+export const TOUCH_STICK_HARD_CHARGE_RETURN_MS = 2400;
+export const TOUCH_STICK_HARD_CHARGE_RETURN_MS_COMPACT = 2500;
+/**
+ * Stay within this magFrac (of stick radius) to keep charging hard-drop.
+ * Slightly larger than deadFrac so tiny finger noise doesn't reset.
+ */
+export const TOUCH_STICK_HARD_CHARGE_FRAC = 0.22;
+export const TOUCH_STICK_HARD_CHARGE_FRAC_COMPACT = 0.24;
+/**
+ * Grid mode: column step interval at |sx|=1 (ms). Higher = slower.
+ * Step rate scales with |sx|.
+ */
+export const TOUCH_STICK_GRID_STEP_MS = 180;
+export const TOUCH_STICK_GRID_STEP_MS_COMPACT = 210;
+export const TOUCH_STICK_GRID_STEP_MIN_MS = 90;
+export const TOUCH_STICK_GRID_STEP_MIN_MS_COMPACT = 105;
+/**
+ * Continuous (truePhysics) stick rate at |sx|=1 (rim of the drawn stick),
+ * as a fraction of keyboard hold strafe. Finger outside the ring → |sx|>1
+ * → faster than this (absolute distance / radius, uncapped).
+ */
+export const TOUCH_STICK_STRAFE_MULT = 0.78;
+export const TOUCH_STICK_STRAFE_MULT_COMPACT = 0.7;
+/**
+ * Safety cap on |sx| (radii of travel) so a full-screen fling cannot
+ * teleport the piece. ~4 radii ≈ 4× rim speed.
+ */
+export const TOUCH_STICK_SX_MAX = 4;
+export const TOUCH_STICK_SX_MAX_COMPACT = 3.5;
+
+export type TouchStickProfile = {
+  radiusCells: number;
+  deadFrac: number;
+  softVy: number;
+  softVyRelease: number;
+  /** Direct center-hold charge (ms). */
+  hardChargeMs: number;
+  /** Charge after leaving dead zone then returning (ms). */
+  hardChargeReturnMs: number;
+  hardChargeFrac: number;
+  gridStepMs: number;
+  gridStepMinMs: number;
+  /** Strafe rate at |sx|=1 (rim); outside ring scales above this. */
+  strafeMult: number;
+  /** Cap |sx| in radii of travel. */
+  sxMax: number;
+};
+
+/** Desktop / large-screen stick + pace. */
+export const TOUCH_STICK_PROFILE_DESKTOP: TouchStickProfile = {
+  radiusCells: TOUCH_STICK_RADIUS_CELLS,
+  deadFrac: TOUCH_STICK_DEAD_FRAC,
+  softVy: TOUCH_STICK_SOFT_VY,
+  softVyRelease: TOUCH_STICK_SOFT_VY_RELEASE,
+  hardChargeMs: TOUCH_STICK_HARD_CHARGE_MS,
+  hardChargeReturnMs: TOUCH_STICK_HARD_CHARGE_RETURN_MS,
+  hardChargeFrac: TOUCH_STICK_HARD_CHARGE_FRAC,
+  gridStepMs: TOUCH_STICK_GRID_STEP_MS,
+  gridStepMinMs: TOUCH_STICK_GRID_STEP_MIN_MS,
+  strafeMult: TOUCH_STICK_STRAFE_MULT,
+  sxMax: TOUCH_STICK_SX_MAX,
+};
+
+/** Phone / compact: bigger ring, calmer max rates, slightly longer direct charge. */
+export const TOUCH_STICK_PROFILE_COMPACT: TouchStickProfile = {
+  radiusCells: TOUCH_STICK_RADIUS_CELLS_COMPACT,
+  deadFrac: TOUCH_STICK_DEAD_FRAC_COMPACT,
+  softVy: TOUCH_STICK_SOFT_VY_COMPACT,
+  softVyRelease: TOUCH_STICK_SOFT_VY_RELEASE_COMPACT,
+  hardChargeMs: TOUCH_STICK_HARD_CHARGE_MS_COMPACT,
+  hardChargeReturnMs: TOUCH_STICK_HARD_CHARGE_RETURN_MS_COMPACT,
+  hardChargeFrac: TOUCH_STICK_HARD_CHARGE_FRAC_COMPACT,
+  gridStepMs: TOUCH_STICK_GRID_STEP_MS_COMPACT,
+  gridStepMinMs: TOUCH_STICK_GRID_STEP_MIN_MS_COMPACT,
+  strafeMult: TOUCH_STICK_STRAFE_MULT_COMPACT,
+  sxMax: TOUCH_STICK_SX_MAX_COMPACT,
+};
+
+/**
+ * Stage-px thresholds derived from cell fractions (single source for BOX_SIZE).
+ * Pass radiusCells to use compact vs desktop stick size.
+ */
+export const touchStageThresholds = (
+  boxSize: number = BOX_SIZE,
+  radiusCells: number = TOUCH_STICK_RADIUS_CELLS,
+) => {
   const b = boxSize > 0 ? boxSize : BOX_SIZE;
+  const r = radiusCells > 0 ? radiusCells : TOUCH_STICK_RADIUS_CELLS;
   return {
     deadZone: b * TOUCH_DEAD_ZONE_CELLS,
     gridStep: b * TOUCH_GRID_STEP_CELLS,
     softDrop: b * TOUCH_SOFT_DROP_CELLS,
     softSteer: b * TOUCH_SOFT_STEER_CELLS,
     flickMin: b * TOUCH_FLICK_MIN_CELLS,
+    stickRadius: b * r,
   };
 };

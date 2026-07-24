@@ -113,6 +113,16 @@ const armHoldEdge = (
   return true;
 };
 
+export type BindPieceControlsOpts = {
+  /** Continuous mode keyboard hold-strafe bridge. */
+  hold?: HoldMove;
+  /**
+   * Continuous touch stick full-tilt speed (px / PIXI delta).
+   * Should match keyboard hold strafe when truePhysics is on.
+   */
+  strafeSpeed?: number;
+};
+
 /**
  * Bind controls; returns a dispose function that removes every listener.
  * Pass `hold` in continuous mode so left/right key edges only arm/disarm
@@ -121,11 +131,20 @@ const armHoldEdge = (
  */
 export const bindPieceControls = (
   actions: PieceControlActions,
-  hold?: HoldMove,
+  holdOrOpts?: HoldMove | BindPieceControlsOpts,
 ): (() => void) => {
   if (isReplayPlayback()) {
     return () => {};
   }
+
+  const hold =
+    holdOrOpts && "setLeftHeld" in holdOrOpts
+      ? holdOrOpts
+      : (holdOrOpts as BindPieceControlsOpts | undefined)?.hold;
+  const strafeSpeed =
+    holdOrOpts && !("setLeftHeld" in holdOrOpts)
+      ? (holdOrOpts as BindPieceControlsOpts).strafeSpeed
+      : undefined;
 
   const handleKeyPress = (event: KeyboardEvent) => {
     // Settings / dialogs: don't steal arrows/space from form fields.
@@ -186,6 +205,7 @@ export const bindPieceControls = (
 
   const unbindTouch = bindTouchControls(actions, {
     continuous: isContinuousPhysics(),
+    strafeSpeed,
   });
 
   return () => {

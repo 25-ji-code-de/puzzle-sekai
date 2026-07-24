@@ -72,6 +72,7 @@ describe("normalizeSettings", () => {
   });
 
   it("defaults invalid displayMode and keeps valid ones", () => {
+    // No matchMedia in vitest node → windowed (desktop fallback).
     expect(normalizeSettings({}).displayMode).toBe("windowed");
     expect(normalizeSettings({ displayMode: "maximized" }).displayMode).toBe(
       "windowed",

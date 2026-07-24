@@ -1,36 +1,64 @@
 /**
- * Direct-drag touch controls for the active piece (Puyo-Touch style).
- * Pointer Events on the canvas — no Pixi UI, no virtual pad.
+ * Direct-drag touch controls for the active piece.
+ * Pointer Events on the full viewport + floating stick.
  *
- * All gesture thresholds use **stage / cell units** after letterbox conversion
- * so different phone CSS sizes track the board, not raw device pixels.
+ * Velocity model:  v_final = v_base_fall + v_stick(position)
+ * Stick unit-disk (sx, sy): sx → horizontal rate, +sy → soft-drop on top of gravity.
  */
-import { app } from "../runtime";
+import { app, gameTicker } from "../runtime";
 import {
+  CONTINUOUS_STRAFE_SPEED,
   STAGE_HEIGHT,
   STAGE_WIDTH,
-  TOUCH_AXIS_DOMINANCE,
-  TOUCH_CONTINUOUS_GAIN,
   TOUCH_FLICK_HARD_VEL_STAGE,
   TOUCH_FLICK_LIFT_VEL_STAGE,
   TOUCH_FLICK_VERTICAL_RATIO,
+  TOUCH_STICK_PROFILE_COMPACT,
+  TOUCH_STICK_PROFILE_DESKTOP,
   TOUCH_TAP_MAX_MS,
   touchStageThresholds,
+  type TouchStickProfile,
 } from "../config";
 import { isControlsSwapped } from "../fun/effects";
 import { isReplayPlayback, recordReplayAction } from "../replay";
+import { isCompactPointerViewport } from "../ui/display-policy";
 import {
-  canSoftDropSteer,
   classifyFlick,
   clientDeltaToStage,
   clientToStageScale,
-  consumeGridSteps,
   isTapGesture,
-  resolveAxisLock,
-  shouldArmSoftDrop,
-  shouldReleaseSoftDrop,
-  type AxisLock,
+  sampleStick,
+  softDropWithHysteresis,
+  type StickSample,
 } from "./touch-math";
+import { createStickUi } from "./touch-stick-ui";
+
+/**
+ * Clicks that must not start a stick session (pause FAB, dialogs, form fields).
+ */
+const TOUCH_UI_BLOCKER =
+  'button, a, input, textarea, select, label, [contenteditable="true"], ' +
+  '[contenteditable=""], .ui-overlay, .ui-dialog, .pause-fab, #pause-button, ' +
+  "#pause-overlay, #settings-panel, [data-no-touch-play]";
+
+/** True when the event target is chrome that owns the pointer. */
+export const isTouchUiBlocked = (target: EventTarget | null): boolean => {
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest(TOUCH_UI_BLOCKER));
+};
+
+/** Compact (phone) vs desktop stick profile for current viewport. */
+export const resolveStickProfile = (): TouchStickProfile => {
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
+    return TOUCH_STICK_PROFILE_DESKTOP;
+  }
+  return isCompactPointerViewport(window.matchMedia.bind(window))
+    ? TOUCH_STICK_PROFILE_COMPACT
+    : TOUCH_STICK_PROFILE_DESKTOP;
+};
 
 /** Minimal action surface for touch (avoids import cycle with controls.ts). */
 export type TouchPieceActions = {
@@ -46,16 +74,13 @@ export type TouchPieceActions = {
 };
 
 export type TouchControlOptions = {
-  /**
-   * When true, horizontal drag maps to continuous stage pixels via shiftBy.
-   * When false, drag accumulates into discrete column steps (moveLeft/Right).
-   */
   continuous: boolean;
+  /** Continuous hold-strafe speed (px / PIXI delta); scaled by profile.strafeMult. */
+  strafeSpeed?: number;
 };
 
-const THRESH = touchStageThresholds();
+const MAX_DELTA = 3;
 
-/** Canvas mid-x for rotate zones (letterbox-safe). */
 const isLeftHalf = (clientX: number): boolean => {
   const rect = viewEl().getBoundingClientRect();
   if (rect.width <= 0) return clientX < window.innerWidth / 2;
@@ -70,15 +95,27 @@ type TouchSession = {
   lastY: number;
   lastAt: number;
   startedAt: number;
-  axis: AxisLock;
-  /** Grid: leftover stage-x after column steps. */
-  gridAccumX: number;
   softDropArmed: boolean;
-  /** Once true, this contact will never emit a rotate tap. */
   consumedAsPan: boolean;
   ended: boolean;
-  /** Recent **stage** velocity Y (stage-px/ms, down positive). */
   recentVelY: number;
+  /** Horizontal velocity component sx ∈ [-1, 1]. */
+  intentSx: number;
+  lastGridStepAt: number;
+  /**
+   * Hard-drop charge: ms accumulated while magFrac stays in charge radius.
+   * Leaving the center resets to 0. Full charge → hardDrop.
+   */
+  hardChargeMs: number;
+  lastChargeAt: number;
+  hardFired: boolean;
+  /**
+   * Once true this press, the finger left the dead zone — returning to center
+   * uses the slower return charge (3s) instead of the direct hold (~0.5s).
+   */
+  leftDeadZone: boolean;
+  /** Latest stick |offset|/radius for charge gating. */
+  magFrac: number;
 };
 
 const viewEl = (): HTMLElement => app.view as HTMLElement;
@@ -108,10 +145,8 @@ const applyContinuousDx = (
   stageDx: number,
 ): void => {
   if (!stageDx || !Number.isFinite(stageDx)) return;
-  const damped = stageDx * TOUCH_CONTINUOUS_GAIN;
-  if (!damped) return;
   const swapped = isControlsSwapped();
-  const logicalDx = swapped ? -damped : damped;
+  const logicalDx = swapped ? -stageDx : stageDx;
   if (actions.shiftBy) {
     const moved = actions.shiftBy(logicalDx);
     if (moved) {
@@ -121,29 +156,6 @@ const applyContinuousDx = (
   }
   if (logicalDx < 0) fireHorizontalStep(actions, true);
   else fireHorizontalStep(actions, false);
-};
-
-const applyGridDx = (
-  session: TouchSession,
-  actions: TouchPieceActions,
-  stageDx: number,
-): void => {
-  session.gridAccumX += stageDx;
-  const { steps, remainder } = consumeGridSteps(
-    session.gridAccumX,
-    THRESH.gridStep,
-  );
-  session.gridAccumX = remainder;
-  if (steps === 0) return;
-  const swapped = isControlsSwapped();
-  const dir = steps > 0 ? 1 : -1;
-  const count = Math.abs(steps);
-  for (let i = 0; i < count; i++) {
-    const wantLeft = dir < 0;
-    const goLeft = wantLeft !== swapped;
-    (goLeft ? actions.moveLeft : actions.moveRight)();
-    recordReplayAction(goLeft ? "L" : "R");
-  }
 };
 
 const armSoftDrop = (session: TouchSession, actions: TouchPieceActions) => {
@@ -161,7 +173,7 @@ const releaseSoftDrop = (session: TouchSession, actions: TouchPieceActions) => {
 };
 
 /**
- * Bind direct-drag touch on the game canvas. Returns dispose().
+ * Bind stick + flick touch on the full viewport (letterbox included).
  */
 export const bindTouchControls = (
   actions: TouchPieceActions,
@@ -169,35 +181,173 @@ export const bindTouchControls = (
 ): (() => void) => {
   if (isReplayPlayback()) return () => {};
 
-  const canvas = viewEl();
+  const profile = resolveStickProfile();
+  const thresh = touchStageThresholds(undefined, profile.radiusCells);
+
+  const surface: HTMLElement = document.documentElement;
+  const stick = createStickUi();
   let session: TouchSession | null = null;
+  let hooked = false;
+  const prevTouchAction = surface.style.touchAction;
+  surface.style.touchAction = "none";
+
+  const baseStrafe =
+    options.strafeSpeed && options.strafeSpeed > 0
+      ? options.strafeSpeed
+      : CONTINUOUS_STRAFE_SPEED;
+  // Max |sx|=1 → this many stage-px per ticker delta.
+  const strafeSpeed = baseStrafe * profile.strafeMult;
+
+  const sampleFromOrigin = (
+    sess: TouchSession,
+    clientX: number,
+    clientY: number,
+  ): { sample: StickSample; scale: ReturnType<typeof scaleForView> } => {
+    const scale = scaleForView();
+    const stage = clientDeltaToStage(
+      clientX - sess.originX,
+      clientY - sess.originY,
+      scale,
+    );
+    const sample = sampleStick(stage.dx, stage.dy, {
+      radiusStage: thresh.stickRadius,
+      deadFrac: profile.deadFrac,
+      softVy: profile.softVy,
+    });
+    return { sample, scale };
+  };
+
+  const unhookTick = () => {
+    if (!hooked) return;
+    gameTicker.remove(onStickTick);
+    hooked = false;
+  };
+
+  const ensureHooked = () => {
+    if (hooked) return;
+    gameTicker.add(onStickTick);
+    hooked = true;
+  };
+
+  const fireHardDrop = (sess: TouchSession) => {
+    if (sess.hardFired || sess.ended) return;
+    sess.hardFired = true;
+    sess.ended = true;
+    actions.hardDrop();
+    recordReplayAction("HD");
+    clearSession(true);
+  };
+
+  const onStickTick = (delta: number) => {
+    if (!session || session.ended) return;
+
+    // Hard-drop charge ring: hold near center; leave center → reset.
+    // Direct press (never left dead zone) → fast charge; after a pan out and
+    // return → slightly slower charge so accidental re-center is less twitchy.
+    if (!session.hardFired) {
+      const now = performance.now();
+      const dtMs = Math.min(
+        Math.max(now - session.lastChargeAt, 0),
+        50, // cap so a long stall frame doesn't skip the ring
+      );
+      session.lastChargeAt = now;
+
+      if (session.magFrac <= profile.hardChargeFrac) {
+        session.hardChargeMs += dtMs;
+        const need = Math.max(
+          session.leftDeadZone
+            ? profile.hardChargeReturnMs
+            : profile.hardChargeMs,
+          1,
+        );
+        const p = Math.min(1, session.hardChargeMs / need);
+        stick.setCharge(p);
+        if (p >= 1) {
+          fireHardDrop(session);
+          return;
+        }
+      } else if (session.hardChargeMs > 0) {
+        session.hardChargeMs = 0;
+        stick.setCharge(0);
+      }
+    }
+
+    const sxRaw = session.intentSx;
+    // Cap runaway flings; rim is |sx|=1, outside can go up to sxMax.
+    const sx =
+      Math.abs(sxRaw) > profile.sxMax
+        ? Math.sign(sxRaw) * profile.sxMax
+        : sxRaw;
+    if (Math.abs(sx) < 0.02) return;
+
+    if (options.continuous) {
+      const raw = Number.isFinite(delta) && delta > 0 ? delta : 0;
+      if (raw <= 0) return;
+      const dt = Math.min(raw, MAX_DELTA);
+      // v_x = sx * rimStrafe  (sx can exceed 1 outside the drawn ring).
+      const dist = strafeSpeed * sx * dt;
+      if (!dist) return;
+      applyContinuousDx(actions, dist);
+      return;
+    }
+
+    // Grid: step rate scales with |sx| (half-side ≈ half as often; outside ring faster).
+    const now = performance.now();
+    const strength = Math.max(Math.abs(sx), 0.08);
+    const interval = Math.max(
+      profile.gridStepMinMs,
+      profile.gridStepMs / strength,
+    );
+    if (session.lastGridStepAt <= 0) {
+      session.lastGridStepAt = now - interval * 0.55;
+    }
+    if (now - session.lastGridStepAt < interval) return;
+    session.lastGridStepAt = now;
+    fireHorizontalStep(actions, sx < 0);
+  };
 
   const clearSession = (releaseSoft: boolean) => {
     if (session && releaseSoft) releaseSoftDrop(session, actions);
     session = null;
+    unhookTick();
+    stick.hide();
   };
 
   const onPointerDown = (e: PointerEvent) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if (session) return;
+    if (isTouchUiBlocked(e.target)) return;
 
+    const now = performance.now();
     session = {
       pointerId: e.pointerId,
       originX: e.clientX,
       originY: e.clientY,
       lastX: e.clientX,
       lastY: e.clientY,
-      lastAt: performance.now(),
-      startedAt: performance.now(),
-      axis: "none",
-      gridAccumX: 0,
+      lastAt: now,
+      startedAt: now,
       softDropArmed: false,
       consumedAsPan: false,
       ended: false,
       recentVelY: 0,
+      intentSx: 0,
+      lastGridStepAt: 0,
+      hardChargeMs: 0,
+      lastChargeAt: now,
+      hardFired: false,
+      leftDeadZone: false,
+      magFrac: 0,
     };
+
+    const scale = scaleForView();
+    const radiusCss = thresh.stickRadius / (scale.sx > 0 ? scale.sx : 1);
+    stick.show(e.clientX, e.clientY, radiusCss);
+    // Start charging immediately (center hold) — tick accumulates.
+    ensureHooked();
+
     try {
-      canvas.setPointerCapture(e.pointerId);
+      surface.setPointerCapture(e.pointerId);
     } catch {
       /* capture optional */
     }
@@ -208,63 +358,45 @@ export const bindTouchControls = (
 
     const now = performance.now();
     const scale = scaleForView();
-    const clientDxFromOrigin = e.clientX - session.originX;
-    const clientDyFromOrigin = e.clientY - session.originY;
     const clientDxStep = e.clientX - session.lastX;
     const clientDyStep = e.clientY - session.lastY;
     const stepDt = Math.max(now - session.lastAt, 1);
-
-    const stageFromOrigin = clientDeltaToStage(
-      clientDxFromOrigin,
-      clientDyFromOrigin,
-      scale,
-    );
     const stageStep = clientDeltaToStage(clientDxStep, clientDyStep, scale);
 
-    // Stage-space velocity for density-independent flicks.
     const sampleVelY = stageStep.dy / stepDt;
     session.recentVelY = session.recentVelY * 0.35 + sampleVelY * 0.65;
     session.lastX = e.clientX;
     session.lastY = e.clientY;
     session.lastAt = now;
 
-    if (session.axis === "none") {
-      session.axis = resolveAxisLock(
-        stageFromOrigin.dx,
-        stageFromOrigin.dy,
-        THRESH.deadZone,
-        TOUCH_AXIS_DOMINANCE,
-      );
-      if (session.axis === "none") return;
+    const { sample } = sampleFromOrigin(session, e.clientX, e.clientY);
+    const knobCssDx = sample.knobDx / (scale.sx > 0 ? scale.sx : 1);
+    const knobCssDy = sample.knobDy / (scale.sy > 0 ? scale.sy : 1);
+    const active = Math.abs(sample.sx) > 0.02 || sample.softDrop;
+    stick.setKnob(knobCssDx, knobCssDy, active);
+
+    session.magFrac = sample.magFrac;
+    if (sample.magFrac > profile.deadFrac) {
       session.consumedAsPan = true;
+      session.leftDeadZone = true;
     }
 
-    // Soft drop from vertical commitment (stage cells).
-    if (
-      !session.softDropArmed &&
-      shouldArmSoftDrop(stageFromOrigin.dy, THRESH.softDrop)
-    ) {
+    session.intentSx = sample.sx;
+    // Keep ticker for charge even when sx≈0 (center hold).
+    ensureHooked();
+
+    // Soft-drop from +sy (down component) — stacks on base gravity.
+    // While charging hard-drop in center, don't soft-drop (sy≈0 anyway).
+    const wantSoft = softDropWithHysteresis(
+      sample,
+      session.softDropArmed,
+      profile.softVy,
+      profile.softVyRelease,
+    );
+    if (wantSoft && !session.softDropArmed) {
       armSoftDrop(session, actions);
-    } else if (
-      session.softDropArmed &&
-      shouldReleaseSoftDrop(stageFromOrigin.dy, THRESH.softDrop)
-    ) {
+    } else if (!wantSoft && session.softDropArmed) {
       releaseSoftDrop(session, actions);
-    }
-
-    // Horizontal only when H-locked, or soft-drop + intentional lateral steer.
-    // Pure vertical flicks never move columns.
-    const allowH =
-      session.axis === "h" ||
-      (session.softDropArmed &&
-        canSoftDropSteer(stageFromOrigin.dx, THRESH.softSteer));
-    if (allowH && Math.abs(stageStep.dx) > 0.5) {
-      if (session.axis === "v" && allowH) session.axis = "h";
-      if (options.continuous) {
-        applyContinuousDx(actions, stageStep.dx);
-      } else {
-        applyGridDx(session, actions, stageStep.dx);
-      }
     }
   };
 
@@ -295,7 +427,7 @@ export const bindTouchControls = (
           durationMs,
           stageTotal.dx,
           stageTotal.dy,
-          THRESH.deadZone,
+          thresh.deadZone,
           TOUCH_TAP_MAX_MS,
         )
       ) {
@@ -306,16 +438,14 @@ export const bindTouchControls = (
       }
     }
 
-    // Flicks: vertical-primary contacts only; stage distance + stage velocity.
     const verticalPrimary =
-      session.axis === "v" ||
       Math.abs(stageTotal.dy) >=
-        Math.abs(stageTotal.dx) * TOUCH_FLICK_VERTICAL_RATIO;
+      Math.abs(stageTotal.dx) * TOUCH_FLICK_VERTICAL_RATIO;
     if (!cancelled && session.consumedAsPan && verticalPrimary) {
       const flick = classifyFlick(velocityY, stageTotal.dy, stageTotal.dx, {
         hardVelocity: TOUCH_FLICK_HARD_VEL_STAGE,
         liftVelocity: TOUCH_FLICK_LIFT_VEL_STAGE,
-        minDistance: THRESH.flickMin,
+        minDistance: thresh.flickMin,
         verticalRatio: TOUCH_FLICK_VERTICAL_RATIO,
       });
       if (flick === "hardDrop") {
@@ -346,18 +476,20 @@ export const bindTouchControls = (
     }
   };
 
-  canvas.addEventListener("pointerdown", onPointerDown);
-  canvas.addEventListener("pointermove", onPointerMove);
-  canvas.addEventListener("pointerup", onPointerUp);
-  canvas.addEventListener("pointercancel", onPointerCancel);
-  canvas.addEventListener("lostpointercapture", onLostCapture);
+  surface.addEventListener("pointerdown", onPointerDown);
+  surface.addEventListener("pointermove", onPointerMove);
+  surface.addEventListener("pointerup", onPointerUp);
+  surface.addEventListener("pointercancel", onPointerCancel);
+  surface.addEventListener("lostpointercapture", onLostCapture);
 
   return () => {
     clearSession(true);
-    canvas.removeEventListener("pointerdown", onPointerDown);
-    canvas.removeEventListener("pointermove", onPointerMove);
-    canvas.removeEventListener("pointerup", onPointerUp);
-    canvas.removeEventListener("pointercancel", onPointerCancel);
-    canvas.removeEventListener("lostpointercapture", onLostCapture);
+    stick.dispose();
+    surface.style.touchAction = prevTouchAction;
+    surface.removeEventListener("pointerdown", onPointerDown);
+    surface.removeEventListener("pointermove", onPointerMove);
+    surface.removeEventListener("pointerup", onPointerUp);
+    surface.removeEventListener("pointercancel", onPointerCancel);
+    surface.removeEventListener("lostpointercapture", onLostCapture);
   };
 };
