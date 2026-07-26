@@ -137,6 +137,75 @@ const fetchJwks = async (): Promise<Record<string, unknown>[]> => {
   return jwksPromise;
 };
 
+/** 从 JWKS 里挑出与 header 匹配的公钥并导入。 */
+const importSigningKey = async (
+  header: Record<string, unknown>,
+  alg: string,
+  spec: AlgSpec,
+): Promise<{ ok: true; key: CryptoKey } | { ok: false; error: string }> => {
+  let keys: Record<string, unknown>[];
+  try {
+    keys = await fetchJwks();
+  } catch {
+    return { ok: false, error: "jwks_unavailable" };
+  }
+
+  const kid = typeof header.kid === "string" ? header.kid : null;
+  const jwk = keys.find(
+    (k) => (!kid || k.kid === kid) && (!k.alg || k.alg === alg),
+  );
+  if (!jwk) return { ok: false, error: "id_token_key_not_found" };
+
+  try {
+    return {
+      ok: true,
+      key: await crypto.subtle.importKey(
+        "jwk",
+        { ...jwk, key_ops: ["verify"] } as JsonWebKey,
+        spec.importParams,
+        false,
+        ["verify"],
+      ),
+    };
+  } catch (e) {
+    devWarn("[auth] jwks key import failed", e);
+    return { ok: false, error: "id_token_key_unusable" };
+  }
+};
+
+/**
+ * 校验 claim。**只在验签通过之后调用** ——
+ * 单看 claim 而不验签是没有意义的，伪造者想写什么就写什么。
+ */
+const checkClaims = (
+  claims: IdTokenClaims,
+  expectedNonce: string | null | undefined,
+): string | null => {
+  const issuer = PASS_ISSUER.replace(/\/$/, "");
+  if (claims.iss !== issuer) return "id_token_bad_issuer";
+
+  const audiences = Array.isArray(claims.aud)
+    ? claims.aud.map(String)
+    : [String(claims.aud ?? "")];
+  if (!audiences.includes(PASS_CLIENT_ID)) return "id_token_bad_audience";
+
+  const now = Math.floor(Date.now() / 1000);
+  // exp 缺失也算过期 —— 不能把"没写"当成"永不过期"
+  if (typeof claims.exp !== "number" || claims.exp + CLOCK_SKEW_SEC < now) {
+    return "id_token_expired";
+  }
+  if (typeof claims.iat === "number" && claims.iat - CLOCK_SKEW_SEC > now) {
+    return "id_token_future_iat";
+  }
+
+  // nonce：发过就必须对得上。这一步才是防 ID Token 注入的那一步。
+  if (expectedNonce && claims.nonce !== expectedNonce) {
+    return "id_token_nonce_mismatch";
+  }
+
+  return null;
+};
+
 /**
  * 验证一个 ID Token：签名 + `iss` / `aud` / `exp` / `iat` / `nonce`。
  *
@@ -158,38 +227,14 @@ export const validateIdToken = async (
   const spec = ALGS.get(alg);
   if (!spec) return { ok: false, error: `id_token_alg_${alg || "none"}` };
 
-  let keys: Record<string, unknown>[];
-  try {
-    keys = await fetchJwks();
-  } catch {
-    return { ok: false, error: "jwks_unavailable" };
-  }
-
-  const kid = typeof header.kid === "string" ? header.kid : null;
-  const key = keys.find(
-    (k) => (!kid || k.kid === kid) && (!k.alg || k.alg === alg),
-  );
-  if (!key) return { ok: false, error: "id_token_key_not_found" };
-
-  let publicKey: CryptoKey;
-  try {
-    publicKey = await crypto.subtle.importKey(
-      "jwk",
-      { ...key, key_ops: ["verify"] } as JsonWebKey,
-      spec.importParams,
-      false,
-      ["verify"],
-    );
-  } catch (e) {
-    devWarn("[auth] jwks key import failed", e);
-    return { ok: false, error: "id_token_key_unusable" };
-  }
+  const imported = await importSigningKey(header, alg, spec);
+  if (!imported.ok) return imported;
 
   let verified: boolean;
   try {
     verified = await crypto.subtle.verify(
       spec.verifyParams,
-      publicKey,
+      imported.key,
       b64urlToBytes(parts[2]!),
       new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
     );
@@ -200,28 +245,8 @@ export const validateIdToken = async (
   if (!verified) return { ok: false, error: "id_token_bad_signature" };
 
   // ── 签名过了，再看 claim ──────────────────────────────────────
-  const issuer = PASS_ISSUER.replace(/\/$/, "");
-  if (claims.iss !== issuer) return { ok: false, error: "id_token_bad_issuer" };
-
-  const audiences = Array.isArray(claims.aud)
-    ? claims.aud.map(String)
-    : [String(claims.aud ?? "")];
-  if (!audiences.includes(PASS_CLIENT_ID)) {
-    return { ok: false, error: "id_token_bad_audience" };
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (typeof claims.exp !== "number" || claims.exp + CLOCK_SKEW_SEC < now) {
-    return { ok: false, error: "id_token_expired" };
-  }
-  if (typeof claims.iat === "number" && claims.iat - CLOCK_SKEW_SEC > now) {
-    return { ok: false, error: "id_token_future_iat" };
-  }
-
-  // nonce：发过就必须对得上。这一步才是防 ID Token 注入的那一步。
-  if (expectedNonce && claims.nonce !== expectedNonce) {
-    return { ok: false, error: "id_token_nonce_mismatch" };
-  }
+  const claimError = checkClaims(claims, expectedNonce);
+  if (claimError) return { ok: false, error: claimError };
 
   return { ok: true, claims };
 };
