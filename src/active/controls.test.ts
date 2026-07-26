@@ -2,7 +2,21 @@
  * Touch half-screen helper (canvas letterbox-aware).
  */
 import "../test/dom-shim";
-import { describe, it, expect, vi } from "vitest";
+import { beforeAll, describe, it, expect, vi } from "vitest";
+
+/*
+ * 预热 ./controls 的模块图。
+ *
+ * 每个用例都 `await import("./controls")`，但只有**第一个**真正付出
+ * 加载成本 —— 那张图很大，冷加载在并行跑整套时能逼近 1.8s，默认 5s
+ * 的用例超时下会偶发超时，而红的会是恰好排在第一个的那个用例，
+ * 看起来像它自己的问题。
+ *
+ * 放进 beforeAll 之后这笔开销归到 hook 上，且只付一次。
+ */
+beforeAll(async () => {
+  await import("./controls");
+}, 30_000);
 
 vi.mock("../runtime", () => ({
   app: {
