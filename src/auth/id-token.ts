@@ -28,27 +28,31 @@ const CLOCK_SKEW_SEC = 60;
  * 「把 JWKS 里的公钥当成 HMAC 密钥」的经典伪造攻击直接不成立。
  * SEKAI Pass 签 ID Token 用的是 ES256。
  *
- * `__proto__: null` 是为了让 `ALGS["constructor"]` 也是 undefined ——
- * 否则 `alg: "constructor"` 能顺着原型链拿到一个真值。
+ * 用 Map 而不是普通对象：`{}.constructor` 是有值的，所以
+ * `alg: "constructor"` 能顺着原型链拿到一个真值，白名单就漏了。
+ * Map 没有这个问题，也不需要 `__proto__: null` 加类型断言那一套。
  */
-const ALGS: Record<
-  string,
-  {
-    importParams:
-      AlgorithmIdentifier | EcKeyImportParams | RsaHashedImportParams;
-    verifyParams: AlgorithmIdentifier | EcdsaParams;
-  }
-> = {
-  __proto__: null,
-  ES256: {
-    importParams: { name: "ECDSA", namedCurve: "P-256" },
-    verifyParams: { name: "ECDSA", hash: { name: "SHA-256" } },
-  },
-  RS256: {
-    importParams: { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    verifyParams: { name: "RSASSA-PKCS1-v1_5" },
-  },
-} as never;
+type AlgSpec = {
+  importParams: AlgorithmIdentifier | EcKeyImportParams | RsaHashedImportParams;
+  verifyParams: AlgorithmIdentifier | EcdsaParams;
+};
+
+const ALGS = new Map<string, AlgSpec>([
+  [
+    "ES256",
+    {
+      importParams: { name: "ECDSA", namedCurve: "P-256" },
+      verifyParams: { name: "ECDSA", hash: { name: "SHA-256" } },
+    },
+  ],
+  [
+    "RS256",
+    {
+      importParams: { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      verifyParams: { name: "RSASSA-PKCS1-v1_5" },
+    },
+  ],
+]);
 
 export type IdTokenClaims = {
   iss?: unknown;
@@ -151,7 +155,7 @@ export const validateIdToken = async (
 
   // 算法白名单先判，早于任何网络请求
   const alg = typeof header.alg === "string" ? header.alg : "";
-  const spec = ALGS[alg];
+  const spec = ALGS.get(alg);
   if (!spec) return { ok: false, error: `id_token_alg_${alg || "none"}` };
 
   let keys: Record<string, unknown>[];
