@@ -16,7 +16,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # 与 ci.yml / release.yml 保持一致。这个 job 会重新生成 yarn.lock
+          # 并直接推 main，用的 Node 版本和 CI 不同就有可能产出 CI 那边
+          # 复现不出来的 lockfile。
+          node-version: "24"
 
       - run: corepack enable
 

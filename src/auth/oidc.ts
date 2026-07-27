@@ -188,6 +188,7 @@ export const handleRedirectCallback = async (): Promise<CallbackResult> => {
       access_token?: string;
       refresh_token?: string;
       expires_in?: number;
+      id_token?: string;
     };
     try {
       data = res.json();
@@ -198,6 +199,19 @@ export const handleRedirectCallback = async (): Promise<CallbackResult> => {
     if (!data.access_token) {
       clearAuthQuery();
       return { handled: true, ok: false, error: "no_access_token" };
+    }
+
+    // 我们请求的 scope 含 openid，所以服务端必须给 ID Token，而且必须验。
+    // 在这之前 startLogin 发出的 nonce 是没有下文的 —— 发了不验等于没发。
+    if (!data.id_token) {
+      clearAuthQuery();
+      return { handled: true, ok: false, error: "no_id_token" };
+    }
+    const { validateIdToken } = await import("./id-token");
+    const idCheck = await validateIdToken(data.id_token, pending.nonce);
+    if (!idCheck.ok) {
+      clearAuthQuery();
+      return { handled: true, ok: false, error: idCheck.error };
     }
 
     const user =

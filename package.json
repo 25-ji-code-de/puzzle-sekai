@@ -3,6 +3,15 @@
   "version": "1.2.0",
   "description": "パズル⭐︎セカ - Project SEKAI fan group-clear / Puyo-style falling-block browser game.",
   "license": "AGPL-3.0-only",
+  "author": "The 25-ji-code-de Team",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/25-ji-code-de/puzzle-sekai.git"
+  },
+  "homepage": "https://github.com/25-ji-code-de/puzzle-sekai#readme",
+  "bugs": {
+    "url": "https://github.com/25-ji-code-de/puzzle-sekai/issues"
+  },
   "scripts": {
     "start": "vite --port 7426",
     "build": "vite build",
