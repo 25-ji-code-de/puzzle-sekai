@@ -12,6 +12,7 @@ export {
 } from "./config";
 export { startLogin, handleRedirectCallback, logout } from "./oidc";
 export type { LoginStartResult, CallbackResult } from "./oidc";
+export { getAuthPending, setAuthPending, onAuthPendingChange } from "./pending";
 export {
   loadSession,
   clearSession,
@@ -31,3 +32,9 @@ export {
   displayNameOf,
   type AuthSnapshot,
 } from "./user";
+export {
+  auth as sekaiAuth,
+  AUTH_SCOPE,
+  AUTH_STORAGE_PREFIX,
+  migrateLegacyAuthBlob,
+} from "./client";

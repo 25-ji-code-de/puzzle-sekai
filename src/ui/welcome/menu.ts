@@ -33,6 +33,7 @@ let welcomeSprite: PIXI.Sprite;
 let menuOverlay: HTMLDivElement | null = null;
 let localeListening = false;
 let unsubAuth: (() => void) | null = null;
+let unsubAuthPending: (() => void) | null = null;
 let unsubSync: (() => void) | null = null;
 let bootstrappedCloudSync = false;
 
@@ -83,6 +84,8 @@ const ensureSettingsPanel = (): Promise<
 const teardownMenu = () => {
   unsubAuth?.();
   unsubAuth = null;
+  unsubAuthPending?.();
+  unsubAuthPending = null;
   unsubSync?.();
   unsubSync = null;
   if (menuOverlay) {
@@ -228,28 +231,10 @@ const buildMenu = () => {
   authChip.textContent = t("auth.loginShort");
   authChip.title = t("auth.login");
   authChip.disabled = true;
-  /** True while OAuth is in-flight (browser open → deep-link return → token). */
-  let authPending = false;
-
-  const setAuthPending = (pending: boolean) => {
-    authPending = pending;
-    try {
-      if (pending) sessionStorage.setItem("puzzleSekaiAuthPending", "1");
-      else sessionStorage.removeItem("puzzleSekaiAuthPending");
-    } catch {
-      /* private mode */
-    }
-  };
-
-  try {
-    authPending = sessionStorage.getItem("puzzleSekaiAuthPending") === "1";
-  } catch {
-    authPending = false;
-  }
-
   const paintAuthChip = async () => {
     const auth = await ensureAuth();
     const snap = auth.getAuthSnapshot();
+    const authPending = auth.getAuthPending();
     const syncStatus = syncMod?.getSyncStatus() ?? "idle";
     authChip.classList.toggle("menu-auth--guest", !snap.loggedIn);
     authChip.classList.toggle("menu-auth--user", snap.loggedIn);
@@ -260,7 +245,7 @@ const buildMenu = () => {
 
     if (snap.loggedIn) {
       // Successful login clears the pending flag.
-      if (authPending) setAuthPending(false);
+      if (authPending) auth.setAuthPending(false);
       const name = auth.displayNameOf(snap.user);
       let suffix = "";
       if (syncStatus === "syncing") suffix = ` · ${t("auth.syncing")}`;
@@ -292,6 +277,11 @@ const buildMenu = () => {
         void paintAuthChip();
       });
     }
+    if (!unsubAuthPending) {
+      unsubAuthPending = auth.onAuthPendingChange(() => {
+        void paintAuthChip();
+      });
+    }
     await paintAuthChip();
   };
 
@@ -304,11 +294,11 @@ const buildMenu = () => {
           return;
         }
         // Show "Signing in…" immediately so return-from-browser doesn't look stuck.
-        setAuthPending(true);
+        auth.setAuthPending(true);
         void paintAuthChip();
         void auth.startLogin().then((r) => {
           if (!r.ok) {
-            setAuthPending(false);
+            auth.setAuthPending(false);
             void paintAuthChip();
             if (r.reason === "not_configured") {
               window.alert(t("auth.notConfigured"));
@@ -320,7 +310,7 @@ const buildMenu = () => {
       }
       if (window.confirm(t("auth.logout"))) {
         auth.logout();
-        setAuthPending(false);
+        auth.setAuthPending(false);
         void paintAuthChip();
         return;
       }

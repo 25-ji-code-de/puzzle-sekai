@@ -95,6 +95,7 @@ export const zh = {
     syncing: "同步中…",
     syncOk: "已同步",
     syncFailed: "同步失败",
+    loginFailed: "登录失败，请稍后重试。",
     notConfigured: "登录未设置（缺少 client_id）",
     loggedInAs: "{name}",
   },

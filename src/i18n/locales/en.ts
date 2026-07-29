@@ -95,6 +95,7 @@ export const en = {
     syncing: "Syncing…",
     syncOk: "Synced",
     syncFailed: "Sync failed",
+    loginFailed: "Sign-in failed. Please try again later.",
     notConfigured: "Login not configured (missing client_id)",
     loggedInAs: "{name}",
   },

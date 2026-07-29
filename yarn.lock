@@ -5,6 +5,13 @@ __metadata:
   version: 10
   cacheKey: 10c0
 
+"@25-ji-code-de/sekai-auth@github:25-ji-code-de/sekai-auth#v0.2.0":
+  version: 0.2.0
+  resolution: "@25-ji-code-de/sekai-auth@https://github.com/25-ji-code-de/sekai-auth.git#commit=d8b39bd1568818b07b9b9300bb7cd2c434d0fb1c"
+  checksum: 10c0/0757f6d6ba8c9b7c04525db3ee0c4ec750579250a1735079cb5f989f1e466879a2a163976e6e5fdad19a7219a62a778e532a420cae47a520e565b5a77ce32479
+  languageName: node
+  linkType: hard
+
 "@apideck/better-ajv-errors@npm:^0.3.1":
   version: 0.3.7
   resolution: "@apideck/better-ajv-errors@npm:0.3.7"
@@ -2850,6 +2857,21 @@ __metadata:
   version: 4.62.2
   resolution: "@rollup/rollup-win32-x64-msvc@npm:4.62.2"
   conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@sekai/design@github:25-ji-code-de/sekai-design#v0.1.0":
+  version: 0.1.0
+  resolution: "@sekai/design@https://github.com/25-ji-code-de/sekai-design.git#commit=b7eb8d25d0249ad575ee2242010b4500efebbb78"
+  peerDependencies:
+    react: ">=18"
+    react-dom: ">=18"
+  peerDependenciesMeta:
+    react:
+      optional: true
+    react-dom:
+      optional: true
+  checksum: 10c0/0648d0921b997680471af5fd23a25b6127c1a95654328ebed97dfe67cb59f6adf7b797f330f18fb99767be866ec728da793f1138468c041adefd2973d62dc27a
   languageName: node
   linkType: hard
 
@@ -6179,6 +6201,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "puzzle-sekai@workspace:."
   dependencies:
+    "@25-ji-code-de/sekai-auth": "github:25-ji-code-de/sekai-auth#v0.2.0"
     "@capacitor/android": "npm:^7"
     "@capacitor/app": "npm:^7"
     "@capacitor/browser": "npm:^7"
@@ -6189,6 +6212,7 @@ __metadata:
     "@capacitor/status-bar": "npm:^7"
     "@dimforge/rapier2d-compat": "npm:^0.19.3"
     "@eslint/js": "npm:^10.0.1"
+    "@sekai/design": "github:25-ji-code-de/sekai-design#v0.1.0"
     "@tauri-apps/api": "npm:^2"
     "@tauri-apps/cli": "npm:^2"
     "@tauri-apps/plugin-deep-link": "npm:^2"

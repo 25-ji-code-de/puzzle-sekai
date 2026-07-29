@@ -56,6 +56,10 @@ describe("isAppStorageKey", () => {
 
   it("never matches auth or unrelated keys", () => {
     expect(isAppStorageKey("puzzleSekaiAuth")).toBe(false);
+    expect(isAppStorageKey("puzzle_sekai_access_token")).toBe(false);
+    expect(isAppStorageKey("puzzle_sekai_refresh_token")).toBe(false);
+    expect(isAppStorageKey("puzzle_sekai_expires_at")).toBe(false);
+    expect(isAppStorageKey("puzzle_sekai_user")).toBe(false);
     expect(isAppStorageKey("unrelated-key")).toBe(false);
     expect(isAppStorageKey("hs:other:1")).toBe(false);
   });

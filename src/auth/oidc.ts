@@ -1,71 +1,33 @@
 /**
- * SEKAI Pass OAuth 2.1 + PKCE login for SPA.
+ * SEKAI Pass OAuth 2.1 + PKCE login façade.
+ *
+ * Implementation lives in @25-ji-code-de/sekai-auth; this file preserves the
+ * pre-SDK call shapes (startLogin / handleRedirectCallback / logout) so UI,
+ * sync, and native deep-link code do not churn.
  */
-import {
-  isAuthConfigured,
-  isNativeBuild,
-  PASS_CLIENT_ID,
-  PASS_ISSUER,
-  redirectUri,
-} from "./config";
-import {
-  generateCodeChallenge,
-  generateCodeVerifier,
-  generateNonce,
-  generateState,
-} from "./pkce";
+import { SekaiAuthError } from "@25-ji-code-de/sekai-auth";
+import { isAuthConfigured } from "./config";
+import { auth, profileToAuthUser, syncRedirectUri } from "./client";
 import {
   clearPkcePending,
   clearSession,
-  loadPkcePending,
-  savePkcePending,
   saveSession,
   type AuthSession,
   type AuthUser,
 } from "./session";
 import { notifyAuthChanged } from "./user";
+import { getStoragePort } from "../settings/storage";
 import { devWarn } from "../util/dev-log";
-import { toFiniteNumber } from "../util/number";
 
 export type LoginStartResult =
   { ok: true } | { ok: false; reason: "not_configured" | "crypto" };
 
-/** Redirect browser to SEKAI Pass authorize endpoint. */
+/** Redirect browser (or native OS browser) to SEKAI Pass authorize endpoint. */
 export const startLogin = async (): Promise<LoginStartResult> => {
   if (!isAuthConfigured()) return { ok: false, reason: "not_configured" };
   try {
-    const verifier = generateCodeVerifier();
-    const challenge = await generateCodeChallenge(verifier);
-    const state = generateState();
-    const nonce = generateNonce();
-    const redir = redirectUri();
-    savePkcePending({ verifier, state, nonce, redirectUri: redir });
-
-    const url = new URL(`${PASS_ISSUER}/oauth/authorize`);
-    url.searchParams.set("client_id", PASS_CLIENT_ID);
-    url.searchParams.set("redirect_uri", redir);
-    url.searchParams.set("response_type", "code");
-    url.searchParams.set("scope", "openid profile");
-    url.searchParams.set("code_challenge", challenge);
-    url.searchParams.set("code_challenge_method", "S256");
-    url.searchParams.set("state", state);
-    url.searchParams.set("nonce", nonce);
-
-    const authorizeUrl = url.toString();
-    // Native shells: open the IdP in the OS browser so the OAuth redirect
-    // lands as a system deep-link (puzzlesekai://) back into this app.
-    // Navigating the embedded webview would trap the custom scheme.
-    if (isNativeBuild()) {
-      const { openExternalUrl } = await import("../native/shell");
-      const ok = await openExternalUrl(authorizeUrl);
-      if (!ok) {
-        // Fallback — better than failing silently
-        window.location.assign(authorizeUrl);
-      }
-      return { ok: true };
-    }
-
-    window.location.assign(authorizeUrl);
+    syncRedirectUri();
+    await auth.login();
     return { ok: true };
   } catch (e) {
     devWarn("[auth] startLogin", e);
@@ -78,7 +40,7 @@ export type CallbackResult =
   | { handled: true; ok: true; session: AuthSession }
   | { handled: true; ok: false; error: string };
 
-const clearAuthQuery = () => {
+const clearAuthQuery = (): void => {
   try {
     const u = new URL(window.location.href);
     if (
@@ -100,31 +62,15 @@ const clearAuthQuery = () => {
   }
 };
 
-const fetchUserInfo = async (accessToken: string): Promise<AuthUser | null> => {
-  try {
-    const { getJson } = await import("../native/http");
-    const res = await getJson(`${PASS_ISSUER}/oauth/userinfo`, accessToken);
-    if (!res.ok) return null;
-    const data = res.json<Record<string, unknown>>();
-    const id = String(data.sub || data.id || "");
-    const username = String(
-      data.preferred_username || data.username || data.name || id,
-    );
-    if (!id || !username) return null;
-    return {
-      id,
-      username,
-      email: data.email != null ? String(data.email) : undefined,
-      displayName:
-        data.name != null
-          ? String(data.name)
-          : data.display_name != null
-            ? String(data.display_name)
-            : undefined,
-    };
-  } catch {
-    return null;
+const errorCodeOf = (err: unknown): string => {
+  if (err instanceof SekaiAuthError)
+    return err.code || err.message || "auth_error";
+  if (err && typeof err === "object" && "code" in err) {
+    const code = (err as { code?: unknown }).code;
+    if (typeof code === "string" && code) return code;
   }
+  if (err instanceof Error && err.message) return err.message;
+  return "network";
 };
 
 /**
@@ -133,6 +79,7 @@ const fetchUserInfo = async (accessToken: string): Promise<AuthUser | null> => {
  */
 export const handleRedirectCallback = async (): Promise<CallbackResult> => {
   if (typeof window === "undefined") return { handled: false };
+
   const params = new URLSearchParams(window.location.search);
   const err = params.get("error");
   const code = params.get("code");
@@ -140,11 +87,9 @@ export const handleRedirectCallback = async (): Promise<CallbackResult> => {
 
   if (!err && !code) return { handled: false };
 
-  const pending = loadPkcePending();
-  clearPkcePending();
-
   if (err) {
     clearAuthQuery();
+    clearPkcePending();
     return {
       handled: true,
       ok: false,
@@ -156,90 +101,70 @@ export const handleRedirectCallback = async (): Promise<CallbackResult> => {
     clearAuthQuery();
     return { handled: true, ok: false, error: "missing_code" };
   }
-  if (!pending || pending.state !== state) {
-    clearAuthQuery();
-    return { handled: true, ok: false, error: "state_mismatch" };
-  }
-  if (!PASS_CLIENT_ID) {
+  if (!isAuthConfigured()) {
     clearAuthQuery();
     return { handled: true, ok: false, error: "not_configured" };
   }
 
   try {
-    const body = new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      client_id: PASS_CLIENT_ID,
-      redirect_uri: pending.redirectUri,
-      code_verifier: pending.verifier,
-    });
-    // Native shells use CapacitorHttp to bypass IdP CORS on https://localhost.
-    const { postForm } = await import("../native/http");
-    const res = await postForm(`${PASS_ISSUER}/oauth/token`, body);
-    if (!res.ok) {
-      clearAuthQuery();
-      return {
-        handled: true,
-        ok: false,
-        error: `token_${res.status}${res.text ? `:${res.text.slice(0, 80)}` : ""}`,
-      };
-    }
-    let data: {
-      access_token?: string;
-      refresh_token?: string;
-      expires_in?: number;
-      id_token?: string;
-    };
-    try {
-      data = res.json();
-    } catch {
-      clearAuthQuery();
-      return { handled: true, ok: false, error: "token_bad_json" };
-    }
-    if (!data.access_token) {
-      clearAuthQuery();
-      return { handled: true, ok: false, error: "no_access_token" };
-    }
+    syncRedirectUri();
+    const tokens = await auth.handleCallback(code, state);
 
-    // 我们请求的 scope 含 openid，所以服务端必须给 ID Token，而且必须验。
-    // 在这之前 startLogin 发出的 nonce 是没有下文的 —— 发了不验等于没发。
-    if (!data.id_token) {
+    // SDK validates id_token when present. We requested openid, so missing
+    // id_token is a protocol failure.
+    if (auth.scope.split(/\s+/).includes("openid") && !tokens.id_token) {
+      clearSession();
       clearAuthQuery();
       return { handled: true, ok: false, error: "no_id_token" };
     }
-    const { validateIdToken } = await import("./id-token");
-    const idCheck = await validateIdToken(data.id_token, pending.nonce);
-    if (!idCheck.ok) {
-      clearAuthQuery();
-      return { handled: true, ok: false, error: idCheck.error };
-    }
 
-    const user =
-      (await fetchUserInfo(data.access_token)) ||
-      ({
-        id: "unknown",
-        username: "user",
-      } satisfies AuthUser);
+    const userInfo = await auth.getUserInfo({ cache: true });
+    const mapped = profileToAuthUser(userInfo);
+    const user: AuthUser = mapped ?? {
+      id: "unknown",
+      username: "user",
+    };
 
+    // Ensure discrete keys + user cache are coherent for loadSession().
+    const expiresAt = Number(
+      getStoragePortSafe(auth.keys.expiresAt) ?? Date.now() + 3600 * 1000,
+    );
     const session: AuthSession = {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresAt: Date.now() + toFiniteNumber(data.expires_in, 3600) * 1000,
+      accessToken:
+        getStoragePortSafe(auth.keys.accessToken) || tokens.access_token,
+      refreshToken: getStoragePortSafe(auth.keys.refreshToken) || undefined,
+      expiresAt,
       user,
     };
     saveSession(session);
     clearAuthQuery();
+    clearPkcePending();
     notifyAuthChanged();
     return { handled: true, ok: true, session };
   } catch (e) {
     clearAuthQuery();
+    clearPkcePending();
     devWarn("[auth] callback", e);
-    return { handled: true, ok: false, error: "network" };
+    return { handled: true, ok: false, error: errorCodeOf(e) };
   }
 };
 
+const getStoragePortSafe = (key: string): string | null => {
+  try {
+    return getStoragePort().get(key);
+  } catch {
+    return null;
+  }
+};
+
+/** Local clear + best-effort RFC 7009 revoke. */
 export const logout = (): void => {
-  clearSession();
   clearPkcePending();
+  // auth.logout reads both tokens before its first await, so starting it before
+  // the local clear preserves best-effort revoke without delaying the UI.
+  void auth
+    .logout({ revoke: true })
+    .catch((e) => devWarn("[auth] logout revoke", e));
+  clearSession();
   notifyAuthChanged();
 };
