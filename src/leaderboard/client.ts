@@ -5,6 +5,12 @@ import type { ScoreSummary } from "../score";
 
 export const DAILY_BOARD_ID = "pico-daily";
 export const DAILY_RULES_VERSION = 1;
+export const BOARD_IDS = {
+  daily: DAILY_BOARD_ID,
+  endless: "pico-endless",
+  timeAttack: "pico-time-attack",
+} as const;
+export type LeaderboardMode = keyof typeof BOARD_IDS;
 
 export interface LeaderboardEntry {
   rank: number;
@@ -21,7 +27,7 @@ export interface DailyLeaderboard {
   period_end: string;
 }
 
-let pendingDailySubmission: Promise<boolean> | null = null;
+let pendingSubmission: Promise<boolean> | null = null;
 
 const authorizedFetch = async (path: string, init?: RequestInit) => {
   const token = await getAccessToken();
@@ -34,9 +40,11 @@ const authorizedFetch = async (path: string, init?: RequestInit) => {
   return response;
 };
 
-export const fetchDailyLeaderboard = async (): Promise<DailyLeaderboard> => {
+export const fetchLeaderboard = async (
+  mode: LeaderboardMode = "daily",
+): Promise<DailyLeaderboard> => {
   const response = await authorizedFetch(
-    `/user/leaderboards/${DAILY_BOARD_ID}?limit=50`,
+    `/user/leaderboards/${BOARD_IDS[mode]}?limit=50`,
   );
   const payload = (await response.json()) as {
     entries?: LeaderboardEntry[];
@@ -53,36 +61,50 @@ export const fetchDailyLeaderboard = async (): Promise<DailyLeaderboard> => {
   };
 };
 
-export const submitDailyScore = (summary: ScoreSummary): Promise<boolean> => {
-  if (
-    summary.mode !== "daily" ||
-    summary.replaying ||
-    summary.dailyDateKey !== utcDateKey()
-  ) {
+export const fetchDailyLeaderboard = (): Promise<DailyLeaderboard> =>
+  fetchLeaderboard("daily");
+
+export const submitLeaderboardScore = (
+  summary: ScoreSummary,
+): Promise<boolean> => {
+  if (summary.replaying || summary.entertainment) {
+    return Promise.resolve(false);
+  }
+  if (summary.mode === "daily" && summary.dailyDateKey !== utcDateKey()) {
     return Promise.resolve(false);
   }
 
-  pendingDailySubmission = authorizedFetch(
-    `/user/leaderboards/${DAILY_BOARD_ID}`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        submission_id: crypto.randomUUID(),
-        score: summary.score,
-        metadata: {
-          daily_date: summary.dailyDateKey,
-          max_combo: summary.maxCombo,
-          played_seconds: summary.playedSeconds,
-          rules_version: DAILY_RULES_VERSION,
-        },
-      }),
-    },
-  )
+  const boardId = BOARD_IDS[summary.mode];
+  const leaderboardScore =
+    summary.mode === "daily"
+      ? summary.score
+      : Math.floor(summary.effectiveScore);
+
+  pendingSubmission = authorizedFetch(`/user/leaderboards/${boardId}`, {
+    method: "POST",
+    body: JSON.stringify({
+      submission_id: crypto.randomUUID(),
+      score: leaderboardScore,
+      metadata: {
+        mode: summary.mode,
+        raw_score: summary.score,
+        daily_date: summary.dailyDateKey,
+        max_combo: summary.maxCombo,
+        played_seconds: summary.playedSeconds,
+        difficulty: summary.difficulty,
+        rules_version: DAILY_RULES_VERSION,
+      },
+    }),
+  })
     .then(() => true)
     .catch(() => false);
-  return pendingDailySubmission;
+  return pendingSubmission;
 };
 
-export const waitForDailySubmission = async (): Promise<void> => {
-  await pendingDailySubmission;
+export const submitDailyScore = submitLeaderboardScore;
+
+export const waitForScoreSubmission = async (): Promise<void> => {
+  await pendingSubmission;
 };
+
+export const waitForDailySubmission = waitForScoreSubmission;

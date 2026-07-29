@@ -41,9 +41,14 @@ export const ja = {
     signIn: "ログインするとランキングを確認できます。",
     failed: "ランキングを読み込めませんでした。",
     submitting: "スコアを送信中...",
-    myRank: "今日の順位：{total}人中 {rank}位",
-    notRanked: "今日の有効なスコアはありません。",
+    myRank: "順位：{total}人中 {rank}位",
+    notRanked: "有効なスコアはまだありません。",
     unavailable: "ランキングを利用できません。",
+    mode: {
+      daily: "デイリー",
+      endless: "エンドレス",
+      timeAttack: "タイムアタック",
+    },
   },
   display: {
     rotateLandscape: "端末を横向きにしてプレイしてください",

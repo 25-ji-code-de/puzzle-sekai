@@ -5,7 +5,7 @@ import {
   buildDialogShell,
 } from "../ui/dialog-button";
 import type { FocusTrapHandle } from "../a11y";
-import { fetchDailyLeaderboard } from "./client";
+import { fetchLeaderboard, type LeaderboardMode } from "./client";
 
 let overlay: HTMLDivElement | null = null;
 let focusTrap: FocusTrapHandle | null = null;
@@ -19,7 +19,7 @@ export const closeDailyLeaderboard = (): void => {
 
 const renderRows = (
   host: HTMLElement,
-  entries: Awaited<ReturnType<typeof fetchDailyLeaderboard>>["entries"],
+  entries: Awaited<ReturnType<typeof fetchLeaderboard>>["entries"],
 ) => {
   host.replaceChildren();
   if (entries.length === 0) {
@@ -56,10 +56,42 @@ export const showDailyLeaderboard = (): void => {
   overlay = shell.overlay;
   shell.card.classList.add("ui-dialog--leaderboard");
 
+  const controls = document.createElement("div");
+  controls.className = "leaderboard-controls";
+  let activeMode: LeaderboardMode = "daily";
+
   const body = document.createElement("div");
   body.className = "leaderboard-loading";
   body.textContent = t("leaderboard.loading");
   shell.card.appendChild(body);
+
+  const load = (mode: LeaderboardMode) => {
+    activeMode = mode;
+    controls.querySelectorAll("button").forEach((button) => {
+      button.classList.toggle("active", button.dataset.mode === activeMode);
+    });
+    body.className = "leaderboard-loading";
+    body.textContent = t("leaderboard.loading");
+    void fetchLeaderboard(mode)
+      .then((board) => renderRows(body, board.entries))
+      .catch((error: unknown) => {
+        body.className = "leaderboard-empty";
+        body.textContent =
+          error instanceof Error && error.message === "AUTH_REQUIRED"
+            ? t("leaderboard.signIn")
+            : t("leaderboard.failed");
+      });
+  };
+  for (const mode of ["daily", "endless", "timeAttack"] as const) {
+    const button = buildDialogButton(
+      t(`leaderboard.mode.${mode}`),
+      "neutral",
+      () => load(mode),
+    );
+    button.dataset.mode = mode;
+    controls.appendChild(button);
+  }
+  shell.card.insertBefore(controls, body);
 
   const close = buildDialogButton(
     t("controls.close"),
@@ -76,13 +108,5 @@ export const showDailyLeaderboard = (): void => {
     onEscape: closeDailyLeaderboard,
   });
 
-  void fetchDailyLeaderboard()
-    .then((board) => renderRows(body, board.entries))
-    .catch((error: unknown) => {
-      body.className = "leaderboard-empty";
-      body.textContent =
-        error instanceof Error && error.message === "AUTH_REQUIRED"
-          ? t("leaderboard.signIn")
-          : t("leaderboard.failed");
-    });
+  load("daily");
 };

@@ -41,9 +41,14 @@ export const zh = {
     signIn: "登录后可查看排行榜。",
     failed: "排行榜加载失败。",
     submitting: "正在上传成绩...",
-    myRank: "今日排名：第 {rank} / {total} 名",
-    notRanked: "今天暂无有效成绩。",
+    myRank: "排名：第 {rank} / {total} 名",
+    notRanked: "暂无有效成绩。",
     unavailable: "排行榜暂不可用。",
+    mode: {
+      daily: "每日挑战",
+      endless: "无尽模式",
+      timeAttack: "计时模式",
+    },
   },
   display: {
     rotateLandscape: "请把设备横过来再开始游戏",

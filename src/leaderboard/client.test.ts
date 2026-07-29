@@ -12,6 +12,8 @@ const dailySummary = (overrides: Partial<ScoreSummary> = {}) =>
     replaying: false,
     dailyDateKey: "2026-07-29",
     score: 12345,
+    effectiveScore: 4321.9,
+    entertainment: false,
     maxCombo: 8,
     playedSeconds: 95,
     ...overrides,
@@ -58,13 +60,28 @@ describe("daily leaderboard client", () => {
 
   it.each([
     { replaying: true },
-    { mode: "endless" as const },
+    { entertainment: true },
     { dailyDateKey: "2026-07-28" },
   ])("does not submit an ineligible result: %o", async (overrides) => {
     const { submitDailyScore } = await import("./client");
 
     expect(await submitDailyScore(dailySummary(overrides))).toBe(false);
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["endless", "pico-endless"],
+    ["timeAttack", "pico-time-attack"],
+  ] as const)("submits normalized %s scores", async (mode, boardId) => {
+    const { submitLeaderboardScore } = await import("./client");
+
+    expect(await submitLeaderboardScore(dailySummary({ mode }))).toBe(true);
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe(`https://gateway.test/user/leaderboards/${boardId}`);
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      score: 4321,
+      metadata: { mode, raw_score: 12345 },
+    });
   });
 
   it("requires an access token", async () => {

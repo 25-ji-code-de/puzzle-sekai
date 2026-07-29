@@ -537,9 +537,9 @@ const beginGameOver = (cause: "topOut" | "timeUp") => {
   // Cloud sync (no-op when logged out). Replays themselves are local-only.
   if (!isReplayPlayback()) {
     scheduleSyncPush();
-    if (summary.mode === "daily") {
-      void import("../leaderboard/client").then(({ submitDailyScore }) =>
-        submitDailyScore(summary),
+    if (!summary.entertainment) {
+      void import("../leaderboard/client").then(({ submitLeaderboardScore }) =>
+        submitLeaderboardScore(summary),
       );
     }
   }

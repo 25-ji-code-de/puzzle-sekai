@@ -41,9 +41,14 @@ export const en = {
     signIn: "Sign in to view the leaderboard.",
     failed: "Couldn't load the leaderboard.",
     submitting: "Submitting score...",
-    myRank: "Today's rank: #{rank} of {total}",
-    notRanked: "No qualifying score today.",
+    myRank: "Rank: #{rank} of {total}",
+    notRanked: "No qualifying score yet.",
     unavailable: "Leaderboard unavailable.",
+    mode: {
+      daily: "Daily",
+      endless: "Endless",
+      timeAttack: "Time Attack",
+    },
   },
   display: {
     rotateLandscape: "Rotate your device to landscape to play",

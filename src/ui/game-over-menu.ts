@@ -51,16 +51,16 @@ export const showGameOverMenu = (): void => {
 
   card.appendChild(buildGameOverSummary(summary));
 
-  if (summary.mode === "daily" && !summary.replaying) {
+  if (!summary.entertainment && !summary.replaying) {
     const rank = document.createElement("div");
     rank.className = "go-leaderboard-rank";
     rank.textContent = t("leaderboard.submitting");
     card.appendChild(rank);
     void import("../leaderboard/client").then(
-      async ({ fetchDailyLeaderboard, waitForDailySubmission }) => {
-        await waitForDailySubmission();
+      async ({ fetchLeaderboard, waitForScoreSubmission }) => {
+        await waitForScoreSubmission();
         try {
-          const board = await fetchDailyLeaderboard();
+          const board = await fetchLeaderboard(summary.mode);
           rank.textContent = board.me
             ? t("leaderboard.myRank", {
                 rank: board.me.rank,
