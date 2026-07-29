@@ -196,6 +196,13 @@ const buildMenu = () => {
     }),
   );
   toolbar.appendChild(makeToolbarBtn(t("menu.controls"), showControlsOverlay));
+  toolbar.appendChild(
+    makeToolbarBtn(t("leaderboard.button"), () => {
+      void import("../../leaderboard/dialog").then(({ showDailyLeaderboard }) =>
+        showDailyLeaderboard(),
+      );
+    }),
+  );
   toolbar.appendChild(makeToolbarBtn(t("menu.about"), showAboutOverlay));
 
   const clearCacheBtn = makeToolbarBtn(

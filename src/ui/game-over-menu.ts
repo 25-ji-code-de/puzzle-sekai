@@ -51,6 +51,29 @@ export const showGameOverMenu = (): void => {
 
   card.appendChild(buildGameOverSummary(summary));
 
+  if (summary.mode === "daily" && !summary.replaying) {
+    const rank = document.createElement("div");
+    rank.className = "go-leaderboard-rank";
+    rank.textContent = t("leaderboard.submitting");
+    card.appendChild(rank);
+    void import("../leaderboard/client").then(
+      async ({ fetchDailyLeaderboard, waitForDailySubmission }) => {
+        await waitForDailySubmission();
+        try {
+          const board = await fetchDailyLeaderboard();
+          rank.textContent = board.me
+            ? t("leaderboard.myRank", {
+                rank: board.me.rank,
+                total: board.total,
+              })
+            : t("leaderboard.notRanked");
+        } catch {
+          rank.textContent = t("leaderboard.unavailable");
+        }
+      },
+    );
+  }
+
   const actions = document.createElement("div");
   actions.className = "go-actions";
 
