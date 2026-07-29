@@ -1,7 +1,7 @@
 /**
  * Gateway /user/sync client.
  */
-import { getAccessToken, logout } from "../auth";
+import { getAccessToken } from "../auth";
 import { GATEWAY_BASE, SYNC_PROJECT } from "../auth/config";
 import { parsePicoSyncData } from "./merge";
 import type { PicoSyncData } from "./types";
@@ -37,10 +37,6 @@ export const fetchCloudSync = async (): Promise<CloudSyncEnvelope | null> => {
   if (!headers) return null;
   const url = `${GATEWAY_BASE}/user/sync?project=${encodeURIComponent(SYNC_PROJECT)}`;
   const res = await fetch(url, { headers });
-  if (res.status === 401) {
-    logout();
-    return null;
-  }
   if (!res.ok) {
     throw new Error(`sync_get_${res.status}`);
   }
@@ -79,10 +75,6 @@ export const uploadCloudSync = async (
       data,
     }),
   });
-  if (res.status === 401) {
-    logout();
-    return null;
-  }
   if (!res.ok) {
     throw new Error(`sync_post_${res.status}`);
   }

@@ -23,7 +23,8 @@ export const isAppStorageKey = (key: string): boolean =>
   key === "highScore_endless" ||
   key.startsWith("highScore_endless_") ||
   key.startsWith("highScore_timeAttack_");
-// Note: puzzleSekaiAuth is intentionally NOT cleared so login survives "clear data".
+// Note: legacy puzzleSekaiAuth and SDK puzzle_sekai_* keys are intentionally
+// NOT cleared so login survives "clear data".
 
 export function clearAppData(): void {
   try {

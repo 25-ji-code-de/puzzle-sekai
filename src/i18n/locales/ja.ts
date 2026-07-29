@@ -95,6 +95,7 @@ export const ja = {
     syncing: "同期中…",
     syncOk: "同期済み",
     syncFailed: "同期失敗",
+    loginFailed: "ログインに失敗しました。しばらくしてから再試行してください。",
     notConfigured: "ログイン未設定（client_id なし）",
     loggedInAs: "{name}",
   },

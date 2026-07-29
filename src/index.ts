@@ -11,6 +11,7 @@
  *    — idle-prewarmed after shell; spawn loads JIT if still missing
  */
 import * as PIXI from "pixi.js-legacy";
+import "@sekai/design/tokens";
 import "./style.scss";
 // Non-critical DOM chrome (menus/dialogs/settings) — does not block first paint.
 // Boot LCP CSS is inlined in index.html.

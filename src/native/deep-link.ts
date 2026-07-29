@@ -6,6 +6,7 @@
  * Loaded only when `VITE_NATIVE=1` so the web bundle never pulls shell APIs.
  */
 import { isNativeBuild } from "../auth/config";
+import { setAuthPending } from "../auth/pending";
 import { devWarn } from "../util/dev-log";
 
 const OAUTH_CALLBACK_HOST = "auth/callback";
@@ -35,23 +36,19 @@ export const injectOAuthCallback = (url: string): void => {
     const next = `${window.location.pathname}?${qs}${window.location.hash || ""}`;
     window.history.replaceState({}, "", next);
     // Keep the "Signing in…" chip visible until handleRedirectCallback finishes.
-    try {
-      sessionStorage.setItem("puzzleSekaiAuthPending", "1");
-    } catch {
-      /* private mode */
-    }
-    void import("../auth").then(async ({ handleRedirectCallback }) => {
-      const cb = await handleRedirectCallback();
-      try {
-        sessionStorage.removeItem("puzzleSekaiAuthPending");
-      } catch {
-        /* ignore */
-      }
-      if (cb.handled && cb.ok) {
-        const { pullMergePush } = await import("../sync");
-        void pullMergePush();
-      }
-    });
+    setAuthPending(true);
+    void import("../auth")
+      .then(async ({ handleRedirectCallback }) => {
+        const cb = await handleRedirectCallback();
+        if (cb.handled && cb.ok) {
+          const { pullMergePush } = await import("../sync");
+          void pullMergePush();
+        }
+      })
+      .catch((e) => devWarn("[native] OAuth callback", e))
+      .finally(() => {
+        setAuthPending(false);
+      });
   } catch (e) {
     devWarn("[native] injectOAuthCallback", e);
   }

@@ -1,15 +1,12 @@
 /**
- * Persist OAuth tokens + user profile (localStorage via StoragePort).
- * PKCE pending uses sessionStorage on web; localStorage on native shells so
- * custom-scheme OAuth hops do not drop the verifier/state.
+ * Auth session façade over sekai-auth discrete storage keys.
+ *
+ * Keeps the AuthSession / AuthUser shapes the rest of the app already uses.
+ * Token refresh is owned by the SDK (5 min skew, single-flight).
  */
+import { auth, migrateLegacyAuthBlob, profileToAuthUser } from "./client";
+import { AUTH_STORAGE_KEY, isNativeBuild } from "./config";
 import { getStoragePort } from "../settings/storage";
-import {
-  AUTH_STORAGE_KEY,
-  isNativeBuild,
-  PASS_CLIENT_ID,
-  PASS_ISSUER,
-} from "./config";
 import { devWarn } from "../util/dev-log";
 import { safeJsonParse } from "../util/json";
 import { toNonNegInt } from "../util/number";
@@ -29,8 +26,10 @@ export type AuthSession = {
   user: AuthUser;
 };
 
+/** @deprecated PKCE is owned by sekai-auth; kept only so old imports typecheck during migration. */
 export const PKCE_SESSION_KEY = "puzzleSekaiPkce";
 
+/** @deprecated */
 export type PkcePending = {
   verifier: string;
   state: string;
@@ -38,95 +37,66 @@ export type PkcePending = {
   redirectUri: string;
 };
 
-const readPkceRaw = (): string | null => {
-  if (isNativeBuild()) {
-    return getStoragePort().get(PKCE_SESSION_KEY);
-  }
-  try {
-    return sessionStorage.getItem(PKCE_SESSION_KEY);
-  } catch {
-    return null;
-  }
+const userFromCache = (): AuthUser | null => {
+  const cached = auth.getCachedUser();
+  return profileToAuthUser(cached);
 };
 
-const writePkceRaw = (raw: string): void => {
-  if (isNativeBuild()) {
-    getStoragePort().set(PKCE_SESSION_KEY, raw);
-    return;
-  }
-  try {
-    sessionStorage.setItem(PKCE_SESSION_KEY, raw);
-  } catch {
-    /* private mode */
-  }
-};
-
-const removePkceRaw = (): void => {
-  if (isNativeBuild()) {
-    getStoragePort().remove(PKCE_SESSION_KEY);
-    return;
-  }
-  try {
-    sessionStorage.removeItem(PKCE_SESSION_KEY);
-  } catch {
-    /* ignore */
-  }
-};
-
-export const savePkcePending = (p: PkcePending): void => {
-  try {
-    writePkceRaw(JSON.stringify(p));
-  } catch {
-    /* private mode / quota */
-  }
-};
-
-export const loadPkcePending = (): PkcePending | null => {
-  const raw = readPkceRaw();
-  if (!raw) return null;
-  const o = safeJsonParse<Partial<PkcePending>>(raw);
-  if (!o?.verifier || !o.state || !o.redirectUri) return null;
-  return {
-    verifier: o.verifier,
-    state: o.state,
-    nonce: o.nonce || "",
-    redirectUri: o.redirectUri,
-  };
-};
-
-export const clearPkcePending = (): void => {
-  try {
-    removePkceRaw();
-  } catch {
-    /* ignore */
-  }
-};
-
+/**
+ * Read the current session from discrete SDK keys.
+ * Runs the legacy blob migrator first so cold boots after upgrade still work
+ * if something imported session before client.ts finished its side effect.
+ */
 export const loadSession = (): AuthSession | null => {
   try {
-    const raw = getStoragePort().get(AUTH_STORAGE_KEY);
-    if (!raw) return null;
-    const o = safeJsonParse<Partial<AuthSession>>(raw);
-    if (!o?.accessToken || !o.user?.id || !o.user?.username) return null;
+    migrateLegacyAuthBlob();
+    const accessToken = getStoragePort().get(auth.keys.accessToken);
+    if (!accessToken) return null;
+    const user = userFromCache();
+    if (!user) return null;
+    const refreshToken =
+      getStoragePort().get(auth.keys.refreshToken) ?? undefined;
+    const expiresAt = toNonNegInt(
+      Number(getStoragePort().get(auth.keys.expiresAt) ?? 0),
+    );
     return {
-      accessToken: o.accessToken,
-      refreshToken: o.refreshToken,
-      expiresAt: toNonNegInt(o.expiresAt),
-      user: {
-        id: o.user.id,
-        username: o.user.username,
-        email: o.user.email,
-        displayName: o.user.displayName,
-      },
+      accessToken,
+      refreshToken: refreshToken || undefined,
+      expiresAt,
+      user,
     };
   } catch {
     return null;
   }
 };
 
+/**
+ * Write a session into SDK discrete keys.
+ * Used by tests and (rarely) by code that already has a full AuthSession.
+ */
 export const saveSession = (session: AuthSession): void => {
   try {
-    getStoragePort().set(AUTH_STORAGE_KEY, JSON.stringify(session));
+    const storage = getStoragePort();
+    storage.set(auth.keys.accessToken, session.accessToken);
+    storage.set(auth.keys.expiresAt, String(session.expiresAt));
+    if (session.refreshToken) {
+      storage.set(auth.keys.refreshToken, session.refreshToken);
+    } else {
+      storage.remove(auth.keys.refreshToken);
+    }
+    storage.set(
+      auth.keys.user,
+      JSON.stringify({
+        sub: session.user.id,
+        preferred_username: session.user.username,
+        username: session.user.username,
+        email: session.user.email,
+        name: session.user.displayName,
+        display_name: session.user.displayName,
+      }),
+    );
+    // Drop any leftover legacy blob so loadSession doesn't thrash.
+    storage.remove(AUTH_STORAGE_KEY);
   } catch (e) {
     devWarn("[auth] save session failed", e);
   }
@@ -134,67 +104,93 @@ export const saveSession = (session: AuthSession): void => {
 
 export const clearSession = (): void => {
   try {
-    getStoragePort().remove(AUTH_STORAGE_KEY);
+    const storage = getStoragePort();
+    storage.remove(auth.keys.accessToken);
+    storage.remove(auth.keys.refreshToken);
+    storage.remove(auth.keys.expiresAt);
+    storage.remove(auth.keys.user);
+    storage.remove(AUTH_STORAGE_KEY);
   } catch {
     /* ignore */
   }
 };
 
+/**
+ * @deprecated Refresh skew is owned by the SDK (REFRESH_SKEW_MS = 5 min).
+ * Kept for any residual callers / tests.
+ */
 export const isSessionFresh = (
   session: AuthSession,
   skewMs = 60_000,
 ): boolean => session.expiresAt - skewMs > Date.now();
 
-/**
- * Return a usable access token, refreshing if needed.
- * Returns null if logged out or refresh fails.
- */
+/** Return a usable access token, refreshing if needed. */
 export const getAccessToken = async (): Promise<string | null> => {
-  const session = loadSession();
-  if (!session) return null;
-  if (isSessionFresh(session)) return session.accessToken;
-  if (!session.refreshToken || !PASS_CLIENT_ID) {
-    clearSession();
+  try {
+    migrateLegacyAuthBlob();
+    return await auth.getAccessToken();
+  } catch (e) {
+    devWarn("[auth] getAccessToken failed", e);
     return null;
   }
+};
+
+/* ── PKCE pending: no longer used by the login path. ───────────────
+ * Retained as thin no-op / best-effort cleaners so deep-link / logout
+ * call sites and any residual imports keep compiling. New code must
+ * not call these.
+ */
+
+export const savePkcePending = (p: PkcePending): void => {
+  // Best-effort write in the old shape so a mid-deploy tab isn't worse off.
   try {
-    const body = new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: session.refreshToken,
-      client_id: PASS_CLIENT_ID,
-    });
-    const { postForm } = await import("../native/http");
-    const res = await postForm(`${PASS_ISSUER}/oauth/token`, body);
-    if (!res.ok) {
-      clearSession();
-      return null;
+    const raw = JSON.stringify(p);
+    if (isNativeBuild()) {
+      getStoragePort().set(PKCE_SESSION_KEY, raw);
+    } else if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(PKCE_SESSION_KEY, raw);
     }
-    let data: {
-      access_token?: string;
-      refresh_token?: string;
-      expires_in?: number;
+  } catch {
+    /* ignore */
+  }
+};
+
+export const loadPkcePending = (): PkcePending | null => {
+  try {
+    const raw = isNativeBuild()
+      ? getStoragePort().get(PKCE_SESSION_KEY)
+      : typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem(PKCE_SESSION_KEY)
+        : null;
+    if (!raw) return null;
+    const o = safeJsonParse<Partial<PkcePending>>(raw);
+    if (!o?.verifier || !o.state || !o.redirectUri) return null;
+    return {
+      verifier: o.verifier,
+      state: o.state,
+      nonce: o.nonce || "",
+      redirectUri: o.redirectUri,
     };
-    try {
-      data = res.json();
-    } catch {
-      clearSession();
-      return null;
-    }
-    if (!data.access_token) {
-      clearSession();
-      return null;
-    }
-    const next: AuthSession = {
-      ...session,
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token || session.refreshToken,
-      expiresAt: Date.now() + (Number(data.expires_in) || 3600) * 1000,
-    };
-    saveSession(next);
-    return next.accessToken;
-  } catch (e) {
-    devWarn("[auth] refresh failed", e);
-    clearSession();
+  } catch {
     return null;
+  }
+};
+
+export const clearPkcePending = (): void => {
+  try {
+    if (isNativeBuild()) {
+      const storage = getStoragePort();
+      storage.remove(PKCE_SESSION_KEY);
+      storage.remove(auth.keys.codeVerifier);
+      storage.remove(auth.keys.state);
+      storage.remove(auth.keys.nonce);
+    } else if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem(PKCE_SESSION_KEY);
+      sessionStorage.removeItem(auth.keys.codeVerifier);
+      sessionStorage.removeItem(auth.keys.state);
+      sessionStorage.removeItem(auth.keys.nonce);
+    }
+  } catch {
+    /* ignore */
   }
 };

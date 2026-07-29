@@ -2,6 +2,7 @@
  * Auth UI snapshot + listeners.
  */
 import { loadSession, type AuthUser } from "./session";
+import { onAuthExpired } from "./client";
 import { devWarn } from "../util/dev-log";
 
 export type AuthSnapshot = {
@@ -12,6 +13,10 @@ export type AuthSnapshot = {
 type Listener = (snap: AuthSnapshot) => void;
 
 const listeners = new Set<Listener>();
+
+// Refresh failure is detected inside the SDK, outside app call sites. Bridge it
+// back into the existing listener model so the login chip updates immediately.
+onAuthExpired(() => notifyAuthChanged());
 
 export const getAuthSnapshot = (): AuthSnapshot => {
   const session = loadSession();
