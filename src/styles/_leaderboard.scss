@@ -74,6 +74,10 @@
   white-space: nowrap;
 }
 
+.leaderboard-name {
+  font-family: var(--font-user-content);
+}
+
 .go-leaderboard-rank {
   min-height: 1.5rem;
   color: var(--ui-text-muted);

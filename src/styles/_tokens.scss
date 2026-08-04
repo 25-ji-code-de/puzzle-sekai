@@ -48,6 +48,9 @@
   --font-display: sans-serif;
   --font-body: sans-serif;
   --font-mono: monospace;
+  --font-user-content:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
 }
 
 // Extra shrink on short landscape viewports (phones in landscape ≈ 360–420px tall).
