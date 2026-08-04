@@ -2,6 +2,17 @@ import { GATEWAY_BASE } from "../auth/config";
 import { getAccessToken } from "../auth";
 import { utcDateKey } from "../domain/daily";
 import type { ScoreSummary } from "../score";
+import type {
+  LeaderboardEntry,
+  LeaderboardMode,
+  LeaderboardResult,
+} from "./types";
+
+export type {
+  LeaderboardEntry,
+  LeaderboardMode,
+  LeaderboardResult,
+} from "./types";
 
 export const DAILY_BOARD_ID = "pico-daily";
 export const DAILY_RULES_VERSION = 1;
@@ -10,22 +21,7 @@ export const BOARD_IDS = {
   endless: "pico-endless",
   timeAttack: "pico-time-attack",
 } as const;
-export type LeaderboardMode = keyof typeof BOARD_IDS;
-
-export interface LeaderboardEntry {
-  rank: number;
-  score: number;
-  display_name: string | null;
-  is_public: boolean;
-}
-
-export interface DailyLeaderboard {
-  entries: LeaderboardEntry[];
-  me: LeaderboardEntry | null;
-  total: number;
-  period_start: string;
-  period_end: string;
-}
+export type DailyLeaderboard = LeaderboardResult;
 
 let pendingSubmission: Promise<boolean> | null = null;
 

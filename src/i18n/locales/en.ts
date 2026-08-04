@@ -1,5 +1,10 @@
 export const en = {
   loading: "Loading",
+  common: {
+    confirmTitle: "Confirm action",
+    cancel: "Cancel",
+    confirm: "Confirm",
+  },
   page: {
     title: "Puzzle ⭐︎ SEKAI",
     description:
@@ -44,6 +49,9 @@ export const en = {
     myRank: "Rank: #{rank} of {total}",
     notRanked: "No qualifying score yet.",
     unavailable: "Leaderboard unavailable.",
+    bilibiliBest: "Bilibili cloud high score",
+    serverOfficial: "Official",
+    serverBilibili: "Bilibili",
     mode: {
       daily: "Daily",
       endless: "Endless",
@@ -108,6 +116,7 @@ export const en = {
   auth: {
     login: "Sign in with SEKAI",
     loginShort: "Sign in",
+    loginWithSekaiPass: "Sign in with SEKAI Pass",
     loggingIn: "Signing in…",
     logout: "Sign out",
     syncing: "Syncing…",

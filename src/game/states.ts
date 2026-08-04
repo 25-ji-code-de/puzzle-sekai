@@ -117,6 +117,10 @@ import {
 } from "../ui/pause-menu";
 import { disposeGameOverMenu, showGameOverMenu } from "../ui/game-over-menu";
 import {
+  isBilibiliToyAvailable,
+  submitBilibiliToyScore,
+} from "../integrations/bilibili-toy";
+import {
   stopBgm,
   playGameOverBgm,
   startPlayBgm,
@@ -531,11 +535,13 @@ const beginGameOver = (cause: "topOut" | "timeUp") => {
   const summary = getScoreSummary();
   // Persist as soon as the run ends (before curtain / menu / restart).
   flushHighScoreIfNeeded();
+  // Toy sync is best-effort and intentionally independent of local/auth sync.
+  void submitBilibiliToyScore(getScoreSummary());
   finishReplayRecording(summary);
   // Account dan: one append per match (latched).
   finalizeRunForDan();
-  // Cloud sync (no-op when logged out). Replays themselves are local-only.
-  if (!isReplayPlayback()) {
+  // Keep official SEKAI Pass sync and Toy sync as separate server channels.
+  if (!isReplayPlayback() && !isBilibiliToyAvailable()) {
     scheduleSyncPush();
     if (!summary.entertainment) {
       void import("../leaderboard/client").then(({ submitLeaderboardScore }) =>

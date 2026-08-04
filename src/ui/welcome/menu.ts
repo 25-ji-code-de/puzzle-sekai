@@ -28,6 +28,12 @@ import {
   startGame,
 } from "./start-game";
 import { setPlayPhase } from "../../application/play-session";
+import {
+  getBilibiliToySnapshot,
+  isBilibiliToyAvailable,
+  subscribeBilibiliToy,
+} from "../../integrations/bilibili-toy";
+import { confirmDialog } from "../confirm-dialog";
 
 let welcomeSprite: PIXI.Sprite;
 let menuOverlay: HTMLDivElement | null = null;
@@ -35,6 +41,8 @@ let localeListening = false;
 let unsubAuth: (() => void) | null = null;
 let unsubAuthPending: (() => void) | null = null;
 let unsubSync: (() => void) | null = null;
+let unsubToy: (() => void) | null = null;
+let toyStatusEl: HTMLDivElement | null = null;
 let bootstrappedCloudSync = false;
 
 let authMod: typeof import("../../auth") | null = null;
@@ -88,6 +96,9 @@ const teardownMenu = () => {
   unsubAuthPending = null;
   unsubSync?.();
   unsubSync = null;
+  unsubToy?.();
+  unsubToy = null;
+  toyStatusEl = null;
   if (menuOverlay) {
     menuOverlay.remove();
     menuOverlay = null;
@@ -129,6 +140,8 @@ const makeToolbarBtn = (label: string, onClick: () => void) => {
 const buildMenu = () => {
   if (menuOverlay) return;
 
+  const toyRuntime = isBilibiliToyAvailable();
+
   void ensureSettingsPanel();
 
   disposeOrientationGate();
@@ -159,6 +172,38 @@ const buildMenu = () => {
     : danLabel;
   danChip.style.cssText = danColorStyle(danSnap.dan);
   header.appendChild(danChip);
+
+  if (toyRuntime) {
+    toyStatusEl = document.createElement("div");
+    toyStatusEl.className = "menu-toy-status";
+    toyStatusEl.setAttribute("aria-label", "bilibili Toy");
+    header.appendChild(toyStatusEl);
+    const renderToyStatus = (
+      state: ReturnType<typeof getBilibiliToySnapshot>,
+    ) => {
+      if (!toyStatusEl) return;
+      const nickname = state.profile?.nickname?.trim();
+      const status =
+        state.profileStatus === "waiting"
+          ? "awaiting authorization"
+          : state.profileStatus === "login-required"
+            ? "login required"
+            : state.profileStatus === "authorization-denied"
+              ? "authorization denied"
+              : state.profileStatus === "unsupported"
+                ? "unsupported"
+                : state.profileStatus === "connection-error"
+                  ? "connection unavailable"
+                  : state.profileStatus === "error"
+                    ? "user unavailable"
+                    : "syncing";
+      const details = nickname || status;
+      toyStatusEl.textContent = "bilibili Toy";
+      toyStatusEl.setAttribute("aria-label", `bilibili Toy · ${details}`);
+      toyStatusEl.title = state.profileError || details;
+    };
+    unsubToy = subscribeBilibiliToy(renderToyStatus);
+  }
 
   menuOverlay.appendChild(header);
 
@@ -208,7 +253,13 @@ const buildMenu = () => {
   const clearCacheBtn = makeToolbarBtn(
     t("settings.data.clearCache"),
     async () => {
-      if (!window.confirm(t("settings.data.clearCacheConfirm"))) return;
+      if (
+        !(await confirmDialog(t("settings.data.clearCacheConfirm"), {
+          confirmLabel: t("settings.data.clearCache"),
+        }))
+      ) {
+        return;
+      }
       clearCacheBtn.disabled = true;
       const prev = clearCacheBtn.textContent;
       clearCacheBtn.textContent = t("settings.data.working");
@@ -235,7 +286,9 @@ const buildMenu = () => {
   authChip.type = "button";
   authChip.className = "menu-auth menu-tool-btn";
   authChip.setAttribute("data-boot-interactive", "1");
-  authChip.textContent = t("auth.loginShort");
+  authChip.textContent = toyRuntime
+    ? t("auth.loginWithSekaiPass")
+    : t("auth.loginShort");
   authChip.title = t("auth.login");
   authChip.disabled = true;
   const paintAuthChip = async () => {
@@ -270,7 +323,9 @@ const buildMenu = () => {
       return;
     }
 
-    authChip.textContent = t("auth.loginShort");
+    authChip.textContent = toyRuntime
+      ? t("auth.loginWithSekaiPass")
+      : t("auth.loginShort");
     authChip.title = auth.isAuthConfigured()
       ? t("auth.login")
       : t("auth.notConfigured");
@@ -293,7 +348,7 @@ const buildMenu = () => {
   };
 
   authChip.onclick = () => {
-    void ensureAuth().then((auth) => {
+    void ensureAuth().then(async (auth) => {
       const snap = auth.getAuthSnapshot();
       if (!snap.loggedIn) {
         if (!auth.isAuthConfigured()) {
@@ -315,7 +370,11 @@ const buildMenu = () => {
         });
         return;
       }
-      if (window.confirm(t("auth.logout"))) {
+      if (
+        await confirmDialog(t("auth.logout"), {
+          confirmLabel: t("auth.logout"),
+        })
+      ) {
         auth.logout();
         auth.setAuthPending(false);
         void paintAuthChip();

@@ -18,6 +18,11 @@ import {
 } from "./dialog-button";
 import { buildGameOverSummary } from "./game-over-summary";
 import { devWarn } from "../util/dev-log";
+import {
+  fetchBilibiliToyLeaderboard,
+  isBilibiliToyAvailable,
+  waitForBilibiliToyScore,
+} from "../integrations/bilibili-toy";
 
 const GAME_OVER_OVERLAY_ID = "game-over-overlay";
 
@@ -54,24 +59,37 @@ export const showGameOverMenu = (): void => {
   if (!summary.entertainment && !summary.replaying) {
     const rank = document.createElement("div");
     rank.className = "go-leaderboard-rank";
-    rank.textContent = t("leaderboard.submitting");
+    const bilibili = isBilibiliToyAvailable();
+    const serverLabel = t(
+      bilibili ? "leaderboard.serverBilibili" : "leaderboard.serverOfficial",
+    );
+    rank.textContent = `${serverLabel} · ${t("leaderboard.submitting")}`;
     card.appendChild(rank);
-    void import("../leaderboard/client").then(
-      async ({ fetchLeaderboard, waitForScoreSubmission }) => {
-        await waitForScoreSubmission();
-        try {
-          const board = await fetchLeaderboard(summary.mode);
-          rank.textContent = board.me
+    void (
+      bilibili
+        ? waitForBilibiliToyScore().then(() =>
+            fetchBilibiliToyLeaderboard(summary.mode),
+          )
+        : import("../leaderboard/client").then(
+            async ({ fetchLeaderboard, waitForScoreSubmission }) => {
+              await waitForScoreSubmission();
+              return fetchLeaderboard(summary.mode);
+            },
+          )
+    )
+      .then((board) => {
+        rank.textContent = `${serverLabel} · ${
+          board.me
             ? t("leaderboard.myRank", {
                 rank: board.me.rank,
                 total: board.total,
               })
-            : t("leaderboard.notRanked");
-        } catch {
-          rank.textContent = t("leaderboard.unavailable");
-        }
-      },
-    );
+            : t("leaderboard.notRanked")
+        }`;
+      })
+      .catch(() => {
+        rank.textContent = `${serverLabel} · ${t("leaderboard.unavailable")}`;
+      });
   }
 
   const actions = document.createElement("div");
