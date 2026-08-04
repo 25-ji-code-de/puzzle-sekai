@@ -68,10 +68,9 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Enable Corepack (Yarn 4)
+      - name: Enable project Yarn
         run: |
           corepack enable
-          corepack prepare yarn@4.17.0 --activate
           yarn --version
 
       - name: Cache Yarn downloads
@@ -162,10 +161,9 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Enable Corepack (Yarn 4)
+      - name: Enable project Yarn
         run: |
           corepack enable
-          corepack prepare yarn@4.17.0 --activate
           yarn --version
 
       - name: Cache Yarn downloads
