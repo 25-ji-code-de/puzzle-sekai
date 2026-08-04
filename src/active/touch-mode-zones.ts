@@ -5,12 +5,8 @@
 import { gameTicker } from "../runtime";
 import {
   CONTINUOUS_STRAFE_SPEED,
-  TOUCH_FLICK_HARD_VEL_STAGE,
-  TOUCH_FLICK_LIFT_VEL_STAGE,
-  TOUCH_FLICK_VERTICAL_RATIO,
   TOUCH_STICK_PROFILE_COMPACT,
   TOUCH_STICK_PROFILE_DESKTOP,
-  TOUCH_TAP_MAX_MS,
   TOUCH_ZONES_HARD_CHARGE_MS,
   TOUCH_ZONES_HARD_CHARGE_MS_COMPACT,
   TOUCH_ZONES_STEP_MS,
@@ -19,24 +15,19 @@ import {
 } from "../config";
 import { isReplayPlayback, recordReplayAction } from "../replay";
 import { isCompactPointerViewport } from "../ui/display-policy";
-import {
-  classifyFlick,
-  clientDeltaToStage,
-  hitTestZone,
-  isTapGesture,
-  type ZoneKind,
-} from "./touch-math";
+import { clientDeltaToStage, hitTestZone, type ZoneKind } from "./touch-math";
 import { createZonesChargeUi } from "./zones-charge-ui";
 import {
   MAX_DELTA,
   applyContinuousDx,
   armSoftDrop,
+  finishTouchGesture,
   fireHorizontalStep,
-  fireRotateAt,
   isTouchUiBlocked,
   openTouchSurface,
   releaseSoftDrop,
   scaleForView,
+  tryCapturePointer,
   viewEl,
   type TouchBindOptions,
   type TouchPieceActions,
@@ -205,11 +196,7 @@ export const bindZonesTouch = (
       ensureHooked();
     }
 
-    try {
-      surface.setPointerCapture(e.pointerId);
-    } catch {
-      /* optional */
-    }
+    tryCapturePointer(surface, e.pointerId);
   };
 
   const onPointerMove = (e: PointerEvent) => {
@@ -245,70 +232,12 @@ export const bindZonesTouch = (
 
   const endPointer = (e: PointerEvent, cancelled: boolean) => {
     if (!session || e.pointerId !== session.pointerId) return;
-    if (session.ended) {
-      clearSession(true);
-      return;
-    }
-    const durationMs = performance.now() - session.startedAt;
-    const scale = scaleForView();
-    const stageTotal = clientDeltaToStage(
-      e.clientX - session.originX,
-      e.clientY - session.originY,
-      scale,
-    );
-    const dt = Math.max(durationMs, 1);
-    const avgVelY = stageTotal.dy / dt;
-    const velocityY =
-      Math.abs(session.recentVelY) > Math.abs(avgVelY)
-        ? session.recentVelY
-        : avgVelY;
-
-    // Center short tap → rotate (half-screen still used for CW/CCW).
-    if (
-      !cancelled &&
-      session.zone === "center" &&
-      !session.consumedAsPan &&
-      isTapGesture(
-        durationMs,
-        stageTotal.dx,
-        stageTotal.dy,
-        thresh.deadZone,
-        TOUCH_TAP_MAX_MS,
-      )
-    ) {
-      fireRotateAt(actions, e.clientX);
-      session.ended = true;
-      clearSession(true);
-      return;
-    }
-
-    const verticalPrimary =
-      Math.abs(stageTotal.dy) >=
-      Math.abs(stageTotal.dx) * TOUCH_FLICK_VERTICAL_RATIO;
-    if (!cancelled && session.consumedAsPan && verticalPrimary) {
-      const flick = classifyFlick(velocityY, stageTotal.dy, stageTotal.dx, {
-        hardVelocity: TOUCH_FLICK_HARD_VEL_STAGE,
-        liftVelocity: TOUCH_FLICK_LIFT_VEL_STAGE,
-        minDistance: thresh.flickMin,
-        verticalRatio: TOUCH_FLICK_VERTICAL_RATIO,
-      });
-      if (flick === "hardDrop") {
-        actions.hardDrop();
-        recordReplayAction("HD");
-        session.ended = true;
-        clearSession(true);
-        return;
-      }
-      if (flick === "lift" && actions.tryLift) {
-        actions.tryLift();
-        recordReplayAction("LF");
-        session.ended = true;
-        clearSession(true);
-        return;
-      }
-    }
-
-    clearSession(true);
+    finishTouchGesture(e, session, actions, () => clearSession(true), {
+      cancelled,
+      allowTap: session.zone === "center",
+      deadZone: thresh.deadZone,
+      flickMin: thresh.flickMin,
+    });
   };
 
   const onPointerUp = (e: PointerEvent) => endPointer(e, false);

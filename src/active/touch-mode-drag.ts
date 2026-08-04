@@ -2,32 +2,24 @@
  * Drag mode — competitive finger-relative 1:1 steer from press origin.
  * No stick UI / no center charge; flicks + soft-drop hold still work.
  */
+import { TOUCH_DRAG_CONTINUOUS_GAIN, touchStageThresholds } from "../config";
+import { isReplayPlayback } from "../replay";
 import {
-  TOUCH_DRAG_CONTINUOUS_GAIN,
-  TOUCH_FLICK_HARD_VEL_STAGE,
-  TOUCH_FLICK_LIFT_VEL_STAGE,
-  TOUCH_FLICK_VERTICAL_RATIO,
-  TOUCH_TAP_MAX_MS,
-  touchStageThresholds,
-} from "../config";
-import { isReplayPlayback, recordReplayAction } from "../replay";
-import {
-  classifyFlick,
   clientDeltaToStage,
   consumeGridSteps,
-  isTapGesture,
   shouldArmSoftDrop,
   shouldReleaseSoftDrop,
 } from "./touch-math";
 import {
   applyContinuousDx,
   armSoftDrop,
+  finishTouchGesture,
   fireHorizontalStep,
-  fireRotateAt,
   isTouchUiBlocked,
   openTouchSurface,
   releaseSoftDrop,
   scaleForView,
+  tryCapturePointer,
   type TouchBindOptions,
   type TouchPieceActions,
 } from "./touch-shared";
@@ -81,11 +73,7 @@ export const bindDragTouch = (
       recentVelY: 0,
       gridAccumX: 0,
     };
-    try {
-      surface.setPointerCapture(e.pointerId);
-    } catch {
-      /* optional */
-    }
+    tryCapturePointer(surface, e.pointerId);
   };
 
   const onPointerMove = (e: PointerEvent) => {
@@ -145,67 +133,12 @@ export const bindDragTouch = (
 
   const endPointer = (e: PointerEvent, cancelled: boolean) => {
     if (!session || e.pointerId !== session.pointerId) return;
-    if (session.ended) {
-      clearSession(true);
-      return;
-    }
-    const durationMs = performance.now() - session.startedAt;
-    const scale = scaleForView();
-    const stageTotal = clientDeltaToStage(
-      e.clientX - session.originX,
-      e.clientY - session.originY,
-      scale,
-    );
-    const dt = Math.max(durationMs, 1);
-    const avgVelY = stageTotal.dy / dt;
-    const velocityY =
-      Math.abs(session.recentVelY) > Math.abs(avgVelY)
-        ? session.recentVelY
-        : avgVelY;
-
-    if (!cancelled && !session.consumedAsPan) {
-      if (
-        isTapGesture(
-          durationMs,
-          stageTotal.dx,
-          stageTotal.dy,
-          thresh.deadZone,
-          TOUCH_TAP_MAX_MS,
-        )
-      ) {
-        fireRotateAt(actions, e.clientX);
-        session.ended = true;
-        clearSession(true);
-        return;
-      }
-    }
-
-    const verticalPrimary =
-      Math.abs(stageTotal.dy) >=
-      Math.abs(stageTotal.dx) * TOUCH_FLICK_VERTICAL_RATIO;
-    if (!cancelled && session.consumedAsPan && verticalPrimary) {
-      const flick = classifyFlick(velocityY, stageTotal.dy, stageTotal.dx, {
-        hardVelocity: TOUCH_FLICK_HARD_VEL_STAGE,
-        liftVelocity: TOUCH_FLICK_LIFT_VEL_STAGE,
-        minDistance: thresh.flickMin,
-        verticalRatio: TOUCH_FLICK_VERTICAL_RATIO,
-      });
-      if (flick === "hardDrop") {
-        actions.hardDrop();
-        recordReplayAction("HD");
-        session.ended = true;
-        clearSession(true);
-        return;
-      }
-      if (flick === "lift" && actions.tryLift) {
-        actions.tryLift();
-        recordReplayAction("LF");
-        session.ended = true;
-        clearSession(true);
-        return;
-      }
-    }
-    clearSession(true);
+    finishTouchGesture(e, session, actions, () => clearSession(true), {
+      cancelled,
+      allowTap: true,
+      deadZone: thresh.deadZone,
+      flickMin: thresh.flickMin,
+    });
   };
 
   const onPointerUp = (e: PointerEvent) => endPointer(e, false);
