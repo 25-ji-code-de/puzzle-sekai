@@ -2,10 +2,22 @@
  * Shared touch binding primitives (surface, scale, fire helpers).
  */
 import { app } from "../runtime";
-import { STAGE_HEIGHT, STAGE_WIDTH } from "../config";
+import {
+  STAGE_HEIGHT,
+  STAGE_WIDTH,
+  TOUCH_FLICK_HARD_VEL_STAGE,
+  TOUCH_FLICK_LIFT_VEL_STAGE,
+  TOUCH_FLICK_VERTICAL_RATIO,
+  TOUCH_TAP_MAX_MS,
+} from "../config";
 import { isControlsSwapped } from "../fun/effects";
 import { recordReplayAction } from "../replay";
-import { clientToStageScale } from "./touch-math";
+import {
+  classifyFlick,
+  clientDeltaToStage,
+  clientToStageScale,
+  isTapGesture,
+} from "./touch-math";
 
 export type TouchPieceActions = {
   moveLeft: () => void;
@@ -22,6 +34,22 @@ export type TouchPieceActions = {
 export type TouchBindOptions = {
   continuous: boolean;
   strafeSpeed?: number;
+};
+
+type GestureEndSession = {
+  originX: number;
+  originY: number;
+  startedAt: number;
+  recentVelY: number;
+  consumedAsPan: boolean;
+  ended: boolean;
+};
+
+type GestureEndOptions = {
+  cancelled: boolean;
+  allowTap: boolean;
+  deadZone: number;
+  flickMin: number;
 };
 
 const TOUCH_UI_BLOCKER =
@@ -104,6 +132,89 @@ export const releaseSoftDrop = (
   armed.softDropArmed = false;
   actions.normalSpeed();
   recordReplayAction("ND");
+};
+
+export const tryCapturePointer = (
+  surface: HTMLElement,
+  pointerId: number,
+): void => {
+  try {
+    surface.setPointerCapture(pointerId);
+  } catch {
+    // Pointer capture is optional on browsers with partial Pointer Events.
+  }
+};
+
+export const finishTouchGesture = (
+  event: PointerEvent,
+  session: GestureEndSession,
+  actions: TouchPieceActions,
+  clearSession: () => void,
+  options: GestureEndOptions,
+): void => {
+  if (session.ended) {
+    clearSession();
+    return;
+  }
+
+  const durationMs = performance.now() - session.startedAt;
+  const scale = scaleForView();
+  const stageTotal = clientDeltaToStage(
+    event.clientX - session.originX,
+    event.clientY - session.originY,
+    scale,
+  );
+  const avgVelY = stageTotal.dy / Math.max(durationMs, 1);
+  const velocityY =
+    Math.abs(session.recentVelY) > Math.abs(avgVelY)
+      ? session.recentVelY
+      : avgVelY;
+
+  if (
+    !options.cancelled &&
+    options.allowTap &&
+    !session.consumedAsPan &&
+    isTapGesture(
+      durationMs,
+      stageTotal.dx,
+      stageTotal.dy,
+      options.deadZone,
+      TOUCH_TAP_MAX_MS,
+    )
+  ) {
+    fireRotateAt(actions, event.clientX);
+    session.ended = true;
+    clearSession();
+    return;
+  }
+
+  const verticalPrimary =
+    Math.abs(stageTotal.dy) >=
+    Math.abs(stageTotal.dx) * TOUCH_FLICK_VERTICAL_RATIO;
+  if (!options.cancelled && session.consumedAsPan && verticalPrimary) {
+    const flick = classifyFlick(velocityY, stageTotal.dy, stageTotal.dx, {
+      hardVelocity: TOUCH_FLICK_HARD_VEL_STAGE,
+      liftVelocity: TOUCH_FLICK_LIFT_VEL_STAGE,
+      minDistance: options.flickMin,
+      verticalRatio: TOUCH_FLICK_VERTICAL_RATIO,
+    });
+    if (flick === "hardDrop") {
+      actions.hardDrop();
+      recordReplayAction("HD");
+      session.ended = true;
+      clearSession();
+      return;
+    }
+    if (flick === "lift" && actions.tryLift) {
+      actions.tryLift();
+      recordReplayAction("LF");
+      session.ended = true;
+      clearSession();
+      return;
+    }
+  }
+
+  clearSession();
 };
 
 /** Install full-viewport pointer surface; returns surface + restore. */

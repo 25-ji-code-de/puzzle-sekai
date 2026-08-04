@@ -60,18 +60,19 @@ export const saveSyncMeta = (meta: SyncMeta): void => {
 
 const isLoggedIn = (): boolean => !!loadSession() && getAuthSnapshot().loggedIn;
 
-/**
- * GET cloud → merge with local → write local → POST merged (version=cloud).
- */
-export const pullMergePush = async (): Promise<boolean> => {
+const syncWithCloud = async (
+  operation: "pullMergePush" | "pushLocal",
+): Promise<boolean> => {
   if (!isLoggedIn()) return false;
   if (inFlight) {
     await inFlight;
-    return true;
+    return status === "ok";
   }
+
   const run = (async () => {
     setStatus("syncing");
     try {
+      // Always refresh the cloud version before upload to avoid stale writes.
       const cloud = await fetchCloudSync();
       if (!cloud) {
         setStatus("error");
@@ -93,10 +94,11 @@ export const pullMergePush = async (): Promise<boolean> => {
       });
       setStatus("ok");
     } catch (e) {
-      devWarn("[sync] pullMergePush", e);
+      devWarn(`[sync] ${operation}`, e);
       setStatus("error");
     }
   })();
+
   inFlight = run.finally(() => {
     inFlight = null;
   });
@@ -104,47 +106,12 @@ export const pullMergePush = async (): Promise<boolean> => {
   return status === "ok";
 };
 
-/** Push local-only snapshot (after a run). Uses stored cloud version. */
-export const pushLocal = async (): Promise<boolean> => {
-  if (!isLoggedIn()) return false;
-  if (inFlight) {
-    await inFlight;
-    return status === "ok";
-  }
-  const run = (async () => {
-    setStatus("syncing");
-    try {
-      // Refresh cloud version first to avoid clobber with stale meta.
-      const cloud = await fetchCloudSync();
-      if (!cloud) {
-        setStatus("error");
-        return;
-      }
-      const local = exportLocalPicoData();
-      const merged = mergePicoData(local, cloud.data);
-      importLocalPicoData(merged);
-      const uploaded = await uploadCloudSync(merged, cloud.version);
-      if (!uploaded) {
-        setStatus("error");
-        return;
-      }
-      importLocalPicoData(uploaded.data);
-      saveSyncMeta({
-        version: uploaded.version,
-        updatedAt: uploaded.updated_at,
-      });
-      setStatus("ok");
-    } catch (e) {
-      devWarn("[sync] pushLocal", e);
-      setStatus("error");
-    }
-  })();
-  inFlight = run.finally(() => {
-    inFlight = null;
-  });
-  await inFlight;
-  return status === "ok";
-};
+/** GET cloud → merge with local → write local → POST merged. */
+export const pullMergePush = (): Promise<boolean> =>
+  syncWithCloud("pullMergePush");
+
+/** Push after a run, merging against the latest cloud version first. */
+export const pushLocal = (): Promise<boolean> => syncWithCloud("pushLocal");
 
 /** Debounced push after game over (logged-in only). */
 export const scheduleSyncPush = (delayMs = 800): void => {
