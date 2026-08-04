@@ -1,5 +1,10 @@
 export const zh = {
   loading: "加载中",
+  common: {
+    confirmTitle: "确认操作",
+    cancel: "取消",
+    confirm: "确认",
+  },
   page: {
     title: "パズル⭐︎セカ | Puzzle × SEKAI",
     description:
@@ -44,6 +49,9 @@ export const zh = {
     myRank: "排名：第 {rank} / {total} 名",
     notRanked: "暂无有效成绩。",
     unavailable: "排行榜暂不可用。",
+    bilibiliBest: "B服云端最高分",
+    serverOfficial: "官服",
+    serverBilibili: "B服",
     mode: {
       daily: "每日挑战",
       endless: "无尽模式",
@@ -108,6 +116,7 @@ export const zh = {
   auth: {
     login: "登录 SEKAI",
     loginShort: "登录",
+    loginWithSekaiPass: "用 SEKAI Pass 登录",
     loggingIn: "登录中…",
     logout: "退出登录",
     syncing: "同步中…",

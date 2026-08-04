@@ -39,6 +39,7 @@ import { prefetchMenuBgm } from "./audio/bgm";
 import { preloadGame } from "./application/play-session";
 import { ensurePlayPack } from "./assets/play-pack";
 import { app, setState, tickMain, setBgSprite } from "./runtime";
+import { initializeBilibiliToy } from "./integrations/bilibili-toy";
 
 // Re-export runtime for any remaining `from "./index"` consumers.
 export {
@@ -70,6 +71,7 @@ app.stage.sortableChildren = true;
 const fontsReady = initializeFontSystem();
 
 ensureLiveRegions();
+void initializeBilibiliToy();
 showBootWelcome();
 app.loader.onProgress.add(() => {
   setWelcomeLoadProgress(app.loader.progress);

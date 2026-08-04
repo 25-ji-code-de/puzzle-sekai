@@ -24,23 +24,21 @@
 # Keep SW headers lean; page CSP already covers registerSW.js + module graph.
 
 # Shared CSP value (enforce). One line — CF _headers is line-oriented.
-# frame-ancestors is active under enforce; X-Frame-Options remains as a
-# belt-and-suspenders clickjacking control for older clients.
+# Bilibili Toy embeds the game in an iframe and communicates through its
+# parent via PostMessage. Keep the allowlist narrow to Bilibili origins.
 #
 # HTML shell — always revalidate
 /
   Cache-Control: public, max-age=0, must-revalidate
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self';
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors https://bilibili.com https://*.bilibili.com; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com https://s1.hdslb.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.hdslb.com https://*.bilibili.com; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net https://cloudflareinsights.com https://api.bilibili.com https://*.bilibili.com https://*.hdslb.com; worker-src 'self'; manifest-src 'self';
 
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
   X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net https://cloudflareinsights.com; worker-src 'self'; manifest-src 'self';
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors https://bilibili.com https://*.bilibili.com; form-action 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://static.cloudflareinsights.com https://s1.hdslb.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.hdslb.com https://*.bilibili.com; font-src 'self'; media-src 'self'; connect-src 'self' https://id.nightcord.de5.net https://api.nightcord.de5.net https://cloudflareinsights.com https://api.bilibili.com https://*.bilibili.com https://*.hdslb.com; worker-src 'self'; manifest-src 'self';
 
 # Service worker / PWA — never long-cache
 /sw.js

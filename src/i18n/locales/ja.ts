@@ -1,5 +1,10 @@
 export const ja = {
   loading: "読み込み中",
+  common: {
+    confirmTitle: "操作の確認",
+    cancel: "キャンセル",
+    confirm: "確認",
+  },
   page: {
     title: "パズル⭐︎セカ | Puzzle × SEKAI",
     description:
@@ -44,6 +49,9 @@ export const ja = {
     myRank: "順位：{total}人中 {rank}位",
     notRanked: "有効なスコアはまだありません。",
     unavailable: "ランキングを利用できません。",
+    bilibiliBest: "Bilibiliクラウド最高スコア",
+    serverOfficial: "公式",
+    serverBilibili: "Bilibili",
     mode: {
       daily: "デイリー",
       endless: "エンドレス",
@@ -108,6 +116,7 @@ export const ja = {
   auth: {
     login: "SEKAIでログイン",
     loginShort: "ログイン",
+    loginWithSekaiPass: "SEKAI Passでログイン",
     loggingIn: "ログイン中…",
     logout: "ログアウト",
     syncing: "同期中…",

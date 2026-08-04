@@ -1,6 +1,7 @@
 import { clearAppData, clearAppCaches } from "../../data";
 import { getAuthSnapshot, logout } from "../../../auth";
 import { t } from "../../../i18n";
+import { confirmDialog } from "../../../ui/confirm-dialog";
 import {
   makeDangerButton,
   makeNeutralButton,
@@ -18,8 +19,14 @@ export const appendDataSection = (panel: HTMLElement): void => {
 
   if (getAuthSnapshot().loggedIn) {
     const logoutBtn = makeNeutralButton(t("auth.logout"));
-    logoutBtn.onclick = () => {
-      if (!window.confirm(t("auth.logout"))) return;
+    logoutBtn.onclick = async () => {
+      if (
+        !(await confirmDialog(t("auth.logout"), {
+          confirmLabel: t("auth.logout"),
+        }))
+      ) {
+        return;
+      }
       logout();
       status.textContent = t("auth.logout");
     };
@@ -30,7 +37,13 @@ export const appendDataSection = (panel: HTMLElement): void => {
   const clearDataBtn = makeDangerButton(t("settings.data.clearData"));
 
   clearCacheBtn.onclick = async () => {
-    if (!window.confirm(t("settings.data.clearCacheConfirm"))) return;
+    if (
+      !(await confirmDialog(t("settings.data.clearCacheConfirm"), {
+        confirmLabel: t("settings.data.clearCache"),
+      }))
+    ) {
+      return;
+    }
     clearCacheBtn.disabled = true;
     clearDataBtn.disabled = true;
     status.textContent = t("settings.data.working");
@@ -45,8 +58,14 @@ export const appendDataSection = (panel: HTMLElement): void => {
     }
   };
 
-  clearDataBtn.onclick = () => {
-    if (!window.confirm(t("settings.data.clearDataConfirm"))) return;
+  clearDataBtn.onclick = async () => {
+    if (
+      !(await confirmDialog(t("settings.data.clearDataConfirm"), {
+        confirmLabel: t("settings.data.clearData"),
+      }))
+    ) {
+      return;
+    }
     clearCacheBtn.disabled = true;
     clearDataBtn.disabled = true;
     status.textContent = t("settings.data.working");

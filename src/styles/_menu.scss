@@ -22,7 +22,7 @@
   .menu-auth {
     flex: 0 0 auto;
     min-width: 4.5em;
-    max-width: 8em;
+    max-width: 12em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -97,6 +97,21 @@
     font-size: clamp(13px, 2.8vh, 18px);
     letter-spacing: 2px;
     // Color from danColorStyle
+    pointer-events: none;
+  }
+
+  .menu-toy-status {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 8px;
+    padding: 3px 10px;
+    border: 1px solid rgba(100, 210, 255, 0.55);
+    border-radius: 999px;
+    color: rgba(190, 240, 255, 0.95);
+    background: rgba(15, 70, 105, 0.55);
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 1px;
     pointer-events: none;
   }
 

@@ -6,6 +6,12 @@ import {
 } from "../ui/dialog-button";
 import type { FocusTrapHandle } from "../a11y";
 import { fetchLeaderboard, type LeaderboardMode } from "./client";
+import type { LeaderboardServer, LeaderboardResult } from "./types";
+import {
+  fetchBilibiliToyLeaderboard,
+  getBilibiliToySnapshot,
+  isBilibiliToyAvailable,
+} from "../integrations/bilibili-toy";
 
 let overlay: HTMLDivElement | null = null;
 let focusTrap: FocusTrapHandle | null = null;
@@ -19,7 +25,7 @@ export const closeDailyLeaderboard = (): void => {
 
 const renderRows = (
   host: HTMLElement,
-  entries: Awaited<ReturnType<typeof fetchLeaderboard>>["entries"],
+  entries: LeaderboardResult["entries"],
 ) => {
   host.replaceChildren();
   if (entries.length === 0) {
@@ -56,6 +62,12 @@ export const showDailyLeaderboard = (): void => {
   overlay = shell.overlay;
   shell.card.classList.add("ui-dialog--leaderboard");
 
+  const serverControls = document.createElement("div");
+  serverControls.className = "leaderboard-server-controls";
+  let activeServer: LeaderboardServer = isBilibiliToyAvailable()
+    ? "bilibili"
+    : "official";
+
   const controls = document.createElement("div");
   controls.className = "leaderboard-controls";
   let activeMode: LeaderboardMode = "daily";
@@ -65,14 +77,33 @@ export const showDailyLeaderboard = (): void => {
   body.textContent = t("leaderboard.loading");
   shell.card.appendChild(body);
 
+  const cloudScore = document.createElement("div");
+  cloudScore.className = "leaderboard-cloud-score";
+  shell.card.insertBefore(cloudScore, body);
+
+  const updateCloudScore = () => {
+    if (activeServer !== "bilibili") {
+      cloudScore.hidden = true;
+      return;
+    }
+    const score = getBilibiliToySnapshot().cloudScores[activeMode];
+    cloudScore.hidden = false;
+    cloudScore.textContent = `${t("leaderboard.bilibiliBest")}: ${score.toLocaleString()}`;
+  };
+
   const load = (mode: LeaderboardMode) => {
     activeMode = mode;
     controls.querySelectorAll("button").forEach((button) => {
       button.classList.toggle("active", button.dataset.mode === activeMode);
     });
+    updateCloudScore();
     body.className = "leaderboard-loading";
     body.textContent = t("leaderboard.loading");
-    void fetchLeaderboard(mode)
+    void (
+      activeServer === "bilibili"
+        ? fetchBilibiliToyLeaderboard(mode)
+        : fetchLeaderboard(mode)
+    )
       .then((board) => renderRows(body, board.entries))
       .catch((error: unknown) => {
         body.className = "leaderboard-empty";
@@ -82,6 +113,30 @@ export const showDailyLeaderboard = (): void => {
             : t("leaderboard.failed");
       });
   };
+
+  const loadServer = (server: LeaderboardServer) => {
+    activeServer = server;
+    serverControls.querySelectorAll("button").forEach((button) => {
+      button.classList.toggle("active", button.dataset.server === activeServer);
+    });
+    load(activeMode);
+  };
+
+  for (const server of ["official", "bilibili"] as const) {
+    if (server === "bilibili" && !isBilibiliToyAvailable()) continue;
+    const button = buildDialogButton(
+      t(
+        server === "official"
+          ? "leaderboard.serverOfficial"
+          : "leaderboard.serverBilibili",
+      ),
+      "neutral",
+      () => loadServer(server),
+    );
+    button.dataset.server = server;
+    serverControls.appendChild(button);
+  }
+  shell.card.insertBefore(serverControls, cloudScore);
   for (const mode of ["daily", "endless", "timeAttack"] as const) {
     const button = buildDialogButton(
       t(`leaderboard.mode.${mode}`),
@@ -108,5 +163,5 @@ export const showDailyLeaderboard = (): void => {
     onEscape: closeDailyLeaderboard,
   });
 
-  load("daily");
+  loadServer(activeServer);
 };
